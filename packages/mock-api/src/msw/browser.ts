@@ -6,17 +6,28 @@ export interface StartedMockWorker {
   worker: ReturnType<typeof setupWorker>;
 }
 
+export interface StartMockWorkerOptions {
+  /**
+   * Where the app serves mockServiceWorker.js. Defaults to the domain root —
+   * apps deployed under a subpath (e.g. /admin) must pass
+   * `${basePath}/mockServiceWorker.js` or registration 404s.
+   */
+  serviceWorkerUrl?: string;
+}
+
 /**
  * Boot the browser mock API. Apps must await this BEFORE rendering anything
  * that fetches, so no request escapes to the network.
  */
-export async function startMockWorker(): Promise<StartedMockWorker> {
+export async function startMockWorker(
+  options: StartMockWorkerOptions = {},
+): Promise<StartedMockWorker> {
   const api = createMockApi();
   const worker = setupWorker(...api.handlers);
   await worker.start({
     onUnhandledRequest: 'bypass',
     quiet: true,
-    serviceWorker: { url: '/mockServiceWorker.js' },
+    serviceWorker: { url: options.serviceWorkerUrl ?? '/mockServiceWorker.js' },
   });
   // Snapshot the db periodically + on unload so state survives reloads.
   setInterval(() => api.persist(), 1500);

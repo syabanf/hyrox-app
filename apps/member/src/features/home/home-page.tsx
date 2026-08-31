@@ -73,16 +73,16 @@ export function HomePage() {
         </div>
       </Link>
 
-      {/* Quick actions */}
+      {/* Quick actions — each with its own soft accent tint */}
       <div className="grid grid-cols-2 gap-3">
         {[
-          { to: '/qr', icon: QrCode, label: t('Check in') },
-          { to: '/classes', icon: CalendarDays, label: t('Book a class') },
-          { to: '/workout', icon: Dumbbell, label: t('Generate workout') },
-          { to: '/races', icon: Flag, label: t('Races') },
-        ].map(({ to, icon: Icon, label }) => (
+          { to: '/qr', icon: QrCode, label: t('Check in'), tint: 'bg-brand/10 text-brand' },
+          { to: '/classes', icon: CalendarDays, label: t('Book a class'), tint: 'bg-[#2563eb]/10 text-[#2563eb]' },
+          { to: '/workout', icon: Dumbbell, label: t('Generate workout'), tint: 'bg-warn/10 text-warn' },
+          { to: '/races', icon: Flag, label: t('Races'), tint: 'bg-ok/10 text-ok' },
+        ].map(({ to, icon: Icon, label, tint }) => (
           <Link key={to} to={to} className="card flex items-center gap-3 !p-4 active:scale-[0.98]">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-raised text-ink/70">
+            <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tint}`}>
               <Icon size={19} strokeWidth={2.2} />
             </span>
             <span className="text-sm font-bold leading-tight">{label}</span>
@@ -166,15 +166,19 @@ export function HomePage() {
         <section>
           <SectionHeader label={t('Announcements')} />
           <div className="card divide-y divide-line !py-1">
-            {home.announcements.slice(0, 3).map((a) => {
+            {home.announcements.slice(0, 3).map((a, i) => {
+              const dot = ['bg-brand', 'bg-warn', 'bg-[#2563eb]'][i % 3];
               const inner = (
-                <>
-                  <div className="flex items-baseline justify-between gap-3">
-                    <p className="text-sm font-extrabold">{a.title}</p>
-                    <p className="shrink-0 text-xs text-muted/70">{formatDay(a.createdAt)}</p>
+                <div className="flex gap-3">
+                  <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${dot}`} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <p className="text-sm font-extrabold">{a.title}</p>
+                      <p className="shrink-0 text-xs text-muted/70">{formatDay(a.createdAt)}</p>
+                    </div>
+                    <p className="mt-0.5 text-sm text-muted">{a.message}</p>
                   </div>
-                  <p className="mt-0.5 text-sm text-muted">{a.message}</p>
-                </>
+                </div>
               );
               return a.deepLink ? (
                 <Link key={a.id} to={a.deepLink} className="block py-3.5">
@@ -227,7 +231,7 @@ export function HomePage() {
                     </p>
                     <p
                       className={`mt-1.5 text-xs font-bold ${
-                        v.myBooking ? 'text-ok' : v.spotsLeft > 0 ? 'text-muted' : 'text-warn'
+                        v.myBooking ? 'text-ok' : v.spotsLeft > 0 ? 'text-brand' : 'text-warn'
                       }`}
                     >
                       {v.myBooking ? t('Booked') : v.spotsLeft > 0 ? `${v.spotsLeft} ${t('left')}` : t('Full · WL')}
@@ -243,14 +247,14 @@ export function HomePage() {
       {/* Challenge progress */}
       {home?.challenge ? (
         <Link to="/train/explore" className="card flex items-center gap-4 !py-4">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-raised text-ink/70">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warn/10 text-warn">
             <Trophy size={19} strokeWidth={2.2} />
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-bold">{home.challenge.name}</p>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-raised">
               <div
-                className="h-full rounded-full bg-brand"
+                className="h-full rounded-full bg-gradient-to-r from-brand to-[#ff7a45]"
                 style={{
                   width: `${Math.min(100, (home.challenge.progressKm / home.challenge.targetKm) * 100)}%`,
                 }}
@@ -283,32 +287,56 @@ export function HomePage() {
           </div>
         ) : (
           <div className="card divide-y divide-line !py-1">
-            {upcoming.map((b) => (
-              <Link
-                key={b.booking.id}
-                to={`/classes/${b.session.id}`}
-                className="flex items-center justify-between gap-3 py-3.5"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-extrabold">{b.classTypeName}</p>
-                  <p className="truncate text-sm text-muted">
-                    {formatDayTime(b.session.startsAt)} · {b.branchName}
-                  </p>
-                </div>
-                <span
-                  className={`chip shrink-0 ${
-                    b.booking.status === 'CONFIRMED'
-                      ? 'bg-ok/10 text-ok'
-                      : 'bg-warn/10 text-warn'
-                  }`}
+            {upcoming.map((b) => {
+              const d = new Date(b.session.startsAt);
+              return (
+                <Link
+                  key={b.booking.id}
+                  to={`/classes/${b.session.id}`}
+                  className="flex items-center gap-3 py-3.5"
                 >
-                  {b.booking.status === 'WAITLIST' ? `WL #${b.booking.waitlistPosition}` : t('Booked')}
-                </span>
-              </Link>
-            ))}
+                  <span className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-2xl bg-brand/[0.08]">
+                    <span className="display text-lg leading-none text-brand">{d.getDate()}</span>
+                    <span className="text-[9px] font-extrabold uppercase tracking-wide text-brand/70">
+                      {d.toLocaleDateString(undefined, { month: 'short' })}
+                    </span>
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-extrabold">{b.classTypeName}</p>
+                    <p className="truncate text-sm text-muted">
+                      {formatDayTime(b.session.startsAt)} · {b.branchName}
+                    </p>
+                  </div>
+                  <span
+                    className={`chip shrink-0 ${
+                      b.booking.status === 'CONFIRMED'
+                        ? 'bg-ok/10 text-ok'
+                        : 'bg-warn/10 text-warn'
+                    }`}
+                  >
+                    {b.booking.status === 'WAITLIST' ? `WL #${b.booking.waitlistPosition}` : t('Booked')}
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         )}
       </section>
+
+      {/* Community finisher — a splash of brand at the end of the page */}
+      <Link
+        to="/train"
+        className="card surface-brand relative block overflow-hidden !border-0 !p-6 text-white"
+      >
+        <div className="pointer-events-none absolute -right-14 -top-20 h-48 w-48 rounded-full bg-white/15 blur-3xl" />
+        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/60">
+          {t('Community')}
+        </p>
+        <p className="display mt-1 text-2xl leading-tight">{t('See what your crew is training')}</p>
+        <span className="chip mt-4 bg-white/15 text-white backdrop-blur">{t('Open Train')} →</span>
+      </Link>
+
+      <p className="display pb-2 text-center text-4xl text-ink/[0.06]">HYROXSTUDIO</p>
     </div>
   );
 }

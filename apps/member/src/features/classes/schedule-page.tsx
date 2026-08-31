@@ -49,9 +49,9 @@ export function SchedulePage() {
           <button
             key={d.key}
             onClick={() => setSelectedDay(d.key)}
-            className={`flex min-w-14 flex-col items-center rounded-xl border px-3 py-2 ${
+            className={`flex min-w-14 flex-col items-center rounded-2xl border px-3 py-2 transition ${
               selectedDay === d.key
-                ? 'border-brand bg-brand text-white'
+                ? 'surface-ink border-transparent text-white shadow-[0_8px_20px_rgb(13_13_16/0.25)]'
                 : 'border-line bg-surface text-muted'
             }`}
           >
@@ -64,8 +64,8 @@ export function SchedulePage() {
       <div className="flex gap-2">
         <button
           onClick={() => setBranchId('')}
-          className={`rounded-full px-4 py-1.5 text-sm font-bold ${
-            branchId === '' ? 'bg-brand text-white' : 'bg-surface text-muted'
+          className={`rounded-full px-4 py-1.5 text-sm font-bold transition ${
+            branchId === '' ? 'bg-brand/10 text-brand ring-1 ring-brand/20' : 'bg-surface text-muted'
           }`}
         >
           All branches
@@ -74,8 +74,8 @@ export function SchedulePage() {
           <button
             key={b.id}
             onClick={() => setBranchId(b.id)}
-            className={`rounded-full px-4 py-1.5 text-sm font-bold ${
-              branchId === b.id ? 'bg-brand text-white' : 'bg-surface text-muted'
+            className={`rounded-full px-4 py-1.5 text-sm font-bold transition ${
+              branchId === b.id ? 'bg-brand/10 text-brand ring-1 ring-brand/20' : 'bg-surface text-muted'
             }`}
           >
             {b.name}

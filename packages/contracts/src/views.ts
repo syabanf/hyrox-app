@@ -231,6 +231,7 @@ export interface AnnouncementView {
   title: string;
   message: string;
   deepLink: string | null;
+  imageUrl: string | null;
   createdAt: string;
 }
 

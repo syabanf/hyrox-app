@@ -207,6 +207,7 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
           title: c.name,
           message: c.message,
           deepLink: c.deepLink,
+          imageUrl: c.imageUrl,
           createdAt: c.createdAt,
         }));
 

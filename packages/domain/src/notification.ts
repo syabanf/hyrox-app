@@ -67,6 +67,8 @@ export interface Campaign {
   customFilter: SegmentFilter | null;
   message: string;
   deepLink: string | null;
+  /** Optional photo shown on the member Home announcement card. */
+  imageUrl: string | null;
   scheduledAt: IsoDate | null;
   status: CampaignStatus;
   sentCount: number | null;

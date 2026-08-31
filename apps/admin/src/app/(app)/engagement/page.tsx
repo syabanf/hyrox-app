@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../lib/api';
 import { usePermissions } from '../../../lib/auth';
-import { ErrorNote, Modal, PageTitle } from '../../../components/ui';
+import { ErrorNote, Modal, PageTitle, SearchSelect } from '../../../components/ui';
 
 const SEGMENT_LABEL: Record<MemberSegment, string> = {
   ALL_ACTIVE: 'All active members',
@@ -155,6 +155,7 @@ function CampaignModal({
       ? String(campaign.customFilter.joinedWithinDays)
       : '',
   );
+  const [imageUrl, setImageUrl] = useState(campaign?.imageUrl ?? '');
   const [error, setError] = useState<string | null>(null);
 
   const { data: branches } = useQuery({ queryKey: ['branches'], queryFn: api.catalog.branches });
@@ -177,7 +178,13 @@ function CampaignModal({
 
   const mutation = useMutation({
     mutationFn: () => {
-      const body = { name, segment, customFilter, message };
+      const body = {
+        name,
+        segment,
+        customFilter,
+        message,
+        imageUrl: imageUrl.trim() === '' ? null : imageUrl.trim(),
+      };
       return campaign
         ? api.admin.campaigns.update(campaign.id, body)
         : api.admin.campaigns.create({ ...body, deepLink: null, scheduledAt: null });
@@ -209,14 +216,14 @@ function CampaignModal({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="a-label">Preferred branch</label>
-                <select className="a-input" value={branchId} onChange={(e) => setBranchId(e.target.value)}>
-                  <option value="">Any</option>
-                  {(branches ?? []).map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
+                <SearchSelect
+                  value={branchId}
+                  onChange={setBranchId}
+                  allowEmpty
+                  emptyLabel="Any"
+                  placeholder="Search branch…"
+                  options={(branches ?? []).map((b) => ({ value: b.id, label: b.name }))}
+                />
               </div>
               <div>
                 <label className="a-label">Balance at most</label>
@@ -245,6 +252,15 @@ function CampaignModal({
             className="a-input min-h-24"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="a-label">Image URL (optional, shown on the member Home)</label>
+          <input
+            className="a-input"
+            value={imageUrl}
+            onChange={(e) => setImageUrl(e.target.value)}
+            placeholder="/img/ann-equipment.jpg"
           />
         </div>
         <ErrorNote message={error} />

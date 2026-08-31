@@ -166,7 +166,7 @@ export function HomePage() {
         <section>
           <SectionHeader label={t('Announcements')} />
           <div className="card divide-y divide-line !py-1">
-            {home.announcements.slice(0, 3).map((a, i) => {
+            {home.announcements.slice(0, 4).map((a, i) => {
               const dot = ['bg-brand', 'bg-warn', 'bg-[#2563eb]'][i % 3];
               const inner = (
                 <div className="flex gap-3">
@@ -178,6 +178,14 @@ export function HomePage() {
                     </div>
                     <p className="mt-0.5 text-sm text-muted">{a.message}</p>
                   </div>
+                  {a.imageUrl ? (
+                    <img
+                      src={a.imageUrl}
+                      alt=""
+                      className="h-14 w-14 shrink-0 self-center rounded-xl object-cover"
+                      loading="lazy"
+                    />
+                  ) : null}
                 </div>
               );
               return a.deepLink ? (

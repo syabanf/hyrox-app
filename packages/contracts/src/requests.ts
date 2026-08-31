@@ -168,6 +168,7 @@ export const UpsertCampaignSchema = z.object({
   customFilter: SegmentFilterSchema.nullable().default(null),
   message: z.string().min(3),
   deepLink: z.string().nullable().default(null),
+  imageUrl: z.string().nullable().default(null),
   scheduledAt: z.string().nullable().default(null),
 });
 

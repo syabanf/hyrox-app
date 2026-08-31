@@ -48,7 +48,7 @@ export function RecordPage() {
   }, [routeId]);
 
   const [phase, setPhase] = useState<Phase>('idle');
-  const [type, setType] = useState<ActivityType>('RUN');
+  const [type, setType] = useState<ActivityType | 'HYROX'>('RUN');
   const [division, setDivision] = useState<Division>('MEN_OPEN');
   const [simBusy, setSimBusy] = useState(false);
   const [simError, setSimError] = useState('');
@@ -117,7 +117,7 @@ export function RecordPage() {
       }, 1000),
     );
 
-    if (type === 'WORKOUT') return; // timer only
+    if (type === 'WORKOUT' || type === 'HYROX') return; // timer only / guided
 
     if (!useDemoGps && navigator.geolocation) {
       watchIdRef.current = navigator.geolocation.watchPosition(
@@ -135,7 +135,7 @@ export function RecordPage() {
         window.setInterval(() => {
           if (pausedRef.current) return;
           const s = simStateRef.current;
-          const v = SIM_SPEED[type] * (0.9 + Math.random() * 0.2);
+          const v = SIM_SPEED[type as ActivityType] * (0.9 + Math.random() * 0.2);
           const route = followRoute;
           if (route && s.routeIdx < route.points.length - 1) {
             // Follow the saved route: head toward the next route point.
@@ -226,21 +226,21 @@ export function RecordPage() {
         <>
           <div>
             <p className="label">Activity type</p>
-            <div className="grid grid-cols-4 gap-2">
-              {(['RUN', 'RIDE', 'WALK', 'WORKOUT'] as const).map((option) => (
+            <div className="grid grid-cols-5 gap-1.5">
+              {(['RUN', 'RIDE', 'WALK', 'WORKOUT', 'HYROX'] as const).map((option) => (
                 <button
                   key={option}
                   onClick={() => setType(option)}
-                  className={`rounded-xl border px-2 py-2.5 text-xs font-black uppercase ${
+                  className={`rounded-xl border px-1 py-2.5 text-[10px] font-black uppercase ${
                     type === option ? 'border-brand bg-brand/10 text-brand' : 'border-line bg-surface text-muted'
                   }`}
                 >
-                  {option}
+                  {option === 'HYROX' ? 'HYROX Sim' : option}
                 </button>
               ))}
             </div>
           </div>
-          {type !== 'WORKOUT' ? (
+          {type === 'HYROX' ? null : type !== 'WORKOUT' ? (
             <label className="card flex items-center justify-between text-sm font-bold">
               Demo GPS (simulated route)
               <input
@@ -253,11 +253,11 @@ export function RecordPage() {
           ) : (
             <p className="card text-sm text-muted">Workouts record time only — no GPS.</p>
           )}
-          <button onClick={start} className="btn-brand flex items-center justify-center gap-2 !py-5 text-lg">
-            <Play size={22} fill="currentColor" /> {t('Start')}
-          </button>
-
-          {/* Guided HYROX full simulation — jumps into the station-by-station session */}
+          {type !== 'HYROX' ? (
+            <button onClick={start} className="btn-brand flex items-center justify-center gap-2 !py-5 text-lg">
+              <Play size={22} fill="currentColor" /> {t('Start')}
+            </button>
+          ) : (
           <div className="card surface-ink relative overflow-hidden !border-0 !p-6 text-white">
             <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
             <div className="relative">
@@ -297,6 +297,7 @@ export function RecordPage() {
               </p>
             </div>
           </div>
+          )}
         </>
       ) : null}
 
@@ -337,7 +338,7 @@ export function RecordPage() {
 
       {phase === 'saving' ? (
         <SaveForm
-          type={type}
+          type={type === 'HYROX' ? 'WORKOUT' : type}
           points={points}
           elapsedSec={elapsedSec}
           distanceM={distanceM}

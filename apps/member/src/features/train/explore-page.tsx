@@ -240,7 +240,7 @@ function AthletesTab() {
   const Row = ({ memberId, name, weeklyKm, isFollowing }: (typeof data.suggestions)[number]) => (
     <div className="card flex items-center justify-between !py-3">
       <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-xs font-black text-white">
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1b1b1f] text-xs font-black text-white">
           {name
             .split(' ')
             .slice(0, 2)

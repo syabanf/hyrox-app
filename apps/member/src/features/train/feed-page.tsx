@@ -43,11 +43,11 @@ export function ActivityCard({ a }: { a: ActivityCardView }) {
   const kudos = useKudosMutation();
   return (
     <div className="card !p-0">
-      <div className="flex items-center gap-3 px-4 pt-4">
+      <Link to={`/train/athletes/${a.memberId}`} className="flex items-center gap-3 px-4 pt-4">
         {a.memberAvatarUrl ? (
           <img src={a.memberAvatarUrl} alt="" className="h-10 w-10 rounded-full object-cover" />
         ) : (
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand text-sm font-black text-white">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1b1b1f] text-sm font-black text-white">
             {a.memberName
               .split(' ')
               .slice(0, 2)
@@ -61,7 +61,7 @@ export function ActivityCard({ a }: { a: ActivityCardView }) {
             {formatDayTime(a.startedAt)} · {a.type[0] + a.type.slice(1).toLowerCase()}
           </p>
         </div>
-      </div>
+      </Link>
       <Link to={`/train/activities/${a.id}`} className="block px-4 pt-3">
         <p className="display text-xl">{a.title}</p>
         <div className="mt-2">

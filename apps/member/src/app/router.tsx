@@ -10,6 +10,11 @@ import { NotificationsPage } from '../features/notifications/notifications-page'
 import { EmergencyContactPage } from '../features/profile/emergency-page';
 import { GearPage } from '../features/profile/gear-page';
 import { TutorialsPage } from '../features/train/tutorials-page';
+import { AnnouncementDetailPage } from '../features/home/announcement-detail-page';
+import { PromoDetailPage } from '../features/home/promo-detail-page';
+import { ChallengeDetailPage } from '../features/train/challenge-detail-page';
+import { AthleteProfilePage } from '../features/train/athlete-profile-page';
+import { RaceDetailPage } from '../features/races/race-detail-page';
 import { ProfilePage } from '../features/profile/profile-page';
 import { SettingsPage } from '../features/profile/settings-page';
 import { QrPage } from '../features/qr/qr-page';
@@ -58,6 +63,10 @@ export const router = createBrowserRouter([
       { path: '/train/you', element: <YouPage /> },
       { path: '/train/explore', element: <ExplorePage /> },
       { path: '/train/tutorials', element: <TutorialsPage /> },
+      { path: '/train/challenges/:challengeId', element: <ChallengeDetailPage /> },
+      { path: '/train/athletes/:memberId', element: <AthleteProfilePage /> },
+      { path: '/announcements/:announcementId', element: <AnnouncementDetailPage /> },
+      { path: '/promos/:code', element: <PromoDetailPage /> },
       { path: '/train/activities/:activityId', element: <ActivityDetailPage /> },
       { path: '/train/segments/:segmentId', element: <SegmentPage /> },
       { path: '/train/heatmap', element: <HeatmapPage /> },
@@ -65,6 +74,7 @@ export const router = createBrowserRouter([
       { path: '/workout/preview/:workoutId', element: <WorkoutPreviewPage /> },
       { path: '/workout/active/:sessionId', element: <WorkoutActivePage /> },
       { path: '/races', element: <RacesPage /> },
+      { path: '/races/:raceId', element: <RaceDetailPage /> },
     ],
   },
 ]);

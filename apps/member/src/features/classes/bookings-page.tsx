@@ -27,7 +27,7 @@ export function BookingsPage() {
             key={t}
             onClick={() => setTab(t)}
             className={`flex-1 rounded-lg py-2 text-sm font-black uppercase tracking-wide ${
-              tab === t ? 'bg-brand text-white' : 'text-muted'
+              tab === t ? 'bg-[#1b1b1f] text-white' : 'text-muted'
             }`}
           >
             {t}

@@ -4,7 +4,7 @@ import type { Division } from '@hyrox/domain';
 import { Spinner, StatusBadge, formatDay, formatDuration } from '@hyrox/ui';
 import { Flag, MapPin, Trophy } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { api } from '../../lib/api';
 import { useMyRaces, useRaces } from '../../lib/athlete-queries';
 import { useInvalidateAll } from '../../lib/queries';
@@ -35,7 +35,7 @@ export function RacesPage() {
             key={t}
             onClick={() => setTab(t)}
             className={`flex-1 rounded-lg py-2 text-sm font-black uppercase tracking-wide ${
-              tab === t ? 'bg-brand text-white' : 'text-muted'
+              tab === t ? 'bg-[#1b1b1f] text-white' : 'text-muted'
             }`}
           >
             {t}
@@ -91,7 +91,9 @@ function DiscoveryTab({ scope, region }: { scope: 'upcoming' | 'results'; region
               <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] opacity-90">
                 {formatDay(v.event.startsAt)}
               </p>
-              <p className="display text-2xl leading-tight">{v.event.name}</p>
+              <Link to={`/races/${v.event.id}`} className="display block text-2xl leading-tight">
+                {v.event.name}
+              </Link>
               <p className="flex items-center gap-1 text-xs font-bold opacity-90">
                 <MapPin size={12} />
                 {v.event.venue}, {v.event.city}
@@ -129,7 +131,7 @@ function DiscoveryTab({ scope, region }: { scope: 'upcoming' | 'results'; region
   );
 }
 
-function RegisterSheet({
+export function RegisterSheet({
   view,
   onClose,
   onDone,

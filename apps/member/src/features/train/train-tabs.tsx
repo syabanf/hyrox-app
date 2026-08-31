@@ -18,7 +18,7 @@ export function TrainTabs() {
           end={t.end}
           className={({ isActive }) =>
             `flex-1 rounded-lg py-2 text-center text-xs font-black uppercase tracking-wide transition-colors duration-200 ${
-              isActive ? 'bg-brand text-white' : 'text-muted'
+              isActive ? 'bg-[#1b1b1f] text-white' : 'text-muted'
             }`
           }
         >

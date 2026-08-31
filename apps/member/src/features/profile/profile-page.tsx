@@ -1,9 +1,10 @@
 import { Spinner, StatusBadge, formatDay } from '@hyrox/ui';
-import { Camera, ChevronRight, Footprints, HeartPulse, LogOut, Settings, Wallet } from 'lucide-react';
+import { Camera, ChevronRight, Footprints, HeartPulse, IdCard, LogOut, Settings, Wallet } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { api } from '../../lib/api';
 import { useAuthStore } from '../../lib/auth';
+import { MemberCardSheet } from '../../components/member-card';
 import { resizeImageToDataUrl } from '../../lib/image';
 import { useInvalidateAll, useMe } from '../../lib/queries';
 
@@ -13,6 +14,7 @@ export function ProfilePage() {
   const clear = useAuthStore((s) => s.clear);
   const invalidate = useInvalidateAll();
   const [editing, setEditing] = useState(false);
+  const [cardOpen, setCardOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [busy, setBusy] = useState(false);
@@ -56,7 +58,7 @@ export function ProfilePage() {
           {m.avatarUrl ? (
             <img src={m.avatarUrl} alt="" className="h-16 w-16 rounded-full object-cover" />
           ) : (
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand text-2xl font-black text-white">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#1b1b1f] text-2xl font-black text-white">
               {m.fullName
                 .split(' ')
                 .slice(0, 2)
@@ -123,6 +125,19 @@ export function ProfilePage() {
       </section>
 
       <section className="card flex flex-col !p-2 text-sm">
+        <button
+          onClick={() => setCardOpen(true)}
+          className="flex items-center gap-3 rounded-xl px-2 py-2.5 text-left active:bg-surface-raised"
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1b1b1f] text-white">
+            <IdCard size={16} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-bold">Digital member card</span>
+            <span className="block truncate text-xs text-muted">Show it at the gate</span>
+          </span>
+          <ChevronRight size={16} className="text-muted" />
+        </button>
         {[
           { to: '/wallet', icon: Wallet, title: 'Wallet & credits', hint: 'Balance, top up, history' },
           {
@@ -162,6 +177,8 @@ export function ProfilePage() {
       <button onClick={logout} className="btn-ghost flex items-center justify-center gap-2 text-danger">
         <LogOut size={16} /> Sign out
       </button>
+
+      {cardOpen ? <MemberCardSheet onClose={() => setCardOpen(false)} /> : null}
     </div>
   );
 }

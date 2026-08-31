@@ -1,8 +1,9 @@
 import { Spinner, formatDay, formatDayTime, formatDuration, formatTime } from '@hyrox/ui';
 import { useQuery } from '@tanstack/react-query';
 import { CalendarDays, Dumbbell, Flag, QrCode, Trophy } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
+import { MemberCardSheet } from '../../components/member-card';
 import { api } from '../../lib/api';
 import { useT } from '../../lib/i18n';
 import { classImage } from '../../lib/images';
@@ -25,6 +26,7 @@ export function HomePage() {
   const { data: me, isLoading } = useMe();
   const { data: bookings } = useMyBookings();
   const { data: home } = useHome();
+  const [cardOpen, setCardOpen] = useState(false);
 
   if (isLoading || !me) return <Spinner label="Loading…" />;
 
@@ -44,8 +46,11 @@ export function HomePage() {
         <p className="display text-3xl leading-tight">{me.member.fullName.split(' ')[0]}</p>
       </div>
 
-      {/* Credit balance — premium "black card" */}
-      <Link to="/wallet" className="card surface-ink relative block overflow-hidden !border-0 !p-6 text-white">
+      {/* Credit balance — premium "black card"; tap opens the digital member card */}
+      <button
+        onClick={() => setCardOpen(true)}
+        className="card surface-ink relative block w-full overflow-hidden !border-0 !p-6 text-left text-white"
+      >
         <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-28 -left-10 h-48 w-48 rounded-full bg-white/[0.04] blur-2xl" />
         <div className="relative flex items-start justify-between">
@@ -61,17 +66,19 @@ export function HomePage() {
         </div>
         <div className="relative mt-5 flex items-center justify-between">
           <p className="text-xs font-semibold text-white/45">{me.member.fullName}</p>
-          {me.lowBalance ? (
-            <span className="chip bg-brand text-white">{t('Top up')}</span>
-          ) : me.expiringCredits > 0 ? (
-            <span className="chip bg-white/10 text-white/80">
-              {me.expiringCredits} {t('expiring soon')}
-            </span>
-          ) : (
-            <span className="chip bg-white/10 text-white/70">{t('Wallet')}</span>
-          )}
+          <Link
+            to={me.lowBalance ? '/wallet/topup' : '/wallet'}
+            onClick={(e) => e.stopPropagation()}
+            className={`chip ${me.lowBalance ? 'bg-brand text-white' : 'bg-white/10 text-white/80'}`}
+          >
+            {me.lowBalance
+              ? t('Top up')
+              : me.expiringCredits > 0
+                ? `${me.expiringCredits} ${t('expiring soon')}`
+                : t('Wallet')}
+          </Link>
         </div>
-      </Link>
+      </button>
 
       {/* Quick actions — each with its own soft accent tint */}
       <div className="grid grid-cols-2 gap-3">
@@ -93,7 +100,7 @@ export function HomePage() {
       {/* Race spotlight — photo card */}
       {home?.spotlightRace ? (
         <Link
-          to="/races"
+          to={`/races/${home.spotlightRace.raceEventId}`}
           className="card relative block overflow-hidden !border-0 !p-0 text-white"
         >
           {home.spotlightRace.imageUrl ? (
@@ -137,7 +144,7 @@ export function HomePage() {
             {home.promos.map((p) => (
               <Link
                 key={p.voucherId}
-                to={`/wallet/topup?voucher=${encodeURIComponent(p.code)}`}
+                to={`/promos/${encodeURIComponent(p.code)}`}
                 className="card surface-ink relative min-w-64 shrink-0 snap-start overflow-hidden !border-0 text-white"
               >
                 <div className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full bg-brand/20 blur-3xl" />
@@ -188,14 +195,10 @@ export function HomePage() {
                   ) : null}
                 </div>
               );
-              return a.deepLink ? (
-                <Link key={a.id} to={a.deepLink} className="block py-3.5">
+              return (
+                <Link key={a.id} to={`/announcements/${a.id}`} className="block py-3.5">
                   {inner}
                 </Link>
-              ) : (
-                <div key={a.id} className="py-3.5">
-                  {inner}
-                </div>
               );
             })}
           </div>
@@ -254,7 +257,7 @@ export function HomePage() {
 
       {/* Challenge progress */}
       {home?.challenge ? (
-        <Link to="/train/explore" className="card flex items-center gap-4 !py-4">
+        <Link to={`/train/challenges/${home.challenge.id}`} className="card flex items-center gap-4 !py-4">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1b1b1f] text-white">
             <Trophy size={19} strokeWidth={2.2} />
           </span>
@@ -345,6 +348,8 @@ export function HomePage() {
       </Link>
 
       <p className="display pb-2 text-center text-4xl text-ink/[0.06]">HYROXSTUDIO</p>
+
+      {cardOpen ? <MemberCardSheet onClose={() => setCardOpen(false)} /> : null}
     </div>
   );
 }

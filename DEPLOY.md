@@ -17,24 +17,26 @@ pnpm --filter @hyrox/member build      # outputs apps/member/dist
 Serve `dist/` at `/`. For a subpath instead, build with
 `vite build --base=/app/` and serve under `/app/`.
 
-## Admin panel (Next.js) — e.g. under /admin
+## Admin panel (Next.js) — always under /admin
+
+The basePath is baked in: routes, assets, and `mockServiceWorker.js` all live
+under `/admin`, in dev and prod alike. A plain build deploys correctly:
 
 ```bash
-NEXT_PUBLIC_BASE_PATH=/admin pnpm --filter @hyrox/admin build
-pnpm --filter @hyrox/admin start       # or deploy the .next output to a Node host
+pnpm --filter @hyrox/admin build
+pnpm --filter @hyrox/admin start       # serves http://host:3000/admin
 ```
 
-`NEXT_PUBLIC_BASE_PATH` moves routes, assets, and `mockServiceWorker.js`
-under the prefix AND tells the MSW bootstrap where to register the worker.
-Point the reverse proxy at the app for the whole `/admin` prefix:
+Point the reverse proxy at the app for the whole prefix, WITHOUT stripping it:
 
 ```nginx
 location /admin { proxy_pass http://127.0.0.1:3000; }
 ```
 
-Without the env var the admin registers `/mockServiceWorker.js` at the domain
-root, which a subpath deploy cannot serve — the exact "Starting mock
-backend…" hang. The boot screen now surfaces the real error + a retry button
-instead of hanging.
+(If the proxy strips the prefix — `proxy_pass http://…/;` with a trailing
+slash — routes 404 and the service worker registers at the wrong scope: the
+classic "Starting mock backend…" hang. The boot screen now surfaces the real
+error + a retry button instead of hanging.) To deploy at the domain root
+instead, build with `NEXT_PUBLIC_BASE_PATH=""`.
 
 Note: the two apps keep separate demo databases (per-origin localStorage).

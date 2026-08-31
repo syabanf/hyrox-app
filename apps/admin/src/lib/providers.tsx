@@ -9,8 +9,8 @@ const queryClient = new QueryClient({
   },
 });
 
-/** Set at build time when the app is deployed under a subpath (e.g. /admin). */
-const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+/** Matches next.config basePath — /admin unless overridden at build time. */
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? '/admin';
 
 /**
  * MSW only exists in the browser, so this gate blocks the whole app until the

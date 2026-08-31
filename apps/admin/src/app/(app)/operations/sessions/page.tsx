@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, Modal, PageTitle, SearchSelect } from '../../../../components/ui';
+import { ErrorNote, Modal, PageTitle, Pager, SearchSelect, StatCard } from '../../../../components/ui';
 
 export default function SessionsPage() {
   const qc = useQueryClient();
@@ -14,6 +14,8 @@ export default function SessionsPage() {
   const [branchId, setBranchId] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [showPast, setShowPast] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [page, setPage] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const { data: branches } = useQuery({ queryKey: ['branches'], queryFn: api.catalog.branches });
@@ -31,9 +33,12 @@ export default function SessionsPage() {
     onError: (e) => setError(e instanceof ApiError ? e.message : 'Delete failed.'),
   });
 
-  const visible = (sessions ?? []).filter(
-    (v) => showPast || new Date(v.session.endsAt).getTime() > Date.now() - 3600_000,
-  );
+  const visible = (sessions ?? [])
+    .filter((v) => showPast || new Date(v.session.endsAt).getTime() > Date.now() - 3600_000)
+    .filter((v) => !statusFilter || v.session.status === statusFilter);
+  const pageCount = Math.max(1, Math.ceil(visible.length / 10));
+  const safePage = Math.min(page, pageCount - 1);
+  const paged = visible.slice(safePage * 10, safePage * 10 + 10);
 
   return (
     <div>
@@ -48,15 +53,40 @@ export default function SessionsPage() {
           ) : undefined
         }
       />
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Upcoming"
+          value={(sessions ?? []).filter((v) => new Date(v.session.startsAt).getTime() > Date.now() && ['PUBLISHED', 'FULL', 'DRAFT'].includes(v.session.status)).length}
+        />
+        <StatCard label="Published" value={(sessions ?? []).filter((v) => v.session.status === 'PUBLISHED').length} />
+        <StatCard label="Full" value={(sessions ?? []).filter((v) => v.session.status === 'FULL').length} />
+        <StatCard label="Draft" value={(sessions ?? []).filter((v) => v.session.status === 'DRAFT').length} />
+      </div>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="w-44">
           <SearchSelect
             value={branchId}
-            onChange={setBranchId}
+            onChange={(v) => {
+              setBranchId(v);
+              setPage(0);
+            }}
             allowEmpty
             emptyLabel="All branches"
             placeholder="Search branch…"
             options={(branches ?? []).map((b) => ({ value: b.id, label: b.name }))}
+          />
+        </div>
+        <div className="w-40">
+          <SearchSelect
+            value={statusFilter}
+            onChange={(v) => {
+              setStatusFilter(v);
+              setPage(0);
+            }}
+            allowEmpty
+            emptyLabel="All statuses"
+            placeholder="Search status…"
+            options={[...new Set((sessions ?? []).map((v) => v.session.status))].map((s) => ({ value: s, label: s }))}
           />
         </div>
         <label className="flex items-center gap-2 text-sm text-muted">
@@ -83,7 +113,7 @@ export default function SessionsPage() {
               </tr>
             </thead>
             <tbody>
-              {visible.map((v) => (
+              {paged.map((v) => (
                 <tr key={v.session.id}>
                   <td className="whitespace-nowrap font-bold">{formatDayTime(v.session.startsAt)}</td>
                   <td>
@@ -118,6 +148,7 @@ export default function SessionsPage() {
               ))}
             </tbody>
           </table>
+          <Pager page={safePage} pageCount={pageCount} onPage={setPage} />
         </div>
       )}
       {createOpen ? (

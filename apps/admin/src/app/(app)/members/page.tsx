@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api, ApiError } from '../../../lib/api';
 import { usePermissions } from '../../../lib/auth';
-import { ErrorNote, Modal, PageTitle, SearchSelect } from '../../../components/ui';
+import { ErrorNote, Modal, PageTitle, Pager, SearchSelect, StatCard } from '../../../components/ui';
 
 const STATUSES = ['', 'ACTIVE', 'SUSPENDED', 'INACTIVE', 'ARCHIVED'];
 
@@ -16,6 +16,7 @@ export default function MembersPage() {
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
+  const [page, setPage] = useState(0);
   const { data, isLoading } = useQuery({
     queryKey: ['members', query, status],
     queryFn: () => api.admin.members.list({ query: query || undefined, status: status || undefined }),
@@ -34,20 +35,45 @@ export default function MembersPage() {
           ) : undefined
         }
       />
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Members" value={(data ?? []).length} />
+        <StatCard
+          label="Active"
+          value={(data ?? []).filter((m) => m.member.status === 'ACTIVE').length}
+        />
+        <StatCard
+          label="Suspended / inactive"
+          value={(data ?? []).filter((m) => m.member.status !== 'ACTIVE').length}
+        />
+        <StatCard
+          label="Credits held"
+          value={(data ?? []).reduce((sum, m) => sum + m.balance, 0)}
+          hint="Outstanding across listed members"
+        />
+      </div>
       <div className="mb-4 flex flex-wrap gap-2">
         <input
           className="a-input max-w-xs"
           placeholder="Search name, email, phone…"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setPage(0);
+          }}
         />
-        <select className="a-input max-w-40" value={status} onChange={(e) => setStatus(e.target.value)}>
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {s || 'All statuses'}
-            </option>
-          ))}
-        </select>
+        <div className="w-44">
+          <SearchSelect
+            value={status}
+            onChange={(v) => {
+              setStatus(v);
+              setPage(0);
+            }}
+            allowEmpty
+            emptyLabel="All statuses"
+            placeholder="Search status…"
+            options={STATUSES.filter(Boolean).map((s) => ({ value: s, label: s }))}
+          />
+        </div>
       </div>
       {isLoading ? (
         <Spinner label="Loading members…" />
@@ -65,7 +91,12 @@ export default function MembersPage() {
               </tr>
             </thead>
             <tbody>
-              {(data ?? []).map((m) => (
+              {(data ?? [])
+                .slice(
+                  Math.min(page, Math.max(0, Math.ceil((data ?? []).length / 10) - 1)) * 10,
+                  Math.min(page, Math.max(0, Math.ceil((data ?? []).length / 10) - 1)) * 10 + 10,
+                )
+                .map((m) => (
                 <tr key={m.member.id}>
                   <td>
                     <Link href={`/members/${m.member.id}`} className="font-bold hover:text-brand">
@@ -87,6 +118,11 @@ export default function MembersPage() {
               ))}
             </tbody>
           </table>
+          <Pager
+            page={Math.min(page, Math.max(0, Math.ceil((data ?? []).length / 10) - 1))}
+            pageCount={Math.max(1, Math.ceil((data ?? []).length / 10))}
+            onPage={setPage}
+          />
         </div>
       )}
       {createOpen ? <CreateMemberModal onClose={() => setCreateOpen(false)} /> : null}

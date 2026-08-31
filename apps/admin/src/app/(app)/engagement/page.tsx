@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../lib/api';
 import { usePermissions } from '../../../lib/auth';
-import { ErrorNote, Modal, PageTitle, SearchSelect } from '../../../components/ui';
+import { ErrorNote, Modal, PageTitle, Pager, SearchSelect, StatCard } from '../../../components/ui';
 
 const SEGMENT_LABEL: Record<MemberSegment, string> = {
   ALL_ACTIVE: 'All active members',
@@ -21,6 +21,8 @@ export default function EngagementPage() {
   const qc = useQueryClient();
   const { can } = usePermissions();
   const [editing, setEditing] = useState<Campaign | 'new' | null>(null);
+  const [statusView, setStatusView] = useState('');
+  const [page, setPage] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const { data, isLoading } = useQuery({ queryKey: ['campaigns'], queryFn: api.admin.campaigns.list });
 
@@ -56,6 +58,31 @@ export default function EngagementPage() {
         }
       />
       <ErrorNote message={error} />
+      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+        <StatCard label="Sent" value={(data ?? []).filter((c) => c.status === 'SENT').length} />
+        <StatCard
+          label="Draft / scheduled"
+          value={(data ?? []).filter((c) => ['DRAFT', 'SCHEDULED'].includes(c.status)).length}
+        />
+        <StatCard
+          label="Total reach"
+          value={(data ?? []).reduce((sum, c) => sum + (c.sentCount ?? 0), 0)}
+          hint="Notifications delivered"
+        />
+      </div>
+      <div className="mb-4 w-44">
+        <SearchSelect
+          value={statusView}
+          onChange={(v) => {
+            setStatusView(v);
+            setPage(0);
+          }}
+          allowEmpty
+          emptyLabel="All statuses"
+          placeholder="Search status…"
+          options={['DRAFT', 'SCHEDULED', 'SENT'].map((s) => ({ value: s, label: s }))}
+        />
+      </div>
       {isLoading ? (
         <Spinner label="Loading campaigns…" />
       ) : (
@@ -73,7 +100,10 @@ export default function EngagementPage() {
               </tr>
             </thead>
             <tbody>
-              {(data ?? []).map((c) => (
+              {(data ?? [])
+                .filter((c) => !statusView || c.status === statusView)
+                .slice(page * 8, page * 8 + 8)
+                .map((c) => (
                 <tr key={c.id}>
                   <td className="font-bold">{c.name}</td>
                   <td>
@@ -113,6 +143,11 @@ export default function EngagementPage() {
               ))}
             </tbody>
           </table>
+          <Pager
+            page={page}
+            pageCount={Math.max(1, Math.ceil((data ?? []).filter((c) => !statusView || c.status === statusView).length / 8))}
+            onPage={setPage}
+          />
         </div>
       )}
       {editing ? (

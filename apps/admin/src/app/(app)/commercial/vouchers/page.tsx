@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, Modal, PageTitle } from '../../../../components/ui';
+import { ErrorNote, Modal, PageTitle, Pager, SearchSelect, StatCard } from '../../../../components/ui';
 
 const NEXT_ACTIONS: Partial<Record<VoucherStatus, VoucherStatus[]>> = {
   DRAFT: ['ACTIVE', 'SCHEDULED', 'DISABLED'],
@@ -19,6 +19,8 @@ export default function VouchersPage() {
   const qc = useQueryClient();
   const { can } = usePermissions();
   const [createOpen, setCreateOpen] = useState(false);
+  const [statusView, setStatusView] = useState('');
+  const [page, setPage] = useState(0);
   const [editTarget, setEditTarget] = useState<Voucher | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { data, isLoading } = useQuery({ queryKey: ['admin-vouchers'], queryFn: api.admin.vouchers.list });
@@ -56,6 +58,27 @@ export default function VouchersPage() {
         }
       />
       <ErrorNote message={error} />
+      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+        <StatCard label="Live now" value={(data ?? []).filter((v) => v.voucher.status === 'ACTIVE').length} />
+        <StatCard
+          label="Draft / scheduled"
+          value={(data ?? []).filter((v) => ['DRAFT', 'SCHEDULED'].includes(v.voucher.status)).length}
+        />
+        <StatCard label="Redemptions" value={(data ?? []).reduce((sum, v) => sum + v.redemptionCount, 0)} />
+      </div>
+      <div className="mb-4 w-44">
+        <SearchSelect
+          value={statusView}
+          onChange={(v) => {
+            setStatusView(v);
+            setPage(0);
+          }}
+          allowEmpty
+          emptyLabel="All statuses"
+          placeholder="Search status…"
+          options={['DRAFT', 'SCHEDULED', 'ACTIVE', 'EXPIRED', 'DISABLED'].map((s) => ({ value: s, label: s }))}
+        />
+      </div>
       {isLoading ? (
         <Spinner label="Loading vouchers…" />
       ) : (
@@ -73,7 +96,10 @@ export default function VouchersPage() {
               </tr>
             </thead>
             <tbody>
-              {(data ?? []).map(({ voucher: v, redemptionCount }) => (
+              {(data ?? [])
+                .filter((row) => !statusView || row.voucher.status === statusView)
+                .slice(page * 8, page * 8 + 8)
+                .map(({ voucher: v, redemptionCount }) => (
                 <tr key={v.id}>
                   <td className="font-mono font-black text-brand">{v.code}</td>
                   <td>{v.type === 'PERCENT' ? `${v.value}%` : formatIdr(v.value)}</td>
@@ -124,6 +150,11 @@ export default function VouchersPage() {
               ))}
             </tbody>
           </table>
+          <Pager
+            page={page}
+            pageCount={Math.max(1, Math.ceil((data ?? []).filter((row) => !statusView || row.voucher.status === statusView).length / 8))}
+            onPage={setPage}
+          />
         </div>
       )}
       {createOpen ? (

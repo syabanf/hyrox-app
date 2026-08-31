@@ -5,13 +5,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, Modal, PageTitle, SearchSelect } from '../../../../components/ui';
+import { ErrorNote, Modal, PageTitle, Pager, SearchSelect, StatCard } from '../../../../components/ui';
 
 export default function BookingsPage() {
   const qc = useQueryClient();
   const { can } = usePermissions();
   const [bookOpen, setBookOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
+  const [memberQuery, setMemberQuery] = useState('');
+  const [page, setPage] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -59,9 +61,14 @@ export default function BookingsPage() {
     onError: (e) => setError(e instanceof ApiError ? e.message : 'Cancel failed.'),
   });
 
-  const rows = (rosterQueries.data ?? [])
+  const all = rosterQueries.data ?? [];
+  const rows = all
     .filter((r) => !statusFilter || r.booking.status === statusFilter)
+    .filter((r) => !memberQuery || r.memberName.toLowerCase().includes(memberQuery.toLowerCase()))
     .sort((a, b) => new Date(a.session.startsAt).getTime() - new Date(b.session.startsAt).getTime());
+  const pageCount = Math.max(1, Math.ceil(rows.length / 10));
+  const safePage = Math.min(page, pageCount - 1);
+  const paged = rows.slice(safePage * 10, safePage * 10 + 10);
 
   return (
     <div>
@@ -76,13 +83,38 @@ export default function BookingsPage() {
           ) : undefined
         }
       />
-      <div className="mb-4">
-        <select className="a-input max-w-44" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="">All statuses</option>
-          {['CONFIRMED', 'WAITLIST', 'CHECKED_IN', 'COMPLETED', 'CANCELLED', 'NO_SHOW'].map((s) => (
-            <option key={s}>{s}</option>
-          ))}
-        </select>
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Confirmed" value={all.filter((r) => r.booking.status === 'CONFIRMED').length} />
+        <StatCard label="Waitlist" value={all.filter((r) => r.booking.status === 'WAITLIST').length} />
+        <StatCard label="Checked in" value={all.filter((r) => r.booking.status === 'CHECKED_IN').length} />
+        <StatCard
+          label="Cancelled / no-show"
+          value={all.filter((r) => ['CANCELLED', 'NO_SHOW'].includes(r.booking.status)).length}
+        />
+      </div>
+      <div className="mb-4 flex flex-wrap gap-2">
+        <input
+          className="a-input max-w-xs"
+          placeholder="Search member…"
+          value={memberQuery}
+          onChange={(e) => {
+            setMemberQuery(e.target.value);
+            setPage(0);
+          }}
+        />
+        <div className="w-44">
+          <SearchSelect
+            value={statusFilter}
+            onChange={(v) => {
+              setStatusFilter(v);
+              setPage(0);
+            }}
+            allowEmpty
+            emptyLabel="All statuses"
+            placeholder="Search status…"
+            options={['CONFIRMED', 'WAITLIST', 'CHECKED_IN', 'COMPLETED', 'CANCELLED', 'NO_SHOW'].map((s) => ({ value: s, label: s }))}
+          />
+        </div>
       </div>
       <ErrorNote message={error} />
       {notice ? <p className="mb-3 rounded-lg bg-ok/10 px-3 py-2 text-sm font-bold text-ok">{notice}</p> : null}
@@ -102,7 +134,7 @@ export default function BookingsPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
+              {paged.map((r) => (
                 <tr key={r.booking.id}>
                   <td className="font-bold">{r.memberName}</td>
                   <td>{r.classTypeName}</td>
@@ -135,6 +167,7 @@ export default function BookingsPage() {
               ) : null}
             </tbody>
           </table>
+          <Pager page={safePage} pageCount={pageCount} onPage={setPage} />
         </div>
       )}
       {bookOpen ? (

@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, PageTitle, StatCard } from '../../../../components/ui';
+import { ErrorNote, PageTitle, Pager, StatCard } from '../../../../components/ui';
 
 export default function AccessLogsPage() {
   const qc = useQueryClient();
@@ -13,6 +13,7 @@ export default function AccessLogsPage() {
   const [gateId, setGateId] = useState('');
   const [result, setResult] = useState('');
   const [mode, setMode] = useState('');
+  const [page, setPage] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const resolve = useMutation({
@@ -91,7 +92,7 @@ export default function AccessLogsPage() {
               </tr>
             </thead>
             <tbody>
-              {(logs ?? []).map((v) => (
+              {(logs ?? []).slice(page * 12, page * 12 + 12).map((v) => (
                 <tr key={v.log.id}>
                   <td className="whitespace-nowrap text-muted">{formatDayTime(v.log.createdAt)}</td>
                   <td className="font-bold">{v.memberName ?? '—'}</td>
@@ -129,6 +130,11 @@ export default function AccessLogsPage() {
               ))}
             </tbody>
           </table>
+          <Pager
+            page={page}
+            pageCount={Math.max(1, Math.ceil((logs ?? []).length / 12))}
+            onPage={setPage}
+          />
         </div>
       )}
     </div>

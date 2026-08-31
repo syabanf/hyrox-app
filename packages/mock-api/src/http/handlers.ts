@@ -47,7 +47,9 @@ import {
   UpdateRulesSchema,
   UpdateSessionSchema,
   UpsertAdminUserSchema,
+  UpdateExerciseSchema,
   UpsertCampaignSchema,
+  UpsertChallengeSchema,
   UpsertClassTypeSchema,
   UpsertCoachSchema,
   UpsertGateSchema,
@@ -1057,6 +1059,75 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
       if (!removeById(db().campaigns, param(params, 'id')))
         return jsonError(404, 'NOT_FOUND', 'Campaign not found.');
       return HttpResponse.json({ ok: true });
+    }),
+
+    // ── Admin: challenges ───────────────────────────────────────────────────
+    http.get('*/api/admin/challenges', ({ request }) => {
+      const auth = requireAdmin(db(), request, 'engagement.view');
+      if (!auth.ok) return auth.response;
+      return HttpResponse.json(
+        [...db().challenges]
+          .sort((a, b) => msOf(b.startsAt) - msOf(a.startsAt))
+          .map((c) => ({
+            challenge: c,
+            participantCount: db().challengeJoins.filter((j) => j.challengeId === c.id).length,
+          })),
+      );
+    }),
+
+    http.post('*/api/admin/challenges', async ({ request }) => {
+      const auth = requireAdmin(db(), request, 'campaigns.manage');
+      if (!auth.ok) return auth.response;
+      const body = await parseBody(request, UpsertChallengeSchema);
+      if (!body.ok) return body.response;
+      const challenge = { id: deps().ids.next('chal'), ...body.data };
+      db().challenges.push(challenge);
+      return HttpResponse.json({ challenge, participantCount: 0 }, { status: 201 });
+    }),
+
+    http.patch('*/api/admin/challenges/:id', async ({ request, params }) => {
+      const auth = requireAdmin(db(), request, 'campaigns.manage');
+      if (!auth.ok) return auth.response;
+      const body = await parsePatch(request, UpsertChallengeSchema);
+      if (!body.ok) return body.response;
+      const challenge = db().challenges.find((c) => c.id === param(params, 'id'));
+      if (!challenge) return jsonError(404, 'NOT_FOUND', 'Challenge not found.');
+      Object.assign(challenge, body.data);
+      return HttpResponse.json({
+        challenge,
+        participantCount: db().challengeJoins.filter((j) => j.challengeId === challenge.id).length,
+      });
+    }),
+
+    http.delete('*/api/admin/challenges/:id', ({ request, params }) => {
+      const auth = requireAdmin(db(), request, 'campaigns.manage');
+      if (!auth.ok) return auth.response;
+      const id = param(params, 'id');
+      if (!removeById(db().challenges, id))
+        return jsonError(404, 'NOT_FOUND', 'Challenge not found.');
+      const joins = db().challengeJoins;
+      for (let i = joins.length - 1; i >= 0; i--) {
+        if (joins[i]!.challengeId === id) joins.splice(i, 1);
+      }
+      return HttpResponse.json({ ok: true });
+    }),
+
+    // ── Admin: exercise guides ──────────────────────────────────────────────
+    http.get('*/api/admin/exercises', ({ request }) => {
+      const auth = requireAdmin(db(), request, 'operations.view');
+      if (!auth.ok) return auth.response;
+      return HttpResponse.json(db().exercises);
+    }),
+
+    http.patch('*/api/admin/exercises/:id', async ({ request, params }) => {
+      const auth = requireAdmin(db(), request, 'class_types.manage');
+      if (!auth.ok) return auth.response;
+      const body = await parsePatch(request, UpdateExerciseSchema);
+      if (!body.ok) return body.response;
+      const exercise = db().exercises.find((e) => e.id === param(params, 'id'));
+      if (!exercise) return jsonError(404, 'NOT_FOUND', 'Exercise not found.');
+      Object.assign(exercise, body.data);
+      return HttpResponse.json(exercise);
     }),
 
     // ── Admin: race events ──────────────────────────────────────────────────

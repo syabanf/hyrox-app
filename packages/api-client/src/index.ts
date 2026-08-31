@@ -39,7 +39,9 @@ import type {
   UpdateProfileInput,
   UpdateRulesInput,
   UpdateSessionInput,
+  UpdateExerciseInput,
   UpsertCampaignInput,
+  UpsertChallengeInput,
   UpsertClassTypeInput,
   UpsertCoachInput,
   UpsertPackageInput,
@@ -86,6 +88,7 @@ import type {
   Branch,
   BusinessRules,
   Campaign,
+  Challenge,
   ClassType,
   Coach,
   CreditLedgerEntry,
@@ -335,6 +338,20 @@ export function createApiClient(options: ApiClientOptions) {
           patch<Campaign>(`/api/admin/campaigns/${id}`, input),
         send: (id: string) => post<Campaign>(`/api/admin/campaigns/${id}/send`),
         remove: (id: string) => del(`/api/admin/campaigns/${id}`),
+      },
+      challenges: {
+        list: () =>
+          get<{ challenge: Challenge; participantCount: number }[]>('/api/admin/challenges'),
+        create: (input: UpsertChallengeInput) =>
+          post<{ challenge: Challenge; participantCount: number }>('/api/admin/challenges', input),
+        update: (id: string, input: Partial<UpsertChallengeInput>) =>
+          patch<{ challenge: Challenge; participantCount: number }>(`/api/admin/challenges/${id}`, input),
+        remove: (id: string) => del(`/api/admin/challenges/${id}`),
+      },
+      exercises: {
+        list: () => get<Exercise[]>('/api/admin/exercises'),
+        update: (id: string, input: UpdateExerciseInput) =>
+          patch<Exercise>(`/api/admin/exercises/${id}`, input),
       },
       races: {
         list: () => get<(RaceEvent & { participants: number })[]>('/api/admin/races'),

@@ -289,6 +289,23 @@ export type UpdateBranchInput = z.infer<typeof UpdateBranchSchema>;
 export type CreateBranchInput = z.infer<typeof CreateBranchSchema>;
 export type UpsertGateInput = z.infer<typeof UpsertGateSchema>;
 export type UpsertAdminUserInput = z.infer<typeof UpsertAdminUserSchema>;
+export const UpsertChallengeSchema = z.object({
+  name: z.string().min(2),
+  description: z.string().default(''),
+  type: z.enum(['ANY', 'RUN', 'RIDE', 'WALK', 'WORKOUT']),
+  targetKm: z.number().positive(),
+  startsAt: z.string(),
+  endsAt: z.string(),
+});
+
+export const UpdateExerciseSchema = z.object({
+  name: z.string().min(2).optional(),
+  difficulty: z.union([z.literal(1), z.literal(2), z.literal(3)]).optional(),
+  videoUrl: z.string().nullable().optional(),
+});
+
 export type ResolveConflictInput = z.infer<typeof ResolveConflictSchema>;
+export type UpsertChallengeInput = z.infer<typeof UpsertChallengeSchema>;
+export type UpdateExerciseInput = z.infer<typeof UpdateExerciseSchema>;
 export type CreateMemberAdminInput = z.infer<typeof CreateMemberAdminSchema>;
 export type UpsertRaceEventInput = z.infer<typeof UpsertRaceEventSchema>;

@@ -5,12 +5,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, Modal, PageTitle } from '../../../../components/ui';
+import { ErrorNote, Modal, PageTitle, Pager, SearchSelect, StatCard } from '../../../../components/ui';
 
 export default function PaymentsPage() {
   const qc = useQueryClient();
   const { can } = usePermissions();
   const [statusFilter, setStatusFilter] = useState('');
+  const [page, setPage] = useState(0);
   const [refundTarget, setRefundTarget] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,6 +27,12 @@ export default function PaymentsPage() {
   });
 
   const rows = (data ?? []).filter((p) => !statusFilter || p.payment.status === statusFilter);
+  const pageCount = Math.max(1, Math.ceil(rows.length / 10));
+  const safePage = Math.min(page, pageCount - 1);
+  const paged = rows.slice(safePage * 10, safePage * 10 + 10);
+  const paidTotal = (data ?? [])
+    .filter((p) => p.payment.status === 'PAID')
+    .reduce((sum, p) => sum + p.payment.totalIdr, 0);
 
   return (
     <div>
@@ -33,13 +40,27 @@ export default function PaymentsPage() {
         title="Payments"
         subtitle="Top-ups via mock Xendit — PAYMENT ≠ CREDIT LEDGER; a paid payment produces the TOP_UP entry"
       />
-      <div className="mb-4">
-        <select className="a-input max-w-44" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="">All statuses</option>
-          {['PENDING', 'PAID', 'FAILED', 'EXPIRED', 'REFUNDED'].map((s) => (
-            <option key={s}>{s}</option>
-          ))}
-        </select>
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Collected" value={formatIdr(paidTotal)} hint="Paid payments" />
+        <StatCard label="Pending" value={(data ?? []).filter((p) => p.payment.status === 'PENDING').length} />
+        <StatCard label="Refunded" value={(data ?? []).filter((p) => p.payment.status === 'REFUNDED').length} />
+        <StatCard
+          label="Failed / expired"
+          value={(data ?? []).filter((p) => ['FAILED', 'EXPIRED'].includes(p.payment.status)).length}
+        />
+      </div>
+      <div className="mb-4 w-44">
+        <SearchSelect
+          value={statusFilter}
+          onChange={(v) => {
+            setStatusFilter(v);
+            setPage(0);
+          }}
+          allowEmpty
+          emptyLabel="All statuses"
+          placeholder="Search status…"
+          options={['PENDING', 'PAID', 'FAILED', 'EXPIRED', 'REFUNDED'].map((s) => ({ value: s, label: s }))}
+        />
       </div>
       <ErrorNote message={error} />
       {isLoading ? (
@@ -60,7 +81,7 @@ export default function PaymentsPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((p) => (
+              {paged.map((p) => (
                 <tr key={p.payment.id}>
                   <td className="whitespace-nowrap text-muted">{formatDayTime(p.payment.createdAt)}</td>
                   <td className="font-mono text-xs">{p.payment.id}</td>
@@ -102,6 +123,7 @@ export default function PaymentsPage() {
               ))}
             </tbody>
           </table>
+          <Pager page={safePage} pageCount={pageCount} onPage={setPage} />
         </div>
       )}
       {refundTarget ? (

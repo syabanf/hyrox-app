@@ -8,6 +8,8 @@ import {
   DoorOpen,
   Dumbbell,
   Flag,
+  Trophy,
+  Video,
   LayoutDashboard,
   LogOut,
   Megaphone,
@@ -54,6 +56,7 @@ const NAV: NavGroup[] = [
       { href: '/operations/class-types', label: 'Class Types', icon: Dumbbell, permission: 'operations.view' },
       { href: '/operations/bookings', label: 'Bookings', icon: ClipboardList, permission: 'operations.view' },
       { href: '/operations/coaches', label: 'Coaches', icon: Users, permission: 'operations.view' },
+      { href: '/operations/exercises', label: 'Exercise Guides', icon: Video, permission: 'operations.view' },
     ],
   },
   {
@@ -76,6 +79,7 @@ const NAV: NavGroup[] = [
     items: [
       { href: '/engagement', label: 'Campaigns', icon: Megaphone, permission: 'engagement.view' },
       { href: '/engagement/races', label: 'Race Events', icon: Flag, permission: 'engagement.view' },
+      { href: '/engagement/challenges', label: 'Challenges', icon: Trophy, permission: 'engagement.view' },
     ],
   },
   {

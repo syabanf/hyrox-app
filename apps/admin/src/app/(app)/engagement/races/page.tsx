@@ -7,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, Modal, PageTitle } from '../../../../components/ui';
+import { ErrorNote, Modal, PageTitle, Pager, SearchSelect, StatCard } from '../../../../components/ui';
 
 type AdminRace = RaceEvent & { participants: number };
 
@@ -22,6 +22,8 @@ export default function RaceEventsPage() {
   const qc = useQueryClient();
   const { can } = usePermissions();
   const [editing, setEditing] = useState<AdminRace | 'new' | null>(null);
+  const [statusView, setStatusView] = useState('');
+  const [page, setPage] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const { data: races, isLoading } = useQuery({ queryKey: ['admin-races'], queryFn: api.admin.races.list });
 
@@ -48,8 +50,36 @@ export default function RaceEventsPage() {
         }
       />
       <ErrorNote message={error} />
+      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+        <StatCard label="Events" value={(races ?? []).length} />
+        <StatCard
+          label="Registration open"
+          value={(races ?? []).filter((r) => r.status === 'REGISTRATION_OPEN').length}
+        />
+        <StatCard
+          label="Athletes registered"
+          value={(races ?? []).reduce((sum, r) => sum + r.participants, 0)}
+          hint="From this studio"
+        />
+      </div>
+      <div className="mb-4 w-48">
+        <SearchSelect
+          value={statusView}
+          onChange={(v) => {
+            setStatusView(v);
+            setPage(0);
+          }}
+          allowEmpty
+          emptyLabel="All statuses"
+          placeholder="Search status…"
+          options={[...new Set((races ?? []).map((r) => r.status))].map((s) => ({ value: s, label: s }))}
+        />
+      </div>
       <div className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {(races ?? []).map((r) => (
+        {(races ?? [])
+          .filter((r) => !statusView || r.status === statusView)
+          .slice(page * 6, page * 6 + 6)
+          .map((r) => (
           <div key={r.id} className="a-card overflow-hidden !p-0">
             <div className="relative h-32 w-full">
               {r.imageUrl ? (
@@ -94,6 +124,15 @@ export default function RaceEventsPage() {
             </div>
           </div>
         ))}
+      </div>
+      <div className="mt-4">
+        <div className="a-card !p-0">
+          <Pager
+            page={page}
+            pageCount={Math.max(1, Math.ceil((races ?? []).filter((r) => !statusView || r.status === statusView).length / 6))}
+            onPage={setPage}
+          />
+        </div>
       </div>
       {editing ? (
         <RaceModal

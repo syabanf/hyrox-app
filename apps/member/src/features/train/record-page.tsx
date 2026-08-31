@@ -2,9 +2,27 @@ import { ApiError } from '@hyrox/api-client';
 import type { ActivityType, ActivityVisibility, Division, Route, TrackPoint } from '@hyrox/domain';
 import { haversineM } from '@hyrox/domain';
 import { formatDistanceM, formatDuration, formatPace } from '@hyrox/ui';
-import { Bike, Dumbbell, Flame, Footprints, ImagePlus, Pause, PersonStanding, Play, Square, X } from 'lucide-react';
+import {
+  Bike,
+  Bluetooth,
+  ChevronRight,
+  Dumbbell,
+  Flame,
+  Footprints,
+  ImagePlus,
+  MapPinned,
+  Pause,
+  PersonStanding,
+  Play,
+  Radio,
+  Settings,
+  Square,
+  Timer,
+  Volume2,
+  X,
+} from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { GeoMap } from '../../components/geo-map';
 import { RouteMap } from '../../components/route-map';
 import { api } from '../../lib/api';
@@ -24,6 +42,69 @@ const DIVISIONS: { id: Division; label: string }[] = [
 ];
 
 const SIM_SPEED: Record<ActivityType, number> = { RUN: 3.2, RIDE: 7.5, WALK: 1.5, WORKOUT: 0 };
+
+/** Recording preferences survive reloads (localStorage, per browser). */
+const prefGet = (key: string): boolean => {
+  try {
+    return localStorage.getItem(`hyrox.rec.${key}`) === '1';
+  } catch {
+    return false;
+  }
+};
+const prefSet = (key: string, value: boolean) => {
+  try {
+    localStorage.setItem(`hyrox.rec.${key}`, value ? '1' : '0');
+  } catch {
+    /* private mode */
+  }
+};
+
+function Toggle({ on, onChange }: { on: boolean; onChange: (next: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={() => onChange(!on)}
+      className={`h-7 w-12 shrink-0 rounded-full p-1 transition ${on ? 'bg-brand' : 'bg-line'}`}
+    >
+      <span
+        className={`block h-5 w-5 rounded-full bg-white shadow transition-transform ${on ? 'translate-x-5' : ''}`}
+      />
+    </button>
+  );
+}
+
+function OptionRow({
+  icon: Icon,
+  label,
+  hint,
+  right,
+  onClick,
+}: {
+  icon: typeof Timer;
+  label: string;
+  hint?: string;
+  right: React.ReactNode;
+  onClick?: () => void;
+}) {
+  const Tag = onClick ? 'button' : 'div';
+  return (
+    <Tag
+      onClick={onClick}
+      className="flex w-full items-center gap-3 px-2 py-3 text-left active:bg-surface-raised"
+    >
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1b1b1f] text-white">
+        <Icon size={16} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-bold leading-tight">{label}</span>
+        {hint ? <span className="block truncate text-xs text-muted">{hint}</span> : null}
+      </span>
+      {right}
+    </Tag>
+  );
+}
 
 const TYPE_TILES: {
   id: ActivityType | 'HYROX';
@@ -66,6 +147,12 @@ export function RecordPage() {
   const [simBusy, setSimBusy] = useState(false);
   const [simError, setSimError] = useState('');
   const [useDemoGps, setUseDemoGps] = useState(true);
+  const [trackLaps, setTrackLaps] = useState(() => prefGet('laps'));
+  const [audioCues, setAudioCues] = useState(() => prefGet('cues'));
+  const [liveShare, setLiveShare] = useState(false);
+  const [liveCopied, setLiveCopied] = useState(false);
+  const [sensorOpen, setSensorOpen] = useState(false);
+  const [laps, setLaps] = useState<number[]>([]);
   const [points, setPoints] = useState<TrackPoint[]>([]);
   const [elapsedSec, setElapsedSec] = useState(0);
   const [distanceM, setDistanceM] = useState(0);
@@ -110,6 +197,8 @@ export function RecordPage() {
     setPoints([]);
     setDistanceM(0);
     setElapsedSec(0);
+    setLaps([]);
+    lastKmRef.current = 0;
     setGpsError('');
     startTsRef.current = Date.now();
     pausedRef.current = false;
@@ -181,6 +270,26 @@ export function RecordPage() {
       );
     }
   };
+
+  // Audio cue at every completed kilometre (skipped when Reduce Motion users
+  // disable it or speech synthesis is unavailable).
+  const lastKmRef = useRef(0);
+  useEffect(() => {
+    const km = Math.floor(distanceM / 1000);
+    if (!audioCues || phase !== 'recording' || km <= lastKmRef.current) return;
+    lastKmRef.current = km;
+    try {
+      const pace = distanceM > 0 ? (elapsedSec / distanceM) * 1000 : 0;
+      const mm = Math.floor(pace / 60);
+      const ss = Math.round(pace % 60);
+      const u = new SpeechSynthesisUtterance(
+        `${km} kilometer${km > 1 ? 's' : ''}. Average pace ${mm} ${ss < 10 ? 'oh ' : ''}${ss} per kilometer.`,
+      );
+      window.speechSynthesis?.speak(u);
+    } catch {
+      /* no speech support */
+    }
+  }, [distanceM, audioCues, phase, elapsedSec]);
 
   const togglePause = () => {
     pausedRef.current = !pausedRef.current;
@@ -328,8 +437,77 @@ export function RecordPage() {
             </div>
           </div>
           )}
+
+          {type !== 'HYROX' ? (
+            <div className="card divide-y divide-line !p-2">
+              {type !== 'WORKOUT' ? (
+                <OptionRow
+                  icon={MapPinned}
+                  label="Follow a route"
+                  hint={followRoute ? followRoute.name : 'Pick a saved route to guide the demo GPS'}
+                  right={
+                    <span className="flex items-center gap-1 text-xs font-bold text-muted">
+                      {followRoute ? 'On' : 'Off'} <ChevronRight size={15} />
+                    </span>
+                  }
+                  onClick={() => navigate('/train/explore')}
+                />
+              ) : null}
+              <OptionRow
+                icon={Timer}
+                label="Track laps"
+                hint="Adds a Lap button while recording"
+                right={<Toggle on={trackLaps} onChange={(v) => { setTrackLaps(v); prefSet('laps', v); }} />}
+              />
+              {type !== 'WORKOUT' ? (
+                <OptionRow
+                  icon={Volume2}
+                  label="Audio cues"
+                  hint="Spoken split every kilometre"
+                  right={<Toggle on={audioCues} onChange={(v) => { setAudioCues(v); prefSet('cues', v); }} />}
+                />
+              ) : null}
+              <OptionRow
+                icon={Radio}
+                label="Share live location"
+                hint={liveCopied ? 'Demo link copied — anyone with it can watch' : 'Send friends a live beacon link'}
+                right={
+                  <Toggle
+                    on={liveShare}
+                    onChange={(v) => {
+                      setLiveShare(v);
+                      if (v) {
+                        void navigator.clipboard
+                          ?.writeText(`${location.origin}/beacon/demo-${Date.now().toString(36)}`)
+                          .catch(() => {});
+                        setLiveCopied(true);
+                      } else {
+                        setLiveCopied(false);
+                      }
+                    }}
+                  />
+                }
+              />
+              <OptionRow
+                icon={Bluetooth}
+                label="Add a sensor"
+                hint="Heart rate, cadence"
+                right={<ChevronRight size={15} className="text-muted" />}
+                onClick={() => setSensorOpen(true)}
+              />
+              <OptionRow
+                icon={Settings}
+                label="Settings"
+                hint="Units, reminders, language"
+                right={<ChevronRight size={15} className="text-muted" />}
+                onClick={() => navigate('/profile/settings')}
+              />
+            </div>
+          ) : null}
         </>
       ) : null}
+
+      {sensorOpen ? <SensorSheet onClose={() => setSensorOpen(false)} /> : null}
 
       {phase === 'recording' || phase === 'paused' ? (
         <>
@@ -353,6 +531,27 @@ export function RecordPage() {
             ) : null}
           </div>
           {gpsError ? <p className="text-sm font-bold text-danger">{gpsError}</p> : null}
+          {trackLaps ? (
+            <div className="card flex items-center gap-3 !py-3">
+              <button
+                onClick={() => setLaps((prev) => [...prev, elapsedSec])}
+                disabled={phase === 'paused'}
+                className="btn-ghost shrink-0 !px-5 !py-2.5 text-sm disabled:opacity-40"
+              >
+                Lap {laps.length + 1}
+              </button>
+              <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto">
+                {laps.map((at, i) => (
+                  <span key={i} className="chip shrink-0 bg-surface-raised text-muted">
+                    {i + 1} · {formatDuration(at - (laps[i - 1] ?? 0))}
+                  </span>
+                ))}
+                {laps.length === 0 ? (
+                  <span className="text-xs text-muted">Tap to mark a lap.</span>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
           {points.length > 1 ? <RouteMap points={points} height={150} /> : null}
           <div className="grid grid-cols-2 gap-3">
             <button onClick={togglePause} className="btn-ghost flex items-center justify-center gap-2">
@@ -369,6 +568,7 @@ export function RecordPage() {
       {phase === 'saving' ? (
         <SaveForm
           type={type === 'HYROX' ? 'WORKOUT' : type}
+          laps={laps}
           points={points}
           elapsedSec={elapsedSec}
           distanceM={distanceM}
@@ -386,6 +586,7 @@ export function RecordPage() {
 
 function SaveForm({
   type,
+  laps,
   points,
   elapsedSec,
   distanceM,
@@ -394,6 +595,7 @@ function SaveForm({
   onSaved,
 }: {
   type: ActivityType;
+  laps: number[];
   points: TrackPoint[];
   elapsedSec: number;
   distanceM: number;
@@ -404,7 +606,11 @@ function SaveForm({
   const t = useT();
   const units = useUnits();
   const [title, setTitle] = useState(defaultTitle(type));
-  const [description, setDescription] = useState('');
+  const [description, setDescription] = useState(() =>
+    laps.length > 0
+      ? `Laps: ${laps.map((at, i) => `${i + 1}) ${formatDuration(at - (laps[i - 1] ?? 0))}`).join('  ')}`
+      : '',
+  );
   const [gearId, setGearId] = useState('');
   const [visibility, setVisibility] = useState<ActivityVisibility>('EVERYONE');
   const [photos, setPhotos] = useState<string[]>([]);
@@ -538,6 +744,40 @@ function SaveForm({
       <button className="btn-ghost text-danger" onClick={onDiscard}>
         {t('Discard')}
       </button>
+    </div>
+  );
+}
+
+
+/** Mock sensor pairing — scans, finds nothing (demo build has no Bluetooth). */
+function SensorSheet({ onClose }: { onClose: () => void }) {
+  const [scanning, setScanning] = useState(true);
+  useEffect(() => {
+    const id = window.setTimeout(() => setScanning(false), 2200);
+    return () => clearTimeout(id);
+  }, []);
+  return (
+    <div className="sheet-backdrop fixed inset-0 z-40 flex items-end justify-center bg-black/50" onClick={onClose}>
+      <div className="sheet-panel w-full max-w-md rounded-t-3xl bg-surface p-5 pb-8" onClick={(e) => e.stopPropagation()}>
+        <h2 className="display mb-1 text-xl">Add a sensor</h2>
+        <p className="mb-4 text-sm text-muted">Heart rate straps, cadence and power meters.</p>
+        {scanning ? (
+          <div className="flex items-center gap-3 rounded-2xl bg-surface-raised px-4 py-4 text-sm font-bold">
+            <span className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-[#ed1c24]" />
+            Scanning for nearby sensors…
+          </div>
+        ) : (
+          <div className="rounded-2xl bg-surface-raised px-4 py-4 text-sm">
+            <p className="font-bold">No sensors nearby</p>
+            <p className="mt-0.5 text-muted">
+              Pairing needs Bluetooth on a real device — this demo build stops here.
+            </p>
+          </div>
+        )}
+        <button className="btn-ghost mt-4 w-full" onClick={onClose}>
+          Close
+        </button>
+      </div>
     </div>
   );
 }

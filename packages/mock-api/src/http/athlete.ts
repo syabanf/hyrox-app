@@ -447,6 +447,35 @@ export function createAthleteHandlers(state: MockApiState): HttpHandler[] {
     }),
 
     // ── Challenges & clubs ──────────────────────────────────────────────────
+    // Public profile of another athlete (or yourself).
+    http.get('*/api/athlete/profile/:memberId', ({ request, params }) => {
+      const auth = requireMember(db(), request);
+      if (!auth.ok) return auth.response;
+      const me = auth.value.id;
+      const targetId = param(params, 'memberId');
+      const target = db().members.find((m) => m.id === targetId);
+      if (!target) return jsonError(404, 'NOT_FOUND', 'Athlete not found.');
+      const follows = (id: string) =>
+        db().follows.some((f) => f.followerId === me && f.followeeId === id);
+      const visible = db()
+        .activities.filter((a) => a.memberId === targetId)
+        .filter((a) => canViewActivity(a, me, follows))
+        .sort((a, b) => msOf(b.startedAt) - msOf(a.startedAt));
+      return HttpResponse.json({
+        member: { id: target.id, fullName: target.fullName, avatarUrl: target.avatarUrl },
+        isMe: targetId === me,
+        isFollowing: follows(targetId),
+        followerCount: db().follows.filter((f) => f.followeeId === targetId).length,
+        followingCount: db().follows.filter((f) => f.followerId === targetId).length,
+        totals: {
+          activities: visible.length,
+          distanceKm: visible.reduce((sum, a) => sum + a.distanceM, 0) / 1000,
+          movingSec: visible.reduce((sum, a) => sum + a.movingSec, 0),
+        },
+        activities: visible.slice(0, 20).map((a) => activityCard(db(), a, me)),
+      });
+    }),
+
     http.get('*/api/athlete/challenges', ({ request }) => {
       const auth = requireMember(db(), request);
       if (!auth.ok) return auth.response;

@@ -68,6 +68,7 @@ export const UpsertPackageSchema = z.object({
   validityDays: z.number().int().positive(),
   branchId: z.string().nullable().default(null),
   purchaseLimitPerMember: z.number().int().positive().nullable().default(null),
+  applicableClassTypeIds: z.array(z.string()).nullable().default(null),
   status: z.enum(['ACTIVE', 'ARCHIVED']).default('ACTIVE'),
 });
 

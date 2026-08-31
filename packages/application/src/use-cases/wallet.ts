@@ -206,6 +206,7 @@ export function confirmPayment(
     id: deps.ids.next('lot'),
     memberId: payment.memberId,
     ledgerEntryId: entry.id,
+    packageId: payment.packageId,
     credits: payment.credits,
     expiresAt: addDaysIso(now, pkg?.validityDays ?? deps.rules.defaults().defaultCreditExpiryDays),
     createdAt: now,

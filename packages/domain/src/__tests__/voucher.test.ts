@@ -10,6 +10,7 @@ const pkg: CreditPackage = {
   validityDays: 60,
   branchId: null,
   purchaseLimitPerMember: null,
+  applicableClassTypeIds: null,
   status: 'ACTIVE',
   createdAt: '2026-01-01T00:00:00.000Z',
 };

@@ -110,6 +110,29 @@ export default function MemberDetailPage() {
               </dd>
             </dl>
           </div>
+          <div className="a-card">
+            <p className="a-label">Purchased packages</p>
+            {m.packages.length === 0 ? (
+              <p className="text-sm text-muted">No packages purchased yet.</p>
+            ) : (
+              <div className="flex flex-col gap-2 text-sm">
+                {m.packages.map((p) => (
+                  <div key={p.lotId} className={`flex items-center justify-between gap-3 ${p.active ? '' : 'opacity-60'}`}>
+                    <div className="min-w-0">
+                      <p className="font-bold">{p.name}</p>
+                      <p className="text-xs text-muted">
+                        {p.credits} cr · bought {formatDay(p.purchasedAt)} ·{' '}
+                        {p.coverageNames ? p.coverageNames.join(', ') : 'all classes'}
+                      </p>
+                    </div>
+                    <span className={`chip shrink-0 ${p.active ? 'bg-ok/10 text-ok' : 'bg-surface-raised text-muted'}`}>
+                      {p.active ? `until ${formatDay(p.expiresAt)}` : 'Expired'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
           <div className="a-card !p-0">
             <p className="a-label px-4 pt-4">Upcoming bookings</p>
             <table className="a-table">

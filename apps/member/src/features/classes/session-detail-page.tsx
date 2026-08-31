@@ -4,12 +4,14 @@ import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { api } from '../../lib/api';
-import { useBookMutation, useCancelMutation, useInvalidateAll, useSession } from '../../lib/queries';
+import { sessionRundown } from '../../lib/rundown';
+import { useBookMutation, useCancelMutation, useInvalidateAll, useSession , useWallet } from '../../lib/queries';
 
 export function SessionDetailPage() {
   const { sessionId = '' } = useParams();
   const navigate = useNavigate();
   const { data: v, isLoading } = useSession(sessionId);
+  const { data: wallet } = useWallet();
   const book = useBookMutation();
   const cancel = useCancelMutation();
   const [message, setMessage] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
@@ -35,6 +37,14 @@ export function SessionDetailPage() {
 
   const mine = v.myBooking;
   const bookable = ['PUBLISHED', 'FULL'].includes(v.session.status);
+  // Package coverage indicator: null = no package credits (no restriction).
+  const activePkgs = (wallet?.myPackages ?? []).filter((p) => p.active);
+  const covered =
+    activePkgs.length === 0
+      ? null
+      : activePkgs.some(
+          (p) => p.coverageIds === null || p.coverageIds.includes(v.session.classTypeId),
+        );
 
   const onBook = async () => {
     setMessage(null);
@@ -80,6 +90,14 @@ export function SessionDetailPage() {
         <p className="mt-1 text-muted">{formatDayTime(v.session.startsAt)}</p>
       </div>
 
+      {covered === false ? (
+        <div className="rounded-xl bg-warn/15 p-3 text-sm font-bold text-warn">
+          None of your packages cover this class — top up with a package that includes it.
+        </div>
+      ) : covered === true ? (
+        <p className="chip self-start bg-ok/10 text-ok">Covered by your package</p>
+      ) : null}
+
       <div className="card grid grid-cols-2 gap-3 text-sm">
         <div>
           <p className="label !mb-0.5">Branch</p>
@@ -101,6 +119,29 @@ export function SessionDetailPage() {
           </p>
         </div>
       </div>
+
+      <section className="card">
+        <p className="label">Rundown</p>
+        <div className="flex flex-col">
+          {sessionRundown(v.session.classTypeId, v.session.startsAt, v.session.endsAt).map(
+            (item, i, arr) => (
+              <div key={item.label} className="flex gap-3">
+                <p className="w-14 shrink-0 pt-0.5 text-right font-mono text-xs font-bold text-muted">
+                  {item.startsAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </p>
+                <div className="flex flex-col items-center">
+                  <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${i === 0 ? 'bg-brand' : 'bg-ink/25'}`} />
+                  {i < arr.length - 1 ? <span className="w-px flex-1 bg-line" /> : null}
+                </div>
+                <div className="pb-4">
+                  <p className="text-sm font-extrabold leading-tight">{item.label}</p>
+                  <p className="text-xs text-muted">{item.minutes} min</p>
+                </div>
+              </div>
+            ),
+          )}
+        </div>
+      </section>
 
       {message ? (
         <div

@@ -215,6 +215,22 @@ export function createWorkoutRaceHandlers(state: MockApiState): HttpHandler[] {
       return HttpResponse.json(views);
     }),
 
+    http.get('*/api/races/:id', ({ request, params }) => {
+      const auth = requireMember(db(), request);
+      if (!auth.ok) return auth.response;
+      const me = auth.value.id;
+      const event = db().raceEvents.find((e) => e.id === param(params, 'id'));
+      if (!event) return jsonError(404, 'NOT_FOUND', 'Race not found.');
+      const regs = deps()
+        .races.userRaces.forEvent(event.id)
+        .filter((r) => r.status !== 'CANCELLED');
+      const mine = regs.find((r) => r.memberId === me) ?? null;
+      return HttpResponse.json({
+        view: { event, joined: mine !== null, participantCount: regs.length },
+        myRace: mine ? { userRace: mine, event } : null,
+      });
+    }),
+
     http.post('*/api/races/:id/register', async ({ request, params }) => {
       const auth = requireMember(db(), request);
       if (!auth.ok) return auth.response;

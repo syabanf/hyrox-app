@@ -27,6 +27,7 @@ const lot = (partial: Partial<TopUpLot>): TopUpLot => ({
   id: `lot_${++n}`,
   memberId: 'mem_1',
   ledgerEntryId: 'led_x',
+  packageId: null,
   credits: 10,
   expiresAt: '2026-03-01T00:00:00.000Z',
   createdAt: '2026-01-01T00:00:00.000Z',

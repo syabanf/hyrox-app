@@ -1,4 +1,4 @@
-import { Spinner, StatusBadge, formatDayTime } from '@hyrox/ui';
+import { Spinner, StatusBadge, formatDay, formatDayTime } from '@hyrox/ui';
 import { Link } from 'react-router';
 import { useWallet } from '../../lib/queries';
 
@@ -35,6 +35,42 @@ export function WalletPage() {
       <Link to="/wallet/topup" className="btn-brand">
         Top up credits
       </Link>
+
+      {wallet.myPackages.length > 0 ? (
+        <section>
+          <h2 className="display mb-2 text-xl font-black">My packages</h2>
+          <div className="flex flex-col gap-2">
+            {wallet.myPackages.map((p) => (
+              <div key={p.lotId} className={`card !py-4 ${p.active ? '' : 'opacity-60'}`}>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-extrabold">{p.name}</p>
+                    <p className="text-xs text-muted">
+                      {p.credits} credits · bought {formatDay(p.purchasedAt)}
+                    </p>
+                  </div>
+                  <span
+                    className={`chip shrink-0 ${p.active ? 'bg-ok/10 text-ok' : 'bg-surface-raised text-muted'}`}
+                  >
+                    {p.active ? `Valid until ${formatDay(p.expiresAt)}` : 'Expired'}
+                  </span>
+                </div>
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                  {p.coverageNames ? (
+                    p.coverageNames.map((n) => (
+                      <span key={n} className="chip bg-brand/10 text-brand">
+                        {n}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="chip bg-surface-raised text-muted">All classes</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section>
         <h2 className="display mb-2 text-xl font-black">Transaction history</h2>

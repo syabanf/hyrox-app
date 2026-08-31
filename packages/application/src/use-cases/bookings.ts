@@ -11,6 +11,7 @@ import {
   nextWaitlistPosition,
   noShowPenalty,
   ok,
+  packageCoversClass,
   pickWaitlistPromotion,
   transition,
 } from '@hyrox/domain';
@@ -70,6 +71,28 @@ export function bookSession(
 
   if (decision.kind === 'DENY') {
     return err(appError(decision.reason, bookingDenialMessage(decision.reason)));
+  }
+
+  // Package coverage: when the member holds unexpired package credits, at
+  // least one of those packages must cover this class type. Members whose
+  // credits came only from bonuses/adjustments are not restricted.
+  const nowMs = new Date(deps.clock.now()).getTime();
+  const packageLots = deps.ledger
+    .lotsFor(args.memberId)
+    .filter((l) => l.packageId !== null && new Date(l.expiresAt).getTime() > nowMs);
+  if (packageLots.length > 0) {
+    const covered = packageLots.some((l) => {
+      const pkg = deps.packages.byId(l.packageId!);
+      return pkg ? packageCoversClass(pkg, session.classTypeId) : false;
+    });
+    if (!covered)
+      return err(
+        appError(
+          'PACKAGE_NOT_COVERED',
+          'None of your packages cover this class — top up with a package that includes it.',
+          422,
+        ),
+      );
   }
 
   const now = deps.clock.now();

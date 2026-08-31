@@ -93,6 +93,7 @@ import {
   memberDetailView,
   memberSummaryView,
   meView,
+  myPackagesView,
   paymentView,
   rosterView,
   sessionView,
@@ -304,12 +305,52 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
       });
     }),
 
+    // Announcement detail (a SENT campaign).
+    http.get('*/api/announcements/:id', ({ request, params }) => {
+      const auth = requireMember(db(), request);
+      if (!auth.ok) return auth.response;
+      const c = db().campaigns.find((x) => x.id === param(params, 'id') && x.status === 'SENT');
+      if (!c) return jsonError(404, 'NOT_FOUND', 'Announcement not found.');
+      return HttpResponse.json({
+        id: c.id,
+        title: c.name,
+        message: c.message,
+        deepLink: c.deepLink,
+        imageUrl: c.imageUrl,
+        createdAt: c.createdAt,
+      });
+    }),
+
+    // Promo detail (voucher by code).
+    http.get('*/api/promos/:code', ({ request, params }) => {
+      const auth = requireMember(db(), request);
+      if (!auth.ok) return auth.response;
+      const code = param(params, 'code').toUpperCase();
+      const now = deps().clock.now();
+      const v = db().vouchers.find((x) => x.code === code);
+      if (!v) return jsonError(404, 'NOT_FOUND', 'Promo not found.');
+      return HttpResponse.json({
+        code: v.code,
+        label:
+          v.type === 'PERCENT' ? `${v.value}% OFF` : `Rp${v.value.toLocaleString('id-ID')} OFF`,
+        live: v.status === 'ACTIVE' && msOf(v.startsAt) <= msOf(now) && msOf(v.endsAt) >= msOf(now),
+        startsAt: v.startsAt,
+        endsAt: v.endsAt,
+        perMemberLimit: v.perMemberLimit,
+        usageLimit: v.usageLimit,
+        newMembersOnly: v.eligibleSegment === 'NEW_MEMBERS',
+        packageNames: v.applicablePackageIds
+          ? v.applicablePackageIds.map((id) => db().packages.find((x) => x.id === id)?.name ?? id)
+          : null,
+      });
+    }),
+
     http.get('*/api/me/wallet', ({ request }) => {
       const auth = requireMember(db(), request);
       if (!auth.ok) return auth.response;
       const snapshot = walletSnapshot(deps(), auth.value.id);
       snapshot.entries = [...snapshot.entries].sort((a, b) => msOf(b.createdAt) - msOf(a.createdAt));
-      return HttpResponse.json(snapshot);
+      return HttpResponse.json({ ...snapshot, myPackages: myPackagesView(db(), auth.value.id) });
     }),
 
     http.post('*/api/me/topup', async ({ request }) => {
@@ -364,7 +405,18 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
     http.get('*/api/branches', () => HttpResponse.json(db().branches)),
 
     http.get('*/api/packages', () =>
-      HttpResponse.json(db().packages.filter((p) => p.status === 'ACTIVE')),
+      HttpResponse.json(
+        db()
+          .packages.filter((p) => p.status === 'ACTIVE')
+          .map((p) => ({
+            ...p,
+            coverageNames: p.applicableClassTypeIds
+              ? p.applicableClassTypeIds.map(
+                  (id) => db().classTypes.find((c) => c.id === id)?.name ?? id,
+                )
+              : null,
+          })),
+      ),
     ),
 
     http.get('*/api/sessions', ({ request }) => {

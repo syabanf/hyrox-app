@@ -49,6 +49,19 @@ export interface AdminUserView extends AdminUser {
 }
 
 // ── Wallet ──────────────────────────────────────────────────────────────────
+export interface MyPackageView {
+  lotId: string;
+  packageId: string;
+  name: string;
+  credits: number;
+  purchasedAt: string;
+  expiresAt: string;
+  active: boolean;
+  /** Class-type ids this package may book; null = every class. */
+  coverageIds: string[] | null;
+  coverageNames: string[] | null;
+}
+
 export interface WalletView {
   balance: number;
   expiringCredits: number;
@@ -56,6 +69,8 @@ export interface WalletView {
   lowBalanceThreshold: number;
   entries: CreditLedgerEntry[];
   lots: TopUpLot[];
+  /** Purchased packages, newest first. */
+  myPackages: MyPackageView[];
 }
 export interface MeView {
   member: Member;
@@ -146,6 +161,7 @@ export interface MemberDetailView {
   visits: AccessLogView[];
   payments: Payment[];
   audit: AuditEvent[];
+  packages: MyPackageView[];
 }
 
 // ── Operations ──────────────────────────────────────────────────────────────

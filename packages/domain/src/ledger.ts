@@ -42,6 +42,8 @@ export interface TopUpLot {
   id: string;
   memberId: string;
   ledgerEntryId: string;
+  /** The purchased package (null for bonus/adjustment credits). */
+  packageId: string | null;
   credits: number;
   expiresAt: IsoDate;
   createdAt: IsoDate;

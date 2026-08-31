@@ -99,6 +99,30 @@ export function memberSummaryView(db: MockDb, deps: UseCaseDeps, member: Member)
   };
 }
 
+export function myPackagesView(db: MockDb, memberId: string) {
+  const nowMs = Date.now();
+  return db.lots
+    .filter((l) => l.memberId === memberId && l.packageId)
+    .sort((a, b) => msOf(b.createdAt) - msOf(a.createdAt))
+    .map((l) => {
+      const pkg = db.packages.find((x) => x.id === l.packageId);
+      const coverageIds = pkg?.applicableClassTypeIds ?? null;
+      return {
+        lotId: l.id,
+        packageId: l.packageId!,
+        name: pkg?.name ?? 'Credit package',
+        credits: l.credits,
+        purchasedAt: l.createdAt,
+        expiresAt: l.expiresAt,
+        active: msOf(l.expiresAt) > nowMs,
+        coverageIds,
+        coverageNames: coverageIds
+          ? coverageIds.map((id) => db.classTypes.find((c) => c.id === id)?.name ?? id)
+          : null,
+      };
+    });
+}
+
 export function memberDetailView(db: MockDb, deps: UseCaseDeps, member: Member): MemberDetailView {
   const summary = memberSummaryView(db, deps, member);
   const bookings = db.bookings
@@ -120,6 +144,7 @@ export function memberDetailView(db: MockDb, deps: UseCaseDeps, member: Member):
       .filter((e) => e.memberId === member.id)
       .sort((a, b) => msOf(b.createdAt) - msOf(a.createdAt)),
     lots: db.lots.filter((l) => l.memberId === member.id),
+    packages: myPackagesView(db, member.id),
     bookings,
     visits: db.accessLogs
       .filter((l) => l.memberId === member.id)

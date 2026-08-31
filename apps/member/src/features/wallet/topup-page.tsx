@@ -90,6 +90,9 @@ export function TopUpPage() {
               <p className="text-sm text-muted">
                 {p.credits} credits · valid {p.validityDays} days
               </p>
+              <p className="mt-0.5 text-xs font-bold text-muted">
+                {p.coverageNames ? `Covers: ${p.coverageNames.join(', ')}` : 'Valid for every class'}
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <span className="font-black text-brand">{formatIdr(p.priceIdr)}</span>

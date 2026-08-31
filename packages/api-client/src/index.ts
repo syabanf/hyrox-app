@@ -183,11 +183,32 @@ export function createApiClient(options: ApiClientOptions) {
       bookings: () => get<BookingView[]>('/api/me/bookings'),
       visits: () => get<AccessLogView[]>('/api/me/visits'),
       notifications: () => get<MemberNotification[]>('/api/me/notifications'),
+      announcement: (id: string) =>
+        get<{
+          id: string;
+          title: string;
+          message: string;
+          deepLink: string | null;
+          imageUrl: string | null;
+          createdAt: string;
+        }>(`/api/announcements/${id}`),
+      promo: (code: string) =>
+        get<{
+          code: string;
+          label: string;
+          live: boolean;
+          startsAt: string;
+          endsAt: string;
+          perMemberLimit: number | null;
+          usageLimit: number | null;
+          newMembersOnly: boolean;
+          packageNames: string[] | null;
+        }>(`/api/promos/${encodeURIComponent(code)}`),
       readAllNotifications: () => post<{ ok: boolean }>('/api/me/notifications/read-all'),
     },
     catalog: {
       branches: () => get<Branch[]>('/api/branches'),
-      packages: () => get<CreditPackage[]>('/api/packages'),
+      packages: () => get<(CreditPackage & { coverageNames: string[] | null })[]>('/api/packages'),
       sessions: (query?: { branchId?: string; from?: string; to?: string }) =>
         get<SessionView[]>('/api/sessions', query),
       session: (id: string) => get<SessionView>(`/api/sessions/${id}`),
@@ -365,6 +386,16 @@ export function createApiClient(options: ApiClientOptions) {
       segments: () => get<SegmentListView[]>('/api/athlete/segments'),
       segment: (id: string) => get<SegmentDetailView>(`/api/athlete/segments/${id}`),
       challenges: () => get<ChallengeView[]>('/api/athlete/challenges'),
+      profile: (memberId: string) =>
+        get<{
+          member: { id: string; fullName: string; avatarUrl: string | null };
+          isMe: boolean;
+          isFollowing: boolean;
+          followerCount: number;
+          followingCount: number;
+          totals: { activities: number; distanceKm: number; movingSec: number };
+          activities: ActivityCardView[];
+        }>(`/api/athlete/profile/${memberId}`),
       joinChallenge: (id: string) => post<{ joined: true }>(`/api/athlete/challenges/${id}/join`),
       clubs: () => get<ClubView[]>('/api/athlete/clubs'),
       toggleClub: (id: string) => post<{ joined: boolean }>(`/api/athlete/clubs/${id}/toggle`),
@@ -403,6 +434,8 @@ export function createApiClient(options: ApiClientOptions) {
     races: {
       list: (query?: { region?: string; scope?: 'upcoming' | 'results' }) =>
         get<RaceEventView[]>('/api/races', query),
+      get: (id: string) =>
+        get<{ view: RaceEventView; myRace: MyRaceView | null }>(`/api/races/${id}`),
       register: (raceEventId: string, input: RegisterRaceInput) =>
         post<UserRace>(`/api/races/${raceEventId}/register`, input),
       mine: () => get<MyRaceView[]>('/api/me/races'),

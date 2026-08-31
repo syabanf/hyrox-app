@@ -332,6 +332,17 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
       return HttpResponse.json(res.value);
     }),
 
+    // The member's own payment, for the mock checkout page (channel, totals).
+    http.get('*/api/payments/:id', ({ request, params }) => {
+      const auth = requireMember(db(), request);
+      if (!auth.ok) return auth.response;
+      const payment = deps().payments.byId(param(params, 'id'));
+      if (!payment || payment.memberId !== auth.value.id)
+        return jsonError(404, 'NOT_FOUND', 'Payment not found.');
+      const pkg = db().packages.find((x) => x.id === payment.packageId);
+      return HttpResponse.json({ payment, packageName: pkg?.name ?? 'Credit package' });
+    }),
+
     // Mock Xendit webhook — the paying member (from their payment page) or an
     // admin with payments.simulate can flip PENDING → PAID.
     http.post('*/api/payments/:id/simulate', ({ request, params }) => {

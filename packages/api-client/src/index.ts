@@ -200,6 +200,8 @@ export function createApiClient(options: ApiClientOptions) {
       confirmSpot: (bookingId: string) => post<Booking>(`/api/bookings/${bookingId}/confirm-spot`),
     },
     payments: {
+      get: (paymentId: string) =>
+        get<{ payment: Payment; packageName: string }>(`/api/payments/${paymentId}`),
       simulate: (paymentId: string) =>
         post<{ payment: Payment; entry: CreditLedgerEntry }>(`/api/payments/${paymentId}/simulate`),
     },

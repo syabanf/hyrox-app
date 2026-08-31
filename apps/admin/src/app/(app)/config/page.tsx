@@ -392,6 +392,7 @@ function UsersTab() {
   const qc = useQueryClient();
   const { can } = usePermissions();
   const [editing, setEditing] = useState<AdminUser | 'new' | null>(null);
+  const [query, setQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
   const { data: users, isLoading } = useQuery({ queryKey: ['admin-users'], queryFn: api.auth.adminUsers });
   const { data: branches } = useQuery({ queryKey: ['branches'], queryFn: api.catalog.branches });
@@ -418,6 +419,12 @@ function UsersTab() {
           Read-only — only Super Admin can manage staff accounts.
         </p>
       )}
+      <input
+        className="a-input max-w-xs"
+        placeholder="Search name, email, role…"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
       <div className="a-card !p-0">
         <table className="a-table">
           <thead>
@@ -430,7 +437,15 @@ function UsersTab() {
             </tr>
           </thead>
           <tbody>
-            {(users ?? []).map((u) => (
+            {(users ?? [])
+              .filter(
+                (u) =>
+                  !query ||
+                  u.name.toLowerCase().includes(query.toLowerCase()) ||
+                  u.email.toLowerCase().includes(query.toLowerCase()) ||
+                  u.role.toLowerCase().includes(query.toLowerCase()),
+              )
+              .map((u) => (
               <tr key={u.id}>
                 <td className="font-bold">{u.name}</td>
                 <td className="text-muted">{u.email}</td>

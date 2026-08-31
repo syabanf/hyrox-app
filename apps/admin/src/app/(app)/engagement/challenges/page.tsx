@@ -20,6 +20,7 @@ export default function ChallengesPage() {
   const { can } = usePermissions();
   const [editing, setEditing] = useState<Challenge | 'new' | null>(null);
   const [typeView, setTypeView] = useState('');
+  const [query, setQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
   const { data, isLoading } = useQuery({
     queryKey: ['admin-challenges'],
@@ -44,7 +45,9 @@ export default function ChallengesPage() {
       new Date(r.challenge.endsAt).getTime() >= now,
   );
   const manage = can('campaigns.manage');
-  const visible = rows.filter((r) => !typeView || r.challenge.type === typeView);
+  const visible = rows
+    .filter((r) => !typeView || r.challenge.type === typeView)
+    .filter((r) => !query || r.challenge.name.toLowerCase().includes(query.toLowerCase()));
 
   return (
     <div>
@@ -69,15 +72,23 @@ export default function ChallengesPage() {
           hint="Joins across all challenges"
         />
       </div>
-      <div className="mb-4 w-44">
-        <SearchSelect
-          value={typeView}
-          onChange={setTypeView}
-          allowEmpty
-          emptyLabel="All types"
-          placeholder="Search type…"
-          options={['ANY', 'RUN', 'RIDE', 'WALK'].map((t) => ({ value: t, label: t }))}
+      <div className="mb-4 flex flex-wrap gap-2">
+        <input
+          className="a-input max-w-xs"
+          placeholder="Search challenge…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
         />
+        <div className="w-44">
+          <SearchSelect
+            value={typeView}
+            onChange={setTypeView}
+            allowEmpty
+            emptyLabel="All types"
+            placeholder="Search type…"
+            options={['ANY', 'RUN', 'RIDE', 'WALK'].map((t) => ({ value: t, label: t }))}
+          />
+        </div>
       </div>
       <div className="grid gap-3 lg:grid-cols-2">
         {visible.map(({ challenge: c, participantCount }) => {

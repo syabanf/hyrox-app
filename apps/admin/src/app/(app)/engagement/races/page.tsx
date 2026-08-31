@@ -23,6 +23,7 @@ export default function RaceEventsPage() {
   const { can } = usePermissions();
   const [editing, setEditing] = useState<AdminRace | 'new' | null>(null);
   const [statusView, setStatusView] = useState('');
+  const [query, setQuery] = useState('');
   const [page, setPage] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const { data: races, isLoading } = useQuery({ queryKey: ['admin-races'], queryFn: api.admin.races.list });
@@ -62,7 +63,17 @@ export default function RaceEventsPage() {
           hint="From this studio"
         />
       </div>
-      <div className="mb-4 w-48">
+      <div className="mb-4 flex flex-wrap gap-2">
+        <input
+          className="a-input max-w-xs"
+          placeholder="Search race or city…"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setPage(0);
+          }}
+        />
+        <div className="w-48">
         <SearchSelect
           value={statusView}
           onChange={(v) => {
@@ -74,10 +85,12 @@ export default function RaceEventsPage() {
           placeholder="Search status…"
           options={[...new Set((races ?? []).map((r) => r.status))].map((s) => ({ value: s, label: s }))}
         />
+        </div>
       </div>
       <div className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {(races ?? [])
           .filter((r) => !statusView || r.status === statusView)
+          .filter((r) => !query || r.name.toLowerCase().includes(query.toLowerCase()) || r.city.toLowerCase().includes(query.toLowerCase()))
           .slice(page * 6, page * 6 + 6)
           .map((r) => (
           <div key={r.id} className="a-card overflow-hidden !p-0">
@@ -129,7 +142,7 @@ export default function RaceEventsPage() {
         <div className="a-card !p-0">
           <Pager
             page={page}
-            pageCount={Math.max(1, Math.ceil((races ?? []).filter((r) => !statusView || r.status === statusView).length / 6))}
+            pageCount={Math.max(1, Math.ceil((races ?? []).filter((r) => !statusView || r.status === statusView).filter((r) => !query || r.name.toLowerCase().includes(query.toLowerCase()) || r.city.toLowerCase().includes(query.toLowerCase())).length / 6))}
             onPage={setPage}
           />
         </div>

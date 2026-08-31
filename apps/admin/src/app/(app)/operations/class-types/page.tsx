@@ -14,6 +14,7 @@ export default function ClassTypesPage() {
   const { can } = usePermissions();
   const [editing, setEditing] = useState<ClassType | 'new' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
   const { data, isLoading } = useQuery({ queryKey: ['class-types'], queryFn: api.admin.classTypes.list });
 
   const remove = useMutation({
@@ -47,6 +48,14 @@ export default function ClassTypesPage() {
           value={(data ?? []).length > 0 ? ((data ?? []).reduce((sum, t) => sum + t.defaultCreditCost, 0) / (data ?? []).length).toFixed(1) : '—'}
         />
       </div>
+      <div className="mb-4">
+        <input
+          className="a-input max-w-xs"
+          placeholder="Search class type…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
       {isLoading ? (
         <Spinner label="Loading…" />
       ) : (
@@ -63,7 +72,14 @@ export default function ClassTypesPage() {
               </tr>
             </thead>
             <tbody>
-              {(data ?? []).map((t) => (
+              {(data ?? [])
+                .filter(
+                  (t) =>
+                    !query ||
+                    t.name.toLowerCase().includes(query.toLowerCase()) ||
+                    t.description.toLowerCase().includes(query.toLowerCase()),
+                )
+                .map((t) => (
                 <tr key={t.id}>
                   <td>
                     <p className="font-bold">{t.name}</p>

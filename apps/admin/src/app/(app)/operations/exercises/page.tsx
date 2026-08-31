@@ -15,13 +15,16 @@ export default function ExercisesPage() {
   const { can } = usePermissions();
   const [editing, setEditing] = useState<Exercise | null>(null);
   const [categoryView, setCategoryView] = useState('');
+  const [query, setQuery] = useState('');
   const { data, isLoading } = useQuery({
     queryKey: ['admin-exercises'],
     queryFn: api.admin.exercises.list,
   });
 
   if (isLoading) return <Spinner label="Loading exercises…" />;
-  const rows = (data ?? []).filter((e) => !categoryView || e.category === categoryView);
+  const rows = (data ?? [])
+    .filter((e) => !categoryView || e.category === categoryView)
+    .filter((e) => !query || e.name.toLowerCase().includes(query.toLowerCase()));
   const manage = can('class_types.manage');
 
   return (
@@ -39,15 +42,23 @@ export default function ExercisesPage() {
           hint="Shown in the member Guides tab"
         />
       </div>
-      <div className="mb-4 w-44">
-        <SearchSelect
-          value={categoryView}
-          onChange={setCategoryView}
-          allowEmpty
-          emptyLabel="All categories"
-          placeholder="Search category…"
-          options={[...new Set((data ?? []).map((e) => e.category))].map((c) => ({ value: c, label: c }))}
+      <div className="mb-4 flex flex-wrap gap-2">
+        <input
+          className="a-input max-w-xs"
+          placeholder="Search exercise…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
         />
+        <div className="w-44">
+          <SearchSelect
+            value={categoryView}
+            onChange={setCategoryView}
+            allowEmpty
+            emptyLabel="All categories"
+            placeholder="Search category…"
+            options={[...new Set((data ?? []).map((e) => e.category))].map((c) => ({ value: c, label: c }))}
+          />
+        </div>
       </div>
       <div className="a-card !p-0">
         <table className="a-table">

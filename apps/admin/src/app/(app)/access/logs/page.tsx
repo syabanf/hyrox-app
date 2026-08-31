@@ -13,6 +13,7 @@ export default function AccessLogsPage() {
   const [gateId, setGateId] = useState('');
   const [result, setResult] = useState('');
   const [mode, setMode] = useState('');
+  const [memberQuery, setMemberQuery] = useState('');
   const [page, setPage] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,6 +55,15 @@ export default function AccessLogsPage() {
         <StatCard label="Conflicts" value={conflicts} tone={conflicts > 0 ? 'danger' : undefined} hint="Need manual reconciliation" />
       </div>
       <div className="mb-4 flex flex-wrap gap-2">
+        <input
+          className="a-input max-w-xs"
+          placeholder="Search member…"
+          value={memberQuery}
+          onChange={(e) => {
+            setMemberQuery(e.target.value);
+            setPage(0);
+          }}
+        />
         <select className="a-input max-w-44" value={gateId} onChange={(e) => setGateId(e.target.value)}>
           <option value="">All gates</option>
           {(gates ?? []).map((g) => (
@@ -92,7 +102,10 @@ export default function AccessLogsPage() {
               </tr>
             </thead>
             <tbody>
-              {(logs ?? []).slice(page * 12, page * 12 + 12).map((v) => (
+              {(logs ?? [])
+                .filter((v) => !memberQuery || (v.memberName ?? '').toLowerCase().includes(memberQuery.toLowerCase()))
+                .slice(page * 12, page * 12 + 12)
+                .map((v) => (
                 <tr key={v.log.id}>
                   <td className="whitespace-nowrap text-muted">{formatDayTime(v.log.createdAt)}</td>
                   <td className="font-bold">{v.memberName ?? '—'}</td>
@@ -132,7 +145,7 @@ export default function AccessLogsPage() {
           </table>
           <Pager
             page={page}
-            pageCount={Math.max(1, Math.ceil((logs ?? []).length / 12))}
+            pageCount={Math.max(1, Math.ceil((logs ?? []).filter((v) => !memberQuery || (v.memberName ?? '').toLowerCase().includes(memberQuery.toLowerCase())).length / 12))}
             onPage={setPage}
           />
         </div>

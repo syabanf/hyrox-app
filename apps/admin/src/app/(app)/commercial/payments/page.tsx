@@ -11,6 +11,7 @@ export default function PaymentsPage() {
   const qc = useQueryClient();
   const { can } = usePermissions();
   const [statusFilter, setStatusFilter] = useState('');
+  const [query, setQuery] = useState('');
   const [page, setPage] = useState(0);
   const [refundTarget, setRefundTarget] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +27,16 @@ export default function PaymentsPage() {
     onError: (e) => setError(e instanceof ApiError ? e.message : 'Simulation failed.'),
   });
 
-  const rows = (data ?? []).filter((p) => !statusFilter || p.payment.status === statusFilter);
+  const q = query.trim().toLowerCase();
+  const rows = (data ?? [])
+    .filter((p) => !statusFilter || p.payment.status === statusFilter)
+    .filter(
+      (p) =>
+        !q ||
+        p.memberName.toLowerCase().includes(q) ||
+        p.packageName.toLowerCase().includes(q) ||
+        p.payment.id.toLowerCase().includes(q),
+    );
   const pageCount = Math.max(1, Math.ceil(rows.length / 10));
   const safePage = Math.min(page, pageCount - 1);
   const paged = rows.slice(safePage * 10, safePage * 10 + 10);
@@ -49,7 +59,17 @@ export default function PaymentsPage() {
           value={(data ?? []).filter((p) => ['FAILED', 'EXPIRED'].includes(p.payment.status)).length}
         />
       </div>
-      <div className="mb-4 w-44">
+      <div className="mb-4 flex flex-wrap gap-2">
+        <input
+          className="a-input max-w-xs"
+          placeholder="Search member, package, id…"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setPage(0);
+          }}
+        />
+        <div className="w-44">
         <SearchSelect
           value={statusFilter}
           onChange={(v) => {
@@ -61,6 +81,7 @@ export default function PaymentsPage() {
           placeholder="Search status…"
           options={['PENDING', 'PAID', 'FAILED', 'EXPIRED', 'REFUNDED'].map((s) => ({ value: s, label: s }))}
         />
+        </div>
       </div>
       <ErrorNote message={error} />
       {isLoading ? (

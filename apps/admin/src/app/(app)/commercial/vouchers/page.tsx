@@ -21,6 +21,7 @@ export default function VouchersPage() {
   const { can } = usePermissions();
   const [createOpen, setCreateOpen] = useState(false);
   const [statusView, setStatusView] = useState('');
+  const [codeQuery, setCodeQuery] = useState('');
   const [page, setPage] = useState(0);
   const [editTarget, setEditTarget] = useState<Voucher | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +68,17 @@ export default function VouchersPage() {
         />
         <StatCard label="Redemptions" value={(data ?? []).reduce((sum, v) => sum + v.redemptionCount, 0)} />
       </div>
-      <div className="mb-4 w-44">
+      <div className="mb-4 flex flex-wrap gap-2">
+        <input
+          className="a-input max-w-xs"
+          placeholder="Search code…"
+          value={codeQuery}
+          onChange={(e) => {
+            setCodeQuery(e.target.value);
+            setPage(0);
+          }}
+        />
+        <div className="w-44">
         <SearchSelect
           value={statusView}
           onChange={(v) => {
@@ -79,6 +90,7 @@ export default function VouchersPage() {
           placeholder="Search status…"
           options={['DRAFT', 'SCHEDULED', 'ACTIVE', 'EXPIRED', 'DISABLED'].map((s) => ({ value: s, label: s }))}
         />
+        </div>
       </div>
       {isLoading ? (
         <Spinner label="Loading vouchers…" />
@@ -99,6 +111,7 @@ export default function VouchersPage() {
             <tbody>
               {(data ?? [])
                 .filter((row) => !statusView || row.voucher.status === statusView)
+                .filter((row) => !codeQuery || row.voucher.code.toLowerCase().includes(codeQuery.toLowerCase()))
                 .slice(page * 8, page * 8 + 8)
                 .map(({ voucher: v, redemptionCount }) => (
                 <tr key={v.id}>
@@ -146,7 +159,7 @@ export default function VouchersPage() {
           </table>
           <Pager
             page={page}
-            pageCount={Math.max(1, Math.ceil((data ?? []).filter((row) => !statusView || row.voucher.status === statusView).length / 8))}
+            pageCount={Math.max(1, Math.ceil((data ?? []).filter((row) => !statusView || row.voucher.status === statusView).filter((row) => !codeQuery || row.voucher.code.toLowerCase().includes(codeQuery.toLowerCase())).length / 8))}
             onPage={setPage}
           />
         </div>

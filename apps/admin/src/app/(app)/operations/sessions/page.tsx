@@ -16,6 +16,7 @@ export default function SessionsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [showPast, setShowPast] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
+  const [query, setQuery] = useState('');
   const [page, setPage] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,9 +35,13 @@ export default function SessionsPage() {
     onError: (e) => setError(e instanceof ApiError ? e.message : 'Delete failed.'),
   });
 
+  const q = query.trim().toLowerCase();
   const visible = (sessions ?? [])
     .filter((v) => showPast || new Date(v.session.endsAt).getTime() > Date.now() - 3600_000)
-    .filter((v) => !statusFilter || v.session.status === statusFilter);
+    .filter((v) => !statusFilter || v.session.status === statusFilter)
+    .filter(
+      (v) => !q || v.classTypeName.toLowerCase().includes(q) || v.coachName.toLowerCase().includes(q),
+    );
   const pageCount = Math.max(1, Math.ceil(visible.length / 10));
   const safePage = Math.min(page, pageCount - 1);
   const paged = visible.slice(safePage * 10, safePage * 10 + 10);
@@ -64,6 +69,15 @@ export default function SessionsPage() {
         <StatCard label="Draft" value={(sessions ?? []).filter((v) => v.session.status === 'DRAFT').length} />
       </div>
       <div className="mb-4 flex flex-wrap items-center gap-2">
+        <input
+          className="a-input max-w-xs"
+          placeholder="Search class or coach…"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setPage(0);
+          }}
+        />
         <div className="w-44">
           <SearchSelect
             value={branchId}

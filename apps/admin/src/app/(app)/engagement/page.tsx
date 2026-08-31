@@ -23,6 +23,7 @@ export default function EngagementPage() {
   const { can } = usePermissions();
   const [editing, setEditing] = useState<Campaign | 'new' | null>(null);
   const [statusView, setStatusView] = useState('');
+  const [query, setQuery] = useState('');
   const [page, setPage] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const { data, isLoading } = useQuery({ queryKey: ['campaigns'], queryFn: api.admin.campaigns.list });
@@ -71,7 +72,17 @@ export default function EngagementPage() {
           hint="Notifications delivered"
         />
       </div>
-      <div className="mb-4 w-44">
+      <div className="mb-4 flex flex-wrap gap-2">
+        <input
+          className="a-input max-w-xs"
+          placeholder="Search campaign…"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setPage(0);
+          }}
+        />
+        <div className="w-44">
         <SearchSelect
           value={statusView}
           onChange={(v) => {
@@ -83,6 +94,7 @@ export default function EngagementPage() {
           placeholder="Search status…"
           options={['DRAFT', 'SCHEDULED', 'SENT'].map((s) => ({ value: s, label: s }))}
         />
+        </div>
       </div>
       {isLoading ? (
         <Spinner label="Loading campaigns…" />
@@ -103,6 +115,7 @@ export default function EngagementPage() {
             <tbody>
               {(data ?? [])
                 .filter((c) => !statusView || c.status === statusView)
+                .filter((c) => !query || c.name.toLowerCase().includes(query.toLowerCase()) || c.message.toLowerCase().includes(query.toLowerCase()))
                 .slice(page * 8, page * 8 + 8)
                 .map((c) => (
                 <tr key={c.id}>
@@ -151,7 +164,7 @@ export default function EngagementPage() {
           </table>
           <Pager
             page={page}
-            pageCount={Math.max(1, Math.ceil((data ?? []).filter((c) => !statusView || c.status === statusView).length / 8))}
+            pageCount={Math.max(1, Math.ceil((data ?? []).filter((c) => !statusView || c.status === statusView).filter((c) => !query || c.name.toLowerCase().includes(query.toLowerCase()) || c.message.toLowerCase().includes(query.toLowerCase())).length / 8))}
             onPage={setPage}
           />
         </div>

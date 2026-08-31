@@ -5,6 +5,7 @@ import { formatDistanceM, formatDuration, formatPace } from '@hyrox/ui';
 import {
   Bike,
   Bluetooth,
+  Check,
   ChevronRight,
   Dumbbell,
   Flame,
@@ -106,16 +107,29 @@ function OptionRow({
   );
 }
 
-const WORKOUT_FOCUS = [
-  'Back',
-  'Chest',
-  'Legs',
-  'Shoulders',
-  'Arms',
-  'Core',
-  'Glutes',
-  'Full body',
-] as const;
+const EXERCISE_LIBRARY: Record<string, string[]> = {
+  Back: ['Lat Pulldown', 'Barbell Row', 'Seated Cable Row', 'Pull-up'],
+  Chest: ['Bench Press', 'Incline DB Press', 'Cable Fly', 'Push-up'],
+  Legs: ['Back Squat', 'Leg Press', 'Romanian Deadlift', 'Walking Lunge'],
+  Shoulders: ['Overhead Press', 'Lateral Raise', 'Rear Delt Fly'],
+  Arms: ['Bicep Curl', 'Hammer Curl', 'Tricep Pushdown', 'Skullcrusher'],
+  Core: ['Plank', 'Hanging Knee Raise', 'Cable Crunch'],
+  Glutes: ['Hip Thrust', 'Glute Bridge', 'Cable Kickback'],
+  'Full body': ['Deadlift', 'Clean & Press', 'Kettlebell Swing', 'Burpee'],
+};
+
+interface StrengthSet {
+  kg: string;
+  reps: string;
+  done: boolean;
+}
+interface StrengthExercise {
+  name: string;
+  muscle: string;
+  sets: StrengthSet[];
+}
+const emptySets = (): StrengthSet[] =>
+  Array.from({ length: 3 }, () => ({ kg: '', reps: '', done: false }));
 
 const TYPE_TILES: {
   id: ActivityType | 'HYROX';
@@ -126,7 +140,7 @@ const TYPE_TILES: {
   { id: 'RUN', label: 'Run', hint: 'GPS tracked', icon: Footprints },
   { id: 'RIDE', label: 'Ride', hint: 'GPS tracked', icon: Bike },
   { id: 'WALK', label: 'Walk', hint: 'GPS tracked', icon: PersonStanding },
-  { id: 'WORKOUT', label: 'Workout', hint: 'Timer only', icon: Dumbbell },
+  { id: 'WORKOUT', label: 'Workout', hint: 'Sets & reps', icon: Dumbbell },
   { id: 'HYROX', label: 'HYROX Sim', hint: 'Guided race', icon: Flame },
 ];
 const M_PER_DEG_LAT = 111_320;
@@ -164,7 +178,8 @@ export function RecordPage() {
   const [liveCopied, setLiveCopied] = useState(false);
   const [sensorOpen, setSensorOpen] = useState(false);
   const [laps, setLaps] = useState<number[]>([]);
-  const [focus, setFocus] = useState<string[]>([]);
+  const [exercises, setExercises] = useState<StrengthExercise[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [points, setPoints] = useState<TrackPoint[]>([]);
   const [elapsedSec, setElapsedSec] = useState(0);
   const [distanceM, setDistanceM] = useState(0);
@@ -403,26 +418,44 @@ export function RecordPage() {
             </label>
           ) : (
             <div className="card">
-              <p className="label">What are you training?</p>
-              <div className="flex flex-wrap gap-1.5">
-                {WORKOUT_FOCUS.map((f) => {
-                  const on = focus.includes(f);
-                  return (
-                    <button
-                      key={f}
-                      onClick={() =>
-                        setFocus((prev) => (on ? prev.filter((x) => x !== f) : [...prev, f]))
-                      }
-                      className={`rounded-full px-3.5 py-2 text-xs font-bold transition ${
-                        on ? 'bg-[#1b1b1f] text-white' : 'bg-surface-raised text-muted'
-                      }`}
-                    >
-                      {f}
-                    </button>
-                  );
-                })}
+              <div className="mb-2 flex items-center justify-between">
+                <p className="label !mb-0">Your workout</p>
+                <button
+                  className="text-sm font-bold text-brand"
+                  onClick={() => setPickerOpen(true)}
+                >
+                  + Add exercise
+                </button>
               </div>
-              <p className="mt-2.5 text-xs text-muted">Timer only — no GPS. Focus lands in the title.</p>
+              {exercises.length === 0 ? (
+                <p className="text-sm text-muted">
+                  Build it like the gym log: add exercises, then track sets, kg and reps while you
+                  train.
+                </p>
+              ) : (
+                <div className="flex flex-col divide-y divide-line">
+                  {exercises.map((ex, i) => (
+                    <div key={ex.name} className="flex items-center gap-3 py-2.5">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1b1b1f] text-white">
+                        <Dumbbell size={15} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-extrabold">{ex.name}</p>
+                        <p className="text-xs text-muted">
+                          {ex.muscle} · {ex.sets.length} sets
+                        </p>
+                      </div>
+                      <button
+                        className="text-muted"
+                        aria-label={`Remove ${ex.name}`}
+                        onClick={() => setExercises((prev) => prev.filter((_, j) => j !== i))}
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
           {type !== 'HYROX' ? (
@@ -471,35 +504,31 @@ export function RecordPage() {
           </div>
           )}
 
-          {type !== 'HYROX' ? (
+          {type !== 'HYROX' && type !== 'WORKOUT' ? (
             <div className="card divide-y divide-line !p-2">
-              {type !== 'WORKOUT' ? (
-                <OptionRow
-                  icon={MapPinned}
-                  label="Follow a route"
-                  hint={followRoute ? followRoute.name : 'Pick a saved route to guide the demo GPS'}
-                  right={
-                    <span className="flex items-center gap-1 text-xs font-bold text-muted">
-                      {followRoute ? 'On' : 'Off'} <ChevronRight size={15} />
-                    </span>
-                  }
-                  onClick={() => navigate('/train/explore')}
-                />
-              ) : null}
+              <OptionRow
+                icon={MapPinned}
+                label="Follow a route"
+                hint={followRoute ? followRoute.name : 'Pick a saved route to guide the demo GPS'}
+                right={
+                  <span className="flex items-center gap-1 text-xs font-bold text-muted">
+                    {followRoute ? 'On' : 'Off'} <ChevronRight size={15} />
+                  </span>
+                }
+                onClick={() => navigate('/train/explore')}
+              />
               <OptionRow
                 icon={Timer}
                 label="Track laps"
                 hint="Adds a Lap button while recording"
                 right={<Toggle on={trackLaps} onChange={(v) => { setTrackLaps(v); prefSet('laps', v); }} />}
               />
-              {type !== 'WORKOUT' ? (
-                <OptionRow
-                  icon={Volume2}
-                  label="Audio cues"
-                  hint="Spoken split every kilometre"
-                  right={<Toggle on={audioCues} onChange={(v) => { setAudioCues(v); prefSet('cues', v); }} />}
-                />
-              ) : null}
+              <OptionRow
+                icon={Volume2}
+                label="Audio cues"
+                hint="Spoken split every kilometre"
+                right={<Toggle on={audioCues} onChange={(v) => { setAudioCues(v); prefSet('cues', v); }} />}
+              />
               <OptionRow
                 icon={Radio}
                 label="Share live location"
@@ -541,6 +570,16 @@ export function RecordPage() {
       ) : null}
 
       {sensorOpen ? <SensorSheet onClose={() => setSensorOpen(false)} /> : null}
+      {pickerOpen ? (
+        <ExercisePicker
+          chosen={exercises.map((ex) => ex.name)}
+          onPick={(name, muscle) => {
+            setExercises((prev) => [...prev, { name, muscle, sets: emptySets() }]);
+            setPickerOpen(false);
+          }}
+          onClose={() => setPickerOpen(false)}
+        />
+      ) : null}
 
       {phase === 'recording' || phase === 'paused' ? (
         <>
@@ -564,6 +603,112 @@ export function RecordPage() {
             ) : null}
           </div>
           {gpsError ? <p className="text-sm font-bold text-danger">{gpsError}</p> : null}
+          {type === 'WORKOUT' && exercises.length > 0 ? (
+            <div className="flex flex-col gap-3">
+              {exercises.map((ex, ei) => (
+                <div key={ex.name} className="card !py-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-extrabold">{ex.name}</p>
+                    <span className="chip bg-surface-raised text-muted">{ex.muscle}</span>
+                  </div>
+                  <div className="mt-2.5 flex flex-col gap-1.5">
+                    <div className="grid grid-cols-[2rem_1fr_1fr_2.5rem] gap-2 text-[10px] font-extrabold uppercase tracking-wider text-muted">
+                      <span>Set</span>
+                      <span>kg</span>
+                      <span>Reps</span>
+                      <span />
+                    </div>
+                    {ex.sets.map((set, si) => (
+                      <div
+                        key={si}
+                        className={`grid grid-cols-[2rem_1fr_1fr_2.5rem] items-center gap-2 rounded-xl px-0.5 py-0.5 ${
+                          set.done ? 'bg-ok/10' : ''
+                        }`}
+                      >
+                        <span className="text-center text-sm font-black text-muted">{si + 1}</span>
+                        <input
+                          inputMode="decimal"
+                          placeholder="—"
+                          value={set.kg}
+                          onChange={(e) =>
+                            setExercises((prev) =>
+                              prev.map((x, j) =>
+                                j === ei
+                                  ? {
+                                      ...x,
+                                      sets: x.sets.map((ss, k) =>
+                                        k === si ? { ...ss, kg: e.target.value } : ss,
+                                      ),
+                                    }
+                                  : x,
+                              ),
+                            )
+                          }
+                          className="input !rounded-lg !px-2.5 !py-1.5 text-center text-sm"
+                        />
+                        <input
+                          inputMode="numeric"
+                          placeholder="—"
+                          value={set.reps}
+                          onChange={(e) =>
+                            setExercises((prev) =>
+                              prev.map((x, j) =>
+                                j === ei
+                                  ? {
+                                      ...x,
+                                      sets: x.sets.map((ss, k) =>
+                                        k === si ? { ...ss, reps: e.target.value } : ss,
+                                      ),
+                                    }
+                                  : x,
+                              ),
+                            )
+                          }
+                          className="input !rounded-lg !px-2.5 !py-1.5 text-center text-sm"
+                        />
+                        <button
+                          aria-label="Set done"
+                          onClick={() =>
+                            setExercises((prev) =>
+                              prev.map((x, j) =>
+                                j === ei
+                                  ? {
+                                      ...x,
+                                      sets: x.sets.map((ss, k) =>
+                                        k === si ? { ...ss, done: !ss.done } : ss,
+                                      ),
+                                    }
+                                  : x,
+                              ),
+                            )
+                          }
+                          className={`mx-auto flex h-7 w-7 items-center justify-center rounded-full ${
+                            set.done ? 'bg-ok text-white' : 'bg-surface-raised text-muted'
+                          }`}
+                        >
+                          <Check size={14} />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      className="mt-1 self-start text-xs font-bold text-brand"
+                      onClick={() =>
+                        setExercises((prev) =>
+                          prev.map((x, j) =>
+                            j === ei
+                              ? { ...x, sets: [...x.sets, { kg: '', reps: '', done: false }] }
+                              : x,
+                          ),
+                        )
+                      }
+                    >
+                      + Add set
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
           {trackLaps ? (
             <div className="card flex items-center gap-3 !py-3">
               <button
@@ -601,7 +746,7 @@ export function RecordPage() {
       {phase === 'saving' ? (
         <SaveForm
           type={type === 'HYROX' ? 'WORKOUT' : type}
-          focus={focus}
+          strength={exercises}
           laps={laps}
           points={points}
           elapsedSec={elapsedSec}
@@ -620,7 +765,7 @@ export function RecordPage() {
 
 function SaveForm({
   type,
-  focus,
+  strength,
   laps,
   points,
   elapsedSec,
@@ -630,7 +775,7 @@ function SaveForm({
   onSaved,
 }: {
   type: ActivityType;
-  focus: string[];
+  strength: StrengthExercise[];
   laps: number[];
   points: TrackPoint[];
   elapsedSec: number;
@@ -641,14 +786,23 @@ function SaveForm({
 }) {
   const t = useT();
   const units = useUnits();
+  const muscles = [...new Set(strength.map((ex) => ex.muscle))];
   const [title, setTitle] = useState(() =>
-    type === 'WORKOUT' && focus.length > 0
-      ? `${focus.slice(0, 2).join(' & ')} Workout`
+    type === 'WORKOUT' && muscles.length > 0
+      ? `${muscles.slice(0, 2).join(' & ')} Workout`
       : defaultTitle(type),
   );
   const [description, setDescription] = useState(() =>
     [
-      focus.length > 0 ? `Focus: ${focus.join(', ')}` : null,
+      ...strength
+        .filter((ex) => ex.sets.some((set) => set.kg || set.reps || set.done))
+        .map(
+          (ex) =>
+            `${ex.name}: ${ex.sets
+              .filter((set) => set.kg || set.reps || set.done)
+              .map((set) => `${set.kg || '-'}kg×${set.reps || '-'}`)
+              .join(', ')}`,
+        ),
       laps.length > 0
         ? `Laps: ${laps.map((at, i) => `${i + 1}) ${formatDuration(at - (laps[i - 1] ?? 0))}`).join('  ')}`
         : null,
@@ -822,6 +976,69 @@ function SensorSheet({ onClose }: { onClose: () => void }) {
         <button className="btn-ghost mt-4 w-full" onClick={onClose}>
           Close
         </button>
+      </div>
+    </div>
+  );
+}
+
+
+/** Hevy-style exercise picker, grouped by muscle. */
+function ExercisePicker({
+  chosen,
+  onPick,
+  onClose,
+}: {
+  chosen: string[];
+  onPick: (name: string, muscle: string) => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState('');
+  const q = query.trim().toLowerCase();
+  return (
+    <div className="sheet-backdrop fixed inset-0 z-40 flex items-end justify-center bg-black/50" onClick={onClose}>
+      <div
+        className="sheet-panel flex max-h-[80dvh] w-full max-w-md flex-col rounded-t-3xl bg-surface p-5 pb-8"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="display mb-3 text-xl">Add exercise</h2>
+        <input
+          autoFocus
+          className="input mb-3"
+          placeholder="Search exercises…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <div className="flex-1 overflow-y-auto">
+          {Object.entries(EXERCISE_LIBRARY).map(([muscle, names]) => {
+            const visible = names.filter(
+              (n) => !q || n.toLowerCase().includes(q) || muscle.toLowerCase().includes(q),
+            );
+            if (visible.length === 0) return null;
+            return (
+              <div key={muscle} className="mb-3">
+                <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-muted">
+                  {muscle}
+                </p>
+                <div className="flex flex-col gap-1">
+                  {visible.map((name) => {
+                    const taken = chosen.includes(name);
+                    return (
+                      <button
+                        key={name}
+                        disabled={taken}
+                        onClick={() => onPick(name, muscle)}
+                        className="flex items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-bold active:bg-surface-raised disabled:opacity-40"
+                      >
+                        {name}
+                        {taken ? <span className="text-xs font-bold text-ok">Added</span> : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

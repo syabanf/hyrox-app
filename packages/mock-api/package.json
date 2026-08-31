@@ -10,7 +10,8 @@
   },
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "dump-seed": "npx -y tsx scripts/dump-seed.mts"
   },
   "dependencies": {
     "@faker-js/faker": "^9.0.0",

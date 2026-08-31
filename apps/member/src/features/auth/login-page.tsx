@@ -5,8 +5,8 @@ import { Link, useNavigate } from 'react-router';
 import { api } from '../../lib/api';
 import { useAuthStore } from '../../lib/auth';
 
-/** Free Unsplash photo (Unsplash License), runtime-cached for offline. */
-const HERO_PHOTO = 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1080&q=60&fit=crop';
+/** Bundled gym photo (originally Unsplash, committed under public/img). */
+const HERO_PHOTO = '/img/hero-login.jpg';
 
 /** Segmented 6-digit code input: an invisible input drives the display boxes. */
 function OtpBoxes({ value, onChange }: { value: string; onChange: (next: string) => void }) {

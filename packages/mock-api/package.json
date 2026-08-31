@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./browser": "./src/msw/browser.ts",
+    "./fetch": "./src/browser/fetch-mock.ts",
     "./node": "./src/msw/node.ts"
   },
   "scripts": {

@@ -16,13 +16,19 @@ export interface MockApi {
 export interface CreateMockApiOptions {
   /** Load/save localStorage snapshots (default true; tests turn it off). */
   persistence?: boolean;
+  /**
+   * Source of a fresh database (boot with no localStorage snapshot, and on
+   * demo reset). Defaults to generating one with faker; the browser fetch
+   * mock passes the bundled seed snapshot instead.
+   */
+  freshDb?: () => MockDb;
 }
 
 export function createMockApi(options: CreateMockApiOptions = {}): MockApi {
   const persistence = options.persistence ?? true;
-  const now = new Date().toISOString();
+  const makeDb = () => options.freshDb?.() ?? createSeedDb(new Date().toISOString());
   const snapshot = persistence ? loadSnapshot() : null;
-  const db = snapshot ?? createSeedDb(now);
+  const db = snapshot ?? makeDb();
 
   const state: MockApiState = { db, deps: createDeps(db) };
 
@@ -31,7 +37,7 @@ export function createMockApi(options: CreateMockApiOptions = {}): MockApi {
   };
   const reset = () => {
     clearSnapshot();
-    state.db = createSeedDb(new Date().toISOString());
+    state.db = makeDb();
     state.deps = createDeps(state.db);
     persist();
   };

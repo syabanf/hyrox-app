@@ -6,7 +6,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, Modal, PageTitle, SearchSelect, StatCard } from '../../../../components/ui';
+import { Pencil } from 'lucide-react';
+import { ErrorNote, Modal, PageTitle, RowActions, SearchSelect, StatCard } from '../../../../components/ui';
 
 /** The exercise library behind the member app's Guides tab and workout player. */
 export default function ExercisesPage() {
@@ -78,9 +79,7 @@ export default function ExercisesPage() {
                 </td>
                 <td className="text-right">
                   {manage ? (
-                    <button className="text-sm font-bold text-brand" onClick={() => setEditing(e)}>
-                      Edit
-                    </button>
+                    <RowActions items={[{ label: 'Edit', icon: Pencil, onClick: () => setEditing(e) }]} />
                   ) : null}
                 </td>
               </tr>

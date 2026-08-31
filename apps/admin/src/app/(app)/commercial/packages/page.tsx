@@ -6,7 +6,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, Modal, PageTitle } from '../../../../components/ui';
+import { Archive, Pencil, Trash2 } from 'lucide-react';
+import { ErrorNote, Modal, PageTitle, RowActions } from '../../../../components/ui';
 
 export default function PackagesPage() {
   const qc = useQueryClient();
@@ -79,28 +80,23 @@ export default function PackagesPage() {
                   </td>
                   <td className="text-right">
                     {can('packages.manage') ? (
-                      <div className="flex justify-end gap-2">
-                        <button className="text-sm font-bold text-brand" onClick={() => setEditing(pkg)}>
-                          Edit
-                        </button>
-                        {pkg.status === 'ACTIVE' ? (
-                          <button
-                            className="text-sm font-bold text-muted hover:text-danger"
-                            onClick={() => archive.mutate(pkg.id)}
-                          >
-                            Archive
-                          </button>
-                        ) : null}
-                        <button
-                          className="text-sm font-bold text-muted hover:text-danger"
-                          onClick={() => {
-                            if (confirm(`Delete package "${pkg.name}"? Only possible while unused.`))
-                              remove.mutate(pkg.id);
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </div>
+                      <RowActions
+                        items={[
+                          { label: 'Edit', icon: Pencil, onClick: () => setEditing(pkg) },
+                          ...(pkg.status === 'ACTIVE'
+                            ? [{ label: 'Archive', icon: Archive, onClick: () => archive.mutate(pkg.id) }]
+                            : []),
+                          {
+                            label: 'Delete',
+                            icon: Trash2,
+                            tone: 'danger' as const,
+                            onClick: () => {
+                              if (confirm(`Delete package "${pkg.name}"? Only possible while unused.`))
+                                remove.mutate(pkg.id);
+                            },
+                          },
+                        ]}
+                      />
                     ) : null}
                   </td>
                 </tr>

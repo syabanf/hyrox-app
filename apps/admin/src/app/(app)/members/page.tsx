@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api, ApiError } from '../../../lib/api';
 import { usePermissions } from '../../../lib/auth';
-import { ErrorNote, Modal, PageTitle, Pager, SearchSelect, StatCard } from '../../../components/ui';
+import { Eye } from 'lucide-react';
+import { ErrorNote, Modal, PageTitle, Pager, RowActions, SearchSelect, StatCard } from '../../../components/ui';
 
 const STATUSES = ['', 'ACTIVE', 'SUSPENDED', 'INACTIVE', 'ARCHIVED'];
 
@@ -88,6 +89,7 @@ export default function MembersPage() {
                 <th className="text-right">Balance</th>
                 <th className="text-right">Visits</th>
                 <th>Last visit</th>
+                <th />
               </tr>
             </thead>
             <tbody>
@@ -114,6 +116,17 @@ export default function MembersPage() {
                   <td className="text-right font-black text-brand">{m.balance}</td>
                   <td className="text-right">{m.totalVisits}</td>
                   <td className="text-muted">{m.lastVisitAt ? formatDay(m.lastVisitAt) : '—'}</td>
+                  <td className="text-right">
+                    <RowActions
+                      items={[
+                        {
+                          label: 'Open 360°',
+                          icon: Eye,
+                          onClick: () => (location.href = `/admin/members/${m.member.id}`),
+                        },
+                      ]}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, Modal, PageTitle, Pager, SearchSelect, StatCard } from '../../../../components/ui';
+import { Eye, Trash2 } from 'lucide-react';
+import { ErrorNote, Modal, PageTitle, Pager, RowActions, SearchSelect, StatCard } from '../../../../components/ui';
 
 export default function SessionsPage() {
   const qc = useQueryClient();
@@ -132,17 +133,28 @@ export default function SessionsPage() {
                     <StatusBadge status={v.session.status} />
                   </td>
                   <td className="text-right">
-                    {can('sessions.manage') && v.confirmedCount === 0 && v.waitlistCount === 0 ? (
-                      <button
-                        className="text-xs font-bold text-muted hover:text-danger"
-                        onClick={() => {
-                          if (confirm('Delete this session? Only possible while nobody is booked.'))
-                            remove.mutate(v.session.id);
-                        }}
-                      >
-                        Delete
-                      </button>
-                    ) : null}
+                    <RowActions
+                      items={[
+                        {
+                          label: 'Open roster',
+                          icon: Eye,
+                          onClick: () => (location.href = `/admin/operations/sessions/${v.session.id}`),
+                        },
+                        ...(can('sessions.manage') && v.confirmedCount === 0 && v.waitlistCount === 0
+                          ? [
+                              {
+                                label: 'Delete',
+                                icon: Trash2,
+                                tone: 'danger' as const,
+                                onClick: () => {
+                                  if (confirm('Delete this session? Only possible while nobody is booked.'))
+                                    remove.mutate(v.session.id);
+                                },
+                              },
+                            ]
+                          : []),
+                      ]}
+                    />
                   </td>
                 </tr>
               ))}

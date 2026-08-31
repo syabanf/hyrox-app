@@ -1,7 +1,7 @@
 'use client';
 
-import { Check, ChevronsUpDown } from 'lucide-react';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Check, ChevronsUpDown, MoreHorizontal } from 'lucide-react';
+import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react';
 
 export interface SearchSelectOption {
   value: string;
@@ -114,6 +114,95 @@ export function SearchSelect({
         </div>
       ) : null}
     </div>
+  );
+}
+
+export interface RowAction {
+  label: string;
+  icon?: ComponentType<{ size?: number | string; className?: string }>;
+  tone?: 'danger';
+  onClick: () => void;
+}
+
+/**
+ * The one true row-actions control: a quiet kebab button opening a small
+ * menu. Fixed-positioned so it never fights the table's scroll container.
+ */
+export function RowActions({ items }: { items: RowAction[] }) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => {
+      if (
+        menuRef.current?.contains(e.target as Node) ||
+        btnRef.current?.contains(e.target as Node)
+      )
+        return;
+      setOpen(false);
+    };
+    const dismiss = () => setOpen(false);
+    document.addEventListener('mousedown', close);
+    window.addEventListener('scroll', dismiss, true);
+    window.addEventListener('resize', dismiss);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      window.removeEventListener('scroll', dismiss, true);
+      window.removeEventListener('resize', dismiss);
+    };
+  }, [open]);
+
+  const toggle = () => {
+    if (!open && btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      const menuH = items.length * 38 + 10;
+      const top = r.bottom + menuH > window.innerHeight - 8 ? r.top - menuH - 4 : r.bottom + 4;
+      setPos({ top, left: Math.max(8, r.right - 180) });
+    }
+    setOpen((v) => !v);
+  };
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        onClick={toggle}
+        aria-label="Row actions"
+        className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition ${
+          open ? 'bg-surface-raised text-ink' : 'text-muted hover:bg-surface-raised hover:text-ink'
+        }`}
+      >
+        <MoreHorizontal size={16} />
+      </button>
+      {open && pos ? (
+        <div
+          ref={menuRef}
+          className="menu-pop fixed z-50 min-w-44 overflow-hidden rounded-xl border border-line bg-surface py-1 shadow-[0_16px_40px_rgb(13_13_16/0.18)]"
+          style={{ top: pos.top, left: pos.left }}
+        >
+          {items.map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                item.onClick();
+              }}
+              className={`flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-sm font-bold hover:bg-surface-raised ${
+                item.tone === 'danger' ? 'text-danger' : ''
+              }`}
+            >
+              {item.icon ? <item.icon size={14} className="shrink-0" /> : null}
+              {item.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </>
   );
 }
 

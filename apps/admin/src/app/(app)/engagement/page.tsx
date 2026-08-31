@@ -6,7 +6,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../lib/api';
 import { usePermissions } from '../../../lib/auth';
-import { ErrorNote, Modal, PageTitle, Pager, SearchSelect, StatCard } from '../../../components/ui';
+import { Pencil, Send, Trash2 } from 'lucide-react';
+import { ErrorNote, Modal, PageTitle, Pager, RowActions, SearchSelect, StatCard } from '../../../components/ui';
 
 const SEGMENT_LABEL: Record<MemberSegment, string> = {
   ALL_ACTIVE: 'All active members',
@@ -119,23 +120,28 @@ export default function EngagementPage() {
                   </td>
                   <td className="text-right">
                     {can('campaigns.manage') ? (
-                      <div className="flex justify-end gap-1.5">
+                      <div className="flex items-center justify-end gap-1.5">
                         {['DRAFT', 'SCHEDULED'].includes(c.status) ? (
                           <button className="a-btn !px-2.5 !py-1 text-xs" onClick={() => send.mutate(c.id)}>
                             Send now
                           </button>
                         ) : null}
-                        <button className="a-btn-ghost !px-2.5 !py-1 text-xs" onClick={() => setEditing(c)}>
-                          Edit
-                        </button>
-                        <button
-                          className="a-btn-danger !px-2.5 !py-1 text-xs"
-                          onClick={() => {
-                            if (confirm(`Delete campaign "${c.name}"?`)) remove.mutate(c.id);
-                          }}
-                        >
-                          Delete
-                        </button>
+                        <RowActions
+                          items={[
+                            { label: 'Edit', icon: Pencil, onClick: () => setEditing(c) },
+                            ...(['DRAFT', 'SCHEDULED'].includes(c.status)
+                              ? [{ label: 'Send now', icon: Send, onClick: () => send.mutate(c.id) }]
+                              : []),
+                            {
+                              label: 'Delete',
+                              icon: Trash2,
+                              tone: 'danger' as const,
+                              onClick: () => {
+                                if (confirm(`Delete campaign "${c.name}"?`)) remove.mutate(c.id);
+                              },
+                            },
+                          ]}
+                        />
                       </div>
                     ) : null}
                   </td>

@@ -6,7 +6,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, Modal, PageTitle, StatCard } from '../../../../components/ui';
+import { Pencil, Trash2 } from 'lucide-react';
+import { ErrorNote, Modal, PageTitle, RowActions, StatCard } from '../../../../components/ui';
 
 export default function ClassTypesPage() {
   const qc = useQueryClient();
@@ -76,19 +77,19 @@ export default function ClassTypesPage() {
                   </td>
                   <td className="text-right">
                     {can('class_types.manage') ? (
-                      <div className="flex justify-end gap-2">
-                        <button className="text-sm font-bold text-brand" onClick={() => setEditing(t)}>
-                          Edit
-                        </button>
-                        <button
-                          className="text-sm font-bold text-muted hover:text-danger"
-                          onClick={() => {
-                            if (confirm(`Delete class type "${t.name}"?`)) remove.mutate(t.id);
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </div>
+                      <RowActions
+                        items={[
+                          { label: 'Edit', icon: Pencil, onClick: () => setEditing(t) },
+                          {
+                            label: 'Delete',
+                            icon: Trash2,
+                            tone: 'danger' as const,
+                            onClick: () => {
+                              if (confirm(`Delete class type "${t.name}"?`)) remove.mutate(t.id);
+                            },
+                          },
+                        ]}
+                      />
                     ) : null}
                   </td>
                 </tr>

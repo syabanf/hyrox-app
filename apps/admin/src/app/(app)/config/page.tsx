@@ -7,7 +7,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../lib/api';
 import { usePermissions } from '../../../lib/auth';
-import { ErrorNote, Modal, PageTitle, SearchSelect } from '../../../components/ui';
+import { Pencil, Trash2 } from 'lucide-react';
+import { ErrorNote, Modal, PageTitle, RowActions, SearchSelect } from '../../../components/ui';
 
 const TABS = ['Business Rules', 'Branches & Gates', 'Users', 'Roles', 'Audit Trail'] as const;
 type Tab = (typeof TABS)[number];
@@ -205,20 +206,20 @@ function BranchesTab() {
               <div className="flex items-center gap-2">
                 <StatusBadge status={b.status} />
                 {can('branches.manage') ? (
-                  <>
-                    <button className="text-sm font-bold text-brand" onClick={() => setBranchModal({ id: b.id })}>
-                      Edit
-                    </button>
-                    <button
-                      className="text-sm font-bold text-muted hover:text-danger"
-                      onClick={() => {
-                        if (confirm(`Delete branch "${b.name}"? Gates and sessions must be removed first.`))
-                          removeBranch.mutate(b.id);
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </>
+                  <RowActions
+                    items={[
+                      { label: 'Edit', icon: Pencil, onClick: () => setBranchModal({ id: b.id }) },
+                      {
+                        label: 'Delete',
+                        icon: Trash2,
+                        tone: 'danger' as const,
+                        onClick: () => {
+                          if (confirm(`Delete branch "${b.name}"? Gates and sessions must be removed first.`))
+                            removeBranch.mutate(b.id);
+                        },
+                      },
+                    ]}
+                  />
                 ) : null}
               </div>
             </div>
@@ -443,19 +444,19 @@ function UsersTab() {
                 </td>
                 <td className="text-right">
                   {can('users.manage') ? (
-                    <div className="flex justify-end gap-2">
-                      <button className="text-sm font-bold text-brand" onClick={() => setEditing(u)}>
-                        Edit
-                      </button>
-                      <button
-                        className="text-sm font-bold text-muted hover:text-danger"
-                        onClick={() => {
-                          if (confirm(`Delete staff user "${u.name}"?`)) remove.mutate(u.id);
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </div>
+                    <RowActions
+                      items={[
+                        { label: 'Edit', icon: Pencil, onClick: () => setEditing(u) },
+                        {
+                          label: 'Delete',
+                          icon: Trash2,
+                          tone: 'danger' as const,
+                          onClick: () => {
+                            if (confirm(`Delete staff user "${u.name}"?`)) remove.mutate(u.id);
+                          },
+                        },
+                      ]}
+                    />
                   ) : null}
                 </td>
               </tr>

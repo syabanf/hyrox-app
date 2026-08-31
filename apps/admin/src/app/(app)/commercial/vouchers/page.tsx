@@ -6,7 +6,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, Modal, PageTitle, Pager, SearchSelect, StatCard } from '../../../../components/ui';
+import { Ban, CalendarClock, CircleSlash, Pencil, Play, Trash2 } from 'lucide-react';
+import { ErrorNote, Modal, PageTitle, Pager, RowActions, SearchSelect, StatCard } from '../../../../components/ui';
 
 const NEXT_ACTIONS: Partial<Record<VoucherStatus, VoucherStatus[]>> = {
   DRAFT: ['ACTIVE', 'SCHEDULED', 'DISABLED'],
@@ -118,32 +119,25 @@ export default function VouchersPage() {
                   </td>
                   <td className="text-right">
                     {can('vouchers.manage') ? (
-                      <div className="flex justify-end gap-2">
-                        <button
-                          className="text-xs font-bold text-brand"
-                          onClick={() => setEditTarget(v)}
-                        >
-                          Edit
-                        </button>
-                        {(NEXT_ACTIONS[v.status] ?? []).map((s) => (
-                          <button
-                            key={s}
-                            className="text-xs font-bold text-muted hover:text-brand"
-                            onClick={() => setStatus.mutate({ id: v.id, status: s })}
-                          >
-                            → {s}
-                          </button>
-                        ))}
-                        <button
-                          className="text-xs font-bold text-muted hover:text-danger"
-                          onClick={() => {
-                            if (confirm(`Delete voucher ${v.code}? Only possible while unredeemed.`))
-                              remove.mutate(v.id);
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </div>
+                      <RowActions
+                        items={[
+                          { label: 'Edit', icon: Pencil, onClick: () => setEditTarget(v) },
+                          ...(NEXT_ACTIONS[v.status] ?? []).map((next) => ({
+                            label: { ACTIVE: 'Activate', DISABLED: 'Disable', SCHEDULED: 'Schedule', EXPIRED: 'Expire', DRAFT: 'Back to draft' }[next] ?? next,
+                            icon: { ACTIVE: Play, DISABLED: Ban, SCHEDULED: CalendarClock, EXPIRED: CircleSlash, DRAFT: Pencil }[next],
+                            onClick: () => setStatus.mutate({ id: v.id, status: next }),
+                          })),
+                          {
+                            label: 'Delete',
+                            icon: Trash2,
+                            tone: 'danger' as const,
+                            onClick: () => {
+                              if (confirm(`Delete voucher ${v.code}? Only possible while unredeemed.`))
+                                remove.mutate(v.id);
+                            },
+                          },
+                        ]}
+                      />
                     ) : null}
                   </td>
                 </tr>

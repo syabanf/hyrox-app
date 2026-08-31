@@ -6,7 +6,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, Modal, PageTitle, SearchSelect, StatCard } from '../../../../components/ui';
+import { Pencil, Trash2 } from 'lucide-react';
+import { ErrorNote, Modal, PageTitle, RowActions, SearchSelect, StatCard } from '../../../../components/ui';
 
 export default function CoachesPage() {
   const qc = useQueryClient();
@@ -73,19 +74,19 @@ export default function CoachesPage() {
                 {(branches ?? []).find((b) => b.id === c.branchId)?.name ?? c.branchId}
               </p>
               {can('coaches.manage') ? (
-                <div className="flex gap-2">
-                  <button className="text-sm font-bold text-brand" onClick={() => setEditing(c)}>
-                    Edit
-                  </button>
-                  <button
-                    className="text-sm font-bold text-muted hover:text-danger"
-                    onClick={() => {
-                      if (confirm(`Delete coach "${c.name}"?`)) remove.mutate(c.id);
-                    }}
-                  >
-                    Delete
-                  </button>
-                </div>
+                <RowActions
+                  items={[
+                    { label: 'Edit', icon: Pencil, onClick: () => setEditing(c) },
+                    {
+                      label: 'Delete',
+                      icon: Trash2,
+                      tone: 'danger' as const,
+                      onClick: () => {
+                        if (confirm(`Delete coach "${c.name}"?`)) remove.mutate(c.id);
+                      },
+                    },
+                  ]}
+                />
               ) : null}
             </div>
           </div>

@@ -44,29 +44,33 @@ export function HomePage() {
         <p className="display text-3xl leading-tight">{me.member.fullName.split(' ')[0]}</p>
       </div>
 
-      {/* Credit balance card */}
-      <Link to="/wallet" className="card surface-brand relative block overflow-hidden !border-0">
-        <div className="pointer-events-none absolute -right-10 -top-14 h-44 w-44 rounded-full bg-white/10" />
-        <div className="pointer-events-none absolute -bottom-20 right-14 h-40 w-40 rounded-full bg-black/10" />
-        <div className="relative flex items-center justify-between text-white">
+      {/* Credit balance — premium "black card" */}
+      <Link to="/wallet" className="card surface-ink relative block overflow-hidden !border-0 !p-6 text-white">
+        <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-28 -left-10 h-48 w-48 rounded-full bg-white/[0.04] blur-2xl" />
+        <div className="relative flex items-start justify-between">
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] opacity-80">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/50">
               {t('Credit balance')}
             </p>
-            <p className="display text-6xl leading-none">{me.balance}</p>
+            <p className="display mt-1 text-7xl leading-none">{me.balance}</p>
           </div>
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15">
-            <QrCode size={26} />
+          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10">
+            <QrCode size={22} className="text-white/80" />
           </span>
         </div>
-        {me.expiringCredits > 0 ? (
-          <p className="mt-2 rounded-lg bg-black/25 px-3 py-1.5 text-xs font-bold text-white">
-            {me.expiringCredits} credit{me.expiringCredits === 1 ? '' : 's'} {t('expiring soon')}
-          </p>
-        ) : null}
-        {me.lowBalance ? (
-          <p className="mt-2 text-sm font-black uppercase text-white">{t('Low balance — top up now')}</p>
-        ) : null}
+        <div className="relative mt-5 flex items-center justify-between">
+          <p className="text-xs font-semibold text-white/45">{me.member.fullName}</p>
+          {me.lowBalance ? (
+            <span className="chip bg-brand text-white">{t('Top up')}</span>
+          ) : me.expiringCredits > 0 ? (
+            <span className="chip bg-white/10 text-white/80">
+              {me.expiringCredits} {t('expiring soon')}
+            </span>
+          ) : (
+            <span className="chip bg-white/10 text-white/70">{t('Wallet')}</span>
+          )}
+        </div>
       </Link>
 
       {/* Quick actions */}
@@ -77,11 +81,11 @@ export function HomePage() {
           { to: '/workout', icon: Dumbbell, label: t('Generate workout') },
           { to: '/races', icon: Flag, label: t('Races') },
         ].map(({ to, icon: Icon, label }) => (
-          <Link key={to} to={to} className="card flex items-center gap-3 !p-3.5 active:scale-[0.98]">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand/10 text-brand">
-              <Icon size={22} />
+          <Link key={to} to={to} className="card flex items-center gap-3 !p-4 active:scale-[0.98]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-raised text-ink/70">
+              <Icon size={19} strokeWidth={2.2} />
             </span>
-            <span className="text-sm font-extrabold leading-tight">{label}</span>
+            <span className="text-sm font-bold leading-tight">{label}</span>
           </Link>
         ))}
       </div>
@@ -102,25 +106,23 @@ export function HomePage() {
           ) : (
             <div className="surface-brand h-52 w-full" />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/10" />
-          <div className="absolute inset-x-0 bottom-0 p-5">
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand" style={{ color: '#ff5a5f' }}>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/5" />
+          <div className="absolute inset-x-0 bottom-0 p-6">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/60">
               {home.spotlightRace.joined ? t('Race day') : t('Next race near you')} ·{' '}
               {formatDay(home.spotlightRace.startsAt)}
             </p>
-            <p className="display text-3xl leading-tight">{home.spotlightRace.name}</p>
-            <div className="mt-2 flex items-center gap-2">
-              <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-extrabold backdrop-blur">
+            <p className="display mt-0.5 text-3xl leading-tight">{home.spotlightRace.name}</p>
+            <div className="mt-3 flex items-center gap-2">
+              <span className="chip bg-white/15 text-white backdrop-blur">
                 {home.spotlightRace.daysToRace} {t('days away')}
               </span>
               {home.spotlightRace.joined && home.spotlightRace.goalSec ? (
-                <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-extrabold backdrop-blur">
+                <span className="chip bg-white/15 text-white backdrop-blur">
                   {t('Goal')} {formatDuration(home.spotlightRace.goalSec)}
                 </span>
               ) : !home.spotlightRace.joined ? (
-                <span className="rounded-full bg-brand px-3 py-1 text-xs font-extrabold">
-                  {t('Add to my races')}
-                </span>
+                <span className="chip bg-brand text-white">{t('Add to my races')}</span>
               ) : null}
             </div>
           </div>
@@ -136,23 +138,22 @@ export function HomePage() {
               <Link
                 key={p.voucherId}
                 to={`/wallet/topup?voucher=${encodeURIComponent(p.code)}`}
-                className="card surface-brand min-w-64 shrink-0 snap-start !border-0 text-white"
+                className="card surface-ink relative min-w-64 shrink-0 snap-start overflow-hidden !border-0 text-white"
               >
-                <div className="flex items-start justify-between gap-2">
+                <div className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full bg-brand/20 blur-3xl" />
+                <div className="relative flex items-start justify-between gap-2">
                   <p className="display text-3xl leading-none">{p.label}</p>
-                  <span className="rounded-full bg-black/25 px-2.5 py-1 font-mono text-xs font-black tracking-wider">
+                  <span className="rounded-full bg-white/10 px-2.5 py-1 font-mono text-[11px] font-bold tracking-wider text-white/80">
                     {p.code}
                   </span>
                 </div>
-                <p className="mt-2 text-sm font-bold opacity-90">{p.description}</p>
-                <div className="mt-2 flex items-center justify-between text-xs font-bold">
-                  <span className="opacity-80">
+                <p className="relative mt-2 text-sm font-medium text-white/60">{p.description}</p>
+                <div className="relative mt-4 flex items-center justify-between text-xs">
+                  <span className="font-semibold text-white/40">
                     {t('Until')} {formatDay(p.endsAt)}
                     {p.newMembersOnly ? ` · ${t('new members')}` : ''}
                   </span>
-                  <span className="rounded-lg bg-white px-2.5 py-1 font-black uppercase text-brand">
-                    {t('Use it')}
-                  </span>
+                  <span className="chip bg-brand text-white">{t('Use it')}</span>
                 </div>
               </Link>
             ))}
@@ -195,8 +196,8 @@ export function HomePage() {
           <SectionHeader
             label={home.railDay === 'TODAY' ? t('Today at the studio') : t('Tomorrow at the studio')}
             action={
-              <Link to="/classes" className="text-xs font-extrabold text-brand">
-                {t('Schedule')}
+              <Link to="/classes" className="text-xs font-bold text-ink/50">
+                {t('Schedule')} →
               </Link>
             }
           />
@@ -225,8 +226,8 @@ export function HomePage() {
                       {v.branchName} · {v.coachName}
                     </p>
                     <p
-                      className={`mt-1.5 text-xs font-extrabold ${
-                        v.myBooking ? 'text-ok' : v.spotsLeft > 0 ? 'text-brand' : 'text-warn'
+                      className={`mt-1.5 text-xs font-bold ${
+                        v.myBooking ? 'text-ok' : v.spotsLeft > 0 ? 'text-muted' : 'text-warn'
                       }`}
                     >
                       {v.myBooking ? t('Booked') : v.spotsLeft > 0 ? `${v.spotsLeft} ${t('left')}` : t('Full · WL')}
@@ -241,11 +242,13 @@ export function HomePage() {
 
       {/* Challenge progress */}
       {home?.challenge ? (
-        <Link to="/train/explore" className="card flex items-center gap-4 !py-3">
-          <Trophy size={26} className="shrink-0 text-brand" />
+        <Link to="/train/explore" className="card flex items-center gap-4 !py-4">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-raised text-ink/70">
+            <Trophy size={19} strokeWidth={2.2} />
+          </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-black">{home.challenge.name}</p>
-            <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface-raised">
+            <p className="truncate text-sm font-bold">{home.challenge.name}</p>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-raised">
               <div
                 className="h-full rounded-full bg-brand"
                 style={{
@@ -254,9 +257,9 @@ export function HomePage() {
               />
             </div>
           </div>
-          <p className="shrink-0 text-right text-xs font-black">
+          <p className="shrink-0 text-right text-xs font-bold">
             {home.challenge.progressKm.toFixed(1)}
-            <span className="text-muted"> / {home.challenge.targetKm} km</span>
+            <span className="font-semibold text-muted"> / {home.challenge.targetKm} km</span>
           </p>
         </Link>
       ) : null}
@@ -266,8 +269,8 @@ export function HomePage() {
         <SectionHeader
           label={t('Upcoming')}
           action={
-            <Link to="/bookings" className="text-xs font-extrabold text-brand">
-              {t('All bookings')}
+            <Link to="/bookings" className="text-xs font-bold text-ink/50">
+              {t('All bookings')} →
             </Link>
           }
         />
@@ -293,8 +296,10 @@ export function HomePage() {
                   </p>
                 </div>
                 <span
-                  className={`shrink-0 text-xs font-extrabold ${
-                    b.booking.status === 'CONFIRMED' ? 'text-ok' : 'text-warn'
+                  className={`chip shrink-0 ${
+                    b.booking.status === 'CONFIRMED'
+                      ? 'bg-ok/10 text-ok'
+                      : 'bg-warn/10 text-warn'
                   }`}
                 >
                   {b.booking.status === 'WAITLIST' ? `WL #${b.booking.waitlistPosition}` : t('Booked')}

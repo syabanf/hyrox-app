@@ -28,7 +28,7 @@ body {
 }
 
 .btn-brand {
-  @apply bg-brand text-white font-extrabold rounded-2xl px-5 py-3.5 text-center transition active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none shadow-[0_8px_20px_rgb(237_28_36/0.28)];
+  @apply bg-brand text-white font-extrabold rounded-2xl px-5 py-3.5 text-center transition active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none shadow-[0_10px_24px_rgb(237_28_36/0.2)];
 }
 .btn-ghost {
   @apply bg-surface-raised text-ink font-bold rounded-2xl px-5 py-3.5 text-center transition active:scale-[0.97] disabled:opacity-40;
@@ -40,9 +40,19 @@ body {
   color: #c4161c;
 }
 
-/* Soft elevated cards: hairline border + layered shadow instead of hard lines. */
+/* Soft elevated cards: hairline border + whisper-quiet layered shadow. */
 .card {
-  @apply bg-surface rounded-3xl border border-black/[0.04] p-4 shadow-[0_2px_4px_rgb(0_0_0/0.03),0_12px_28px_rgb(0_0_0/0.05)];
+  @apply bg-surface rounded-3xl border border-black/[0.03] p-5 shadow-[0_1px_2px_rgb(17_17_20/0.03),0_10px_30px_rgb(17_17_20/0.04)];
+}
+
+/* Premium dark surface — the "black card" look. */
+.surface-ink {
+  background: linear-gradient(150deg, #2a2a30 0%, #17171b 55%, #0d0d10 100%);
+}
+
+/* Small status/info pill. */
+.chip {
+  @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold;
 }
 
 /* Filled inputs, border appears only on focus. */
@@ -53,7 +63,7 @@ body {
   @apply block text-[11px] font-extrabold uppercase tracking-[0.12em] text-muted mb-1.5;
 }
 
-/* Gradient hero/promo surfaces. */
+/* Refined brand gradient (kept for accents like the QR nav button). */
 .surface-brand {
-  background: linear-gradient(135deg, #ff383f 0%, #ed1c24 45%, #b30d13 100%);
+  background: linear-gradient(140deg, #f5333a 0%, #d5121a 55%, #8f0a10 100%);
 }

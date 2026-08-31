@@ -21,10 +21,10 @@ export function WalletPage() {
     <div className="flex flex-col gap-4">
       <h1 className="display text-2xl font-black">Wallet</h1>
 
-      <div className="card surface-brand relative overflow-hidden !border-0 text-white">
-        <div className="pointer-events-none absolute -right-10 -top-14 h-44 w-44 rounded-full bg-white/10" />
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] opacity-80">Credit balance</p>
-        <p className="display text-6xl leading-none">{wallet.balance}</p>
+      <div className="card surface-ink relative overflow-hidden !border-0 !p-6 text-white">
+        <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
+        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/50">Credit balance</p>
+        <p className="display mt-1 text-7xl leading-none">{wallet.balance}</p>
         {wallet.expiringCredits > 0 ? (
           <p className="mt-2 rounded-lg bg-black/25 px-3 py-1.5 text-xs font-bold">
             {wallet.expiringCredits} expiring within the reminder window

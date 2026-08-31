@@ -1,4 +1,4 @@
-import { Activity, Bell, CalendarDays, Home, QrCode, User } from 'lucide-react';
+import { Activity, Bell, CalendarDays, Home, QrCode, Search, User } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation, Navigate } from 'react-router';
 import { useAuthStore } from '../lib/auth';
@@ -28,24 +28,47 @@ export function AppLayout() {
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col">
       <OfflineBanner />
-      <header className="flex items-center justify-between px-5 pt-5 pb-3">
-        <Link to="/" className="display text-xl font-black">
-          HYROX<span className="text-brand">STUDIO</span>
-        </Link>
+      <header className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto flex max-w-md items-center justify-between bg-gradient-to-b from-[#f6f6f2] via-[#f6f6f2]/75 to-transparent px-5 pb-4 pt-[max(env(safe-area-inset-top),1.1rem)] [&_a]:pointer-events-auto">
+        <div className="flex items-center gap-2.5">
+          <Link
+            to="/profile"
+            aria-label="Profile"
+            className="block h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[#1b1b1f] shadow-[0_4px_14px_rgb(17_17_20/0.18)]"
+          >
+            {me?.member.avatarUrl ? (
+              <img src={me.member.avatarUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <span className="flex h-full w-full items-center justify-center text-sm font-black text-white">
+                {me?.member.fullName
+                  .split(' ')
+                  .slice(0, 2)
+                  .map((p) => p[0])
+                  .join('') ?? ''}
+              </span>
+            )}
+          </Link>
+          <Link
+            to="/train/explore"
+            aria-label="Explore"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1b1b1f] text-white shadow-[0_4px_14px_rgb(17_17_20/0.18)]"
+          >
+            <Search size={17} strokeWidth={2.4} />
+          </Link>
+        </div>
         <Link
           to="/notifications"
-          className="relative rounded-full border border-line bg-surface p-2.5"
+          className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[#1b1b1f] text-white shadow-[0_4px_14px_rgb(17_17_20/0.18)]"
           aria-label="Notifications"
         >
-          <Bell size={18} />
+          <Bell size={17} strokeWidth={2.4} />
           {me && me.unreadNotifications > 0 ? (
-            <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-black text-white">
+            <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand px-1 text-[10px] font-black text-white ring-2 ring-[#f6f6f2]">
               {me.unreadNotifications}
             </span>
           ) : null}
         </Link>
       </header>
-      <main className="flex-1 px-5 pt-1 pb-28">
+      <main className="flex-1 px-5 pb-28 pt-[4.75rem]">
         <Outlet />
       </main>
       <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-md px-5 pb-[max(env(safe-area-inset-bottom),1.25rem)]">

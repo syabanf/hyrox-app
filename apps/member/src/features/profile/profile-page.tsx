@@ -1,5 +1,5 @@
 import { Spinner, StatusBadge, formatDay } from '@hyrox/ui';
-import { Camera, ChevronRight, HeartPulse, LogOut, Settings, Wallet } from 'lucide-react';
+import { Camera, ChevronRight, Footprints, HeartPulse, LogOut, Settings, Wallet } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { api } from '../../lib/api';
@@ -133,6 +133,7 @@ export function ProfilePage() {
               ? `${m.emergencyContact.name} · ${m.emergencyContact.phone}`
               : 'Not set — add one',
           },
+          { to: '/profile/gear', icon: Footprints, title: 'My gear', hint: 'Shoes & bike mileage' },
           { to: '/profile/settings', icon: Settings, title: 'Settings', hint: 'Units, reminders' },
         ].map(({ to, icon: Icon, title, hint }) => (
           <Link key={to} to={to} className="flex items-center gap-3 rounded-xl px-2 py-2.5 active:bg-surface-raised">

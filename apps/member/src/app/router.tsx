@@ -8,6 +8,7 @@ import { SessionDetailPage } from '../features/classes/session-detail-page';
 import { HomePage } from '../features/home/home-page';
 import { NotificationsPage } from '../features/notifications/notifications-page';
 import { EmergencyContactPage } from '../features/profile/emergency-page';
+import { GearPage } from '../features/profile/gear-page';
 import { ProfilePage } from '../features/profile/profile-page';
 import { SettingsPage } from '../features/profile/settings-page';
 import { QrPage } from '../features/qr/qr-page';
@@ -50,6 +51,7 @@ export const router = createBrowserRouter([
       { path: '/profile', element: <ProfilePage /> },
       { path: '/profile/settings', element: <SettingsPage /> },
       { path: '/profile/emergency', element: <EmergencyContactPage /> },
+      { path: '/profile/gear', element: <GearPage /> },
       { path: '/train', element: <FeedPage /> },
       { path: '/train/record', element: <RecordPage /> },
       { path: '/train/you', element: <YouPage /> },

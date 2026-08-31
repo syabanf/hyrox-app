@@ -55,6 +55,7 @@ import type {
   CreateBranchInput,
   GenerateWorkoutInput,
   HeatmapView,
+  HomeView,
   MyRaceView,
   RaceEventView,
   RegisterRaceInput,
@@ -170,6 +171,7 @@ export function createApiClient(options: ApiClientOptions) {
     },
     me: {
       get: () => get<MeView>('/api/me'),
+      home: () => get<HomeView>('/api/home'),
       update: (input: UpdateProfileInput) => patch<Member>('/api/me', input),
       wallet: () => get<WalletView>('/api/me/wallet'),
       topUp: (input: TopUpRequest) => post<TopUpView>('/api/me/topup', input),

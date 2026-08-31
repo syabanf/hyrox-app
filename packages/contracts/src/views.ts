@@ -225,6 +225,34 @@ export interface SegmentPreviewView {
   sample: string[];
 }
 
+// ── Member home feed ────────────────────────────────────────────────────────
+export interface AnnouncementView {
+  id: string;
+  title: string;
+  message: string;
+  deepLink: string | null;
+  createdAt: string;
+}
+
+export interface PromoView {
+  voucherId: string;
+  code: string;
+  /** Human label of the discount, e.g. "10% OFF" or "Rp100.000 OFF". */
+  label: string;
+  description: string;
+  endsAt: string;
+  newMembersOnly: boolean;
+}
+
+export interface HomeView {
+  announcements: AnnouncementView[];
+  promos: PromoView[];
+  /** Today's remaining bookable classes, or tomorrow's once today is over. */
+  railDay: 'TODAY' | 'TOMORROW';
+  todaySessions: SessionView[];
+  challenge: { id: string; name: string; progressKm: number; targetKm: number } | null;
+}
+
 // ── Config ──────────────────────────────────────────────────────────────────
 export interface RulesView {
   defaults: BusinessRules;

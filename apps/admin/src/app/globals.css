@@ -21,9 +21,9 @@ body {
 
 .display {
   font-family: var(--font-display);
-  font-weight: 400; /* Anton ships one heavy weight */
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  font-weight: 850;
+  font-stretch: 110%;
+  letter-spacing: -0.02em;
 }
 
 /* WIT Red is a background/accent color; as TEXT on light surfaces it uses a

@@ -32,6 +32,45 @@ export async function parseBody<S extends z.ZodType>(
   return { ok: true, data: parsed.data };
 }
 
+/**
+ * PATCH-safe parsing: `schema.partial()` still applies `.default()` values in
+ * zod, which would clobber unrelated fields. Validate with the partial schema,
+ * then keep only the keys the caller actually sent.
+ */
+export async function parsePatch<S extends z.ZodObject<z.ZodRawShape>>(
+  request: Request,
+  schema: S,
+): Promise<
+  { ok: true; data: Partial<z.infer<S>> } | { ok: false; response: Response }
+> {
+  let raw: unknown;
+  try {
+    raw = await request.json();
+  } catch {
+    return { ok: false, response: jsonError(400, 'INVALID_JSON', 'Body must be JSON.') };
+  }
+  if (typeof raw !== 'object' || raw === null) {
+    return { ok: false, response: jsonError(400, 'VALIDATION_ERROR', 'Body must be an object.') };
+  }
+  const parsed = schema.partial().safeParse(raw);
+  if (!parsed.success) {
+    const first = parsed.error.issues[0];
+    return {
+      ok: false,
+      response: jsonError(
+        400,
+        'VALIDATION_ERROR',
+        first ? `${first.path.join('.') || 'body'}: ${first.message}` : 'Invalid request body.',
+      ),
+    };
+  }
+  const sentKeys = new Set(Object.keys(raw));
+  const data = Object.fromEntries(
+    Object.entries(parsed.data as Record<string, unknown>).filter(([key]) => sentKeys.has(key)),
+  ) as Partial<z.infer<S>>;
+  return { ok: true, data };
+}
+
 const bearerToken = (request: Request): string | null => {
   const header = request.headers.get('authorization');
   if (!header?.startsWith('Bearer ')) return null;

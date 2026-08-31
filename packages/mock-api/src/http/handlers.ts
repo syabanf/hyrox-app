@@ -62,6 +62,7 @@ import {
   SESSION_TRANSITIONS,
   VOUCHER_TRANSITIONS,
   canTransition,
+  challengeProgressKm,
   msOf,
   qrSecondsRemaining,
 } from '@hyrox/domain';
@@ -79,6 +80,7 @@ import {
   jsonError,
   memberFromRequest,
   parseBody,
+  parsePatch,
   requireAdmin,
   requireMember,
 } from './helpers';
@@ -176,6 +178,90 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
       const res = updateProfile(deps(), auth.value.id, body.data);
       if (!res.ok) return fromAppError(res.error);
       return HttpResponse.json(res.value);
+    }),
+
+    // Member home feed: announcements (sent broadcasts), promos (live
+    // vouchers), today's bookable classes, and the member's challenge progress.
+    http.get('*/api/home', ({ request }) => {
+      const auth = requireMember(db(), request);
+      if (!auth.ok) return auth.response;
+      const me = auth.value.id;
+      const now = deps().clock.now();
+
+      const announcements = db()
+        .campaigns.filter((c) => c.status === 'SENT')
+        .sort((a, b) => msOf(b.createdAt) - msOf(a.createdAt))
+        .slice(0, 5)
+        .map((c) => ({
+          id: c.id,
+          title: c.name,
+          message: c.message,
+          deepLink: c.deepLink,
+          createdAt: c.createdAt,
+        }));
+
+      const promos = db()
+        .vouchers.filter(
+          (v) => v.status === 'ACTIVE' && msOf(v.startsAt) <= msOf(now) && msOf(v.endsAt) >= msOf(now),
+        )
+        .map((v) => ({
+          voucherId: v.id,
+          code: v.code,
+          label: v.type === 'PERCENT' ? `${v.value}% OFF` : `Rp${v.value.toLocaleString('id-ID')} OFF`,
+          description:
+            v.applicablePackageIds === null
+              ? 'Valid on every credit package'
+              : `Valid on ${v.applicablePackageIds
+                  .map((id) => db().packages.find((p) => p.id === id)?.name ?? id)
+                  .join(' & ')}`,
+          endsAt: v.endsAt,
+          newMembersOnly: v.eligibleSegment === 'NEW_MEMBERS',
+        }));
+
+      const bookableOn = (day: Date) =>
+        db()
+          .sessions.filter((s) => {
+            const d = new Date(s.startsAt);
+            return (
+              d.toDateString() === day.toDateString() &&
+              (s.status === 'PUBLISHED' || s.status === 'FULL') &&
+              msOf(s.endsAt) > msOf(now)
+            );
+          })
+          .sort((a, b) => msOf(a.startsAt) - msOf(b.startsAt))
+          .slice(0, 10)
+          .map((s) => sessionView(db(), s, me));
+
+      const today = new Date(now);
+      let railDay: 'TODAY' | 'TOMORROW' = 'TODAY';
+      let todaySessions = bookableOn(today);
+      if (todaySessions.length === 0) {
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        todaySessions = bookableOn(tomorrow);
+        railDay = 'TOMORROW';
+      }
+
+      const joined = db()
+        .challenges.filter((c) => deps().athlete.challenges.isJoined(c.id, me))
+        .map((c) => ({
+          id: c.id,
+          name: c.name,
+          targetKm: c.targetKm,
+          progressKm: challengeProgressKm(
+            c,
+            db().activities.filter((a) => a.memberId === me),
+          ),
+        }))
+        .sort((a, b) => b.progressKm / b.targetKm - a.progressKm / a.targetKm);
+
+      return HttpResponse.json({
+        announcements,
+        promos,
+        railDay,
+        todaySessions,
+        challenge: joined[0] ?? null,
+      });
     }),
 
     http.get('*/api/me/wallet', ({ request }) => {
@@ -490,7 +576,7 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
     http.patch('*/api/admin/class-types/:id', async ({ request, params }) => {
       const auth = requireAdmin(db(), request, 'class_types.manage');
       if (!auth.ok) return auth.response;
-      const body = await parseBody(request, UpsertClassTypeSchema.partial());
+      const body = await parsePatch(request, UpsertClassTypeSchema);
       if (!body.ok) return body.response;
       const classType = deps().classTypes.byId(param(params, 'id'));
       if (!classType) return jsonError(404, 'NOT_FOUND', 'Class type not found.');
@@ -662,7 +748,7 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
     http.patch('*/api/admin/coaches/:id', async ({ request, params }) => {
       const auth = requireAdmin(db(), request, 'coaches.manage');
       if (!auth.ok) return auth.response;
-      const body = await parseBody(request, UpsertCoachSchema.partial());
+      const body = await parsePatch(request, UpsertCoachSchema);
       if (!body.ok) return body.response;
       const coach = deps().coaches.byId(param(params, 'id'));
       if (!coach) return jsonError(404, 'NOT_FOUND', 'Coach not found.');
@@ -730,7 +816,7 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
     http.patch('*/api/admin/packages/:id', async ({ request, params }) => {
       const auth = requireAdmin(db(), request, 'packages.manage');
       if (!auth.ok) return auth.response;
-      const body = await parseBody(request, UpsertPackageSchema.partial());
+      const body = await parsePatch(request, UpsertPackageSchema);
       if (!body.ok) return body.response;
       const pkg = deps().packages.byId(param(params, 'id'));
       if (!pkg) return jsonError(404, 'NOT_FOUND', 'Package not found.');
@@ -786,7 +872,7 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
     http.patch('*/api/admin/vouchers/:id', async ({ request, params }) => {
       const auth = requireAdmin(db(), request, 'vouchers.manage');
       if (!auth.ok) return auth.response;
-      const body = await parseBody(request, UpsertVoucherSchema.partial());
+      const body = await parsePatch(request, UpsertVoucherSchema);
       if (!body.ok) return body.response;
       const voucher = deps().vouchers.byId(param(params, 'id'));
       if (!voucher) return jsonError(404, 'NOT_FOUND', 'Voucher not found.');
@@ -982,7 +1068,7 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
     http.patch('*/api/admin/gates/:id', async ({ request, params }) => {
       const auth = requireAdmin(db(), request, 'gates.manage');
       if (!auth.ok) return auth.response;
-      const body = await parseBody(request, UpsertGateSchema.partial());
+      const body = await parsePatch(request, UpsertGateSchema);
       if (!body.ok) return body.response;
       const gate = deps().gates.byId(param(params, 'id'));
       if (!gate) return jsonError(404, 'NOT_FOUND', 'Gate not found.');
@@ -1004,7 +1090,7 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
     http.patch('*/api/admin/users/:id', async ({ request, params }) => {
       const auth = requireAdmin(db(), request, 'users.manage');
       if (!auth.ok) return auth.response;
-      const body = await parseBody(request, UpsertAdminUserSchema.partial());
+      const body = await parsePatch(request, UpsertAdminUserSchema);
       if (!body.ok) return body.response;
       const user = deps().adminUsers.byId(param(params, 'id'));
       if (!user) return jsonError(404, 'NOT_FOUND', 'User not found.');

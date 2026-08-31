@@ -13,8 +13,8 @@
   --color-danger: #ff4d4f;
   --color-info: #4dabf7;
 
-  --font-display: 'Anton', 'Arial Narrow', ui-sans-serif, sans-serif;
-  --font-body: 'Barlow', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Archivo', 'Arial Narrow', ui-sans-serif, sans-serif;
+  --font-body: 'Manrope', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   --radius-card: 1rem;
 }

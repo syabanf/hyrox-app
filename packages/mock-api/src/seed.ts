@@ -694,7 +694,7 @@ export function createSeedDb(nowIso: string): MockDb {
   db.campaigns.push(
     {
       id: 'cmp_1',
-      name: 'Race season promo',
+      name: 'Race season is here',
       segment: 'ALL_ACTIVE',
       customFilter: null,
       message: 'Book your HYROX Full Simulation this weekend — limited slots!',
@@ -715,6 +715,43 @@ export function createSeedDb(nowIso: string): MockDb {
       status: 'DRAFT',
       sentCount: null,
       createdAt: daysAgo(1),
+    },
+    {
+      id: 'cmp_3',
+      name: 'New: Mobility & Recovery hour',
+      segment: 'ALL_ACTIVE',
+      customFilter: null,
+      message:
+        'Every Wednesday 12:00 at Senopati — undo your sled-push sins. First session is on us.',
+      deepLink: '/classes',
+      scheduledAt: null,
+      status: 'SENT',
+      sentCount: 26,
+      createdAt: daysAgo(3),
+    },
+    {
+      id: 'cmp_4',
+      name: 'Holiday opening hours',
+      segment: 'ALL_ACTIVE',
+      customFilter: null,
+      message: 'Both branches open 08:00–18:00 on the public holiday next Monday.',
+      deepLink: null,
+      scheduledAt: null,
+      status: 'SENT',
+      sentCount: 26,
+      createdAt: daysAgo(1, 9),
+    },
+    {
+      id: 'cmp_5',
+      name: 'Coach Livia joins Senopati',
+      segment: 'ALL_ACTIVE',
+      customFilter: null,
+      message: 'Endurance specialist Livia Chandra now coaches Tuesday Engine sessions.',
+      deepLink: '/classes',
+      scheduledAt: null,
+      status: 'SENT',
+      sentCount: 26,
+      createdAt: daysAgo(9),
     },
   );
 

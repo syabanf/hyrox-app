@@ -362,4 +362,25 @@ describe('Member kecil-kecil', () => {
     const res = await call('PUT', '/api/me/settings', { token: demo, body: { language: 'ID' } });
     expect(res.data.language).toBe('ID');
   });
+
+  it('home feed serves announcements, promos, today sessions and challenge progress', async () => {
+    const res = await call('GET', '/api/home', { token: demo });
+    expect(res.status).toBe(200);
+    // Announcements come from SENT broadcasts only, newest first.
+    expect(res.data.announcements.length).toBeGreaterThanOrEqual(3);
+    expect(res.data.announcements.some((a: any) => a.title === 'Holiday opening hours')).toBe(true);
+    // Promos come from live ACTIVE vouchers with a readable discount label.
+    const welcome = res.data.promos.find((p: any) => p.code === 'WELCOME10');
+    expect(welcome.label).toBe('10% OFF');
+    expect(welcome.newMembersOnly).toBe(true);
+    const hyrox100 = res.data.promos.find((p: any) => p.code === 'HYROX100');
+    expect(hyrox100.description).toContain('10 Visit Pack');
+    // Scheduled/expired/disabled vouchers never show as promos.
+    expect(res.data.promos.some((p: any) => p.code === 'EARLYBIRD')).toBe(false);
+    expect(res.data.promos.some((p: any) => p.code === 'FLASHSALE')).toBe(false);
+    // Challenge card reflects the member's joined challenge.
+    expect(res.data.challenge).not.toBeNull();
+    expect(res.data.challenge.progressKm).toBeGreaterThan(0);
+    expect(Array.isArray(res.data.todaySessions)).toBe(true);
+  });
 });

@@ -2,34 +2,36 @@
 @import '@hyrox/ui/tokens.css';
 @source '../../../packages/ui/src';
 
-/* Member app defaults to LIGHT mode: light ground, WIT Red accents. */
+/* Member app: LIGHT mode, WIT Red accents, modern athletic look. */
 :root {
   color-scheme: light;
   --color-surface: #ffffff;
-  --color-surface-raised: #f4f4f1;
-  --color-line: #e4e4de;
+  --color-surface-raised: #f1f1ed;
+  --color-line: #e7e7e1;
   --color-muted: #6f6f76;
 }
 
 body {
   background: #f6f6f2;
-  color: #191919;
+  color: #17171a;
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
 }
 
+/* Modern athletic type: heavy, slightly expanded Archivo with tight tracking.
+   Sentence case — the markup decides the casing, not the CSS. */
 .display {
   font-family: var(--font-display);
-  font-weight: 400; /* Anton ships one heavy weight */
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  font-weight: 850;
+  font-stretch: 110%;
+  letter-spacing: -0.02em;
 }
 
 .btn-brand {
-  @apply bg-brand text-white font-extrabold uppercase tracking-wide rounded-xl px-5 py-3.5 text-center transition active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none;
+  @apply bg-brand text-white font-extrabold rounded-2xl px-5 py-3.5 text-center transition active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none shadow-[0_8px_20px_rgb(237_28_36/0.28)];
 }
 .btn-ghost {
-  @apply bg-surface text-ink font-bold rounded-xl px-5 py-3.5 text-center border border-line transition active:scale-[0.98] disabled:opacity-40;
+  @apply bg-surface-raised text-ink font-bold rounded-2xl px-5 py-3.5 text-center transition active:scale-[0.97] disabled:opacity-40;
 }
 
 /* WIT Red as TEXT on light surfaces uses a slightly darker ink for legibility;
@@ -37,12 +39,21 @@ body {
 .text-brand {
   color: #c4161c;
 }
+
+/* Soft elevated cards: hairline border + layered shadow instead of hard lines. */
 .card {
-  @apply bg-surface rounded-2xl border border-line p-4 shadow-[0_1px_2px_rgb(0_0_0/0.04)];
+  @apply bg-surface rounded-3xl border border-black/[0.04] p-4 shadow-[0_2px_4px_rgb(0_0_0/0.03),0_12px_28px_rgb(0_0_0/0.05)];
 }
+
+/* Filled inputs, border appears only on focus. */
 .input {
-  @apply w-full rounded-xl bg-surface border border-line px-4 py-3 text-ink placeholder:text-muted focus:outline-none focus:border-brand;
+  @apply w-full rounded-2xl bg-surface-raised border-2 border-transparent px-4 py-3 text-ink placeholder:text-muted focus:outline-none focus:border-brand focus:bg-surface;
 }
 .label {
-  @apply block text-xs font-bold uppercase tracking-wider text-muted mb-1.5;
+  @apply block text-[11px] font-extrabold uppercase tracking-[0.12em] text-muted mb-1.5;
+}
+
+/* Gradient hero/promo surfaces. */
+.surface-brand {
+  background: linear-gradient(135deg, #ff383f 0%, #ed1c24 45%, #b30d13 100%);
 }

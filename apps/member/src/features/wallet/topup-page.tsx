@@ -3,7 +3,7 @@ import type { PaymentChannel } from '@hyrox/domain';
 import { Spinner, formatIdr } from '@hyrox/ui';
 import { ArrowLeft, Check } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { api } from '../../lib/api';
 import { usePackages } from '../../lib/queries';
 
@@ -16,10 +16,14 @@ const CHANNELS: { id: PaymentChannel; label: string }[] = [
 
 export function TopUpPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { data: packages, isLoading } = usePackages();
   const [packageId, setPackageId] = useState('');
   const [channel, setChannel] = useState<PaymentChannel>('QRIS');
-  const [voucherCode, setVoucherCode] = useState('');
+  // Promo cards on Home deep-link here with the code prefilled.
+  const [voucherCode, setVoucherCode] = useState(
+    (searchParams.get('voucher') ?? '').toUpperCase(),
+  );
   const [voucherState, setVoucherState] = useState<
     { kind: 'idle' } | { kind: 'ok'; discountIdr: number } | { kind: 'err'; message: string }
   >({ kind: 'idle' });

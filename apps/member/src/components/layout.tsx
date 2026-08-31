@@ -45,11 +45,11 @@ export function AppLayout() {
           ) : null}
         </Link>
       </header>
-      <main className="flex-1 px-4 pb-28">
+      <main className="flex-1 px-4 pb-32">
         <Outlet />
       </main>
-      <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-md border-t border-line bg-white/95 backdrop-blur">
-        <div className="flex items-end justify-around px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2">
+      <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-md px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
+        <div className="flex items-end justify-around rounded-[1.75rem] border border-black/5 bg-white/90 px-2 pb-2 pt-2 shadow-[0_10px_36px_rgb(0_0_0/0.14)] backdrop-blur-xl">
           {NAV.map(({ to, label, icon: Icon, emphasized }) => (
             <NavLink
               key={to}
@@ -57,8 +57,8 @@ export function AppLayout() {
               end={to === '/'}
               className={({ isActive }) =>
                 emphasized
-                  ? 'flex -translate-y-3 flex-col items-center gap-1'
-                  : `flex flex-col items-center gap-1 px-3 py-1 text-[11px] font-bold uppercase tracking-wide ${
+                  ? 'flex -translate-y-4 flex-col items-center gap-1'
+                  : `flex flex-col items-center gap-0.5 px-2 py-1 text-[11px] font-bold ${
                       isActive ? 'text-brand' : 'text-muted'
                     }`
               }
@@ -67,19 +67,23 @@ export function AppLayout() {
                 emphasized ? (
                   <>
                     <span
-                      className={`flex h-14 w-14 items-center justify-center rounded-full border-4 border-white shadow-[0_2px_8px_rgb(0_0_0/0.12)] ${
-                        isActive ? 'bg-brand text-white' : 'bg-surface text-brand'
+                      className={`flex h-14 w-14 items-center justify-center rounded-[1.35rem] shadow-[0_8px_20px_rgb(237_28_36/0.35)] ${
+                        isActive ? 'surface-brand text-white' : 'bg-brand text-white'
                       }`}
                     >
                       <Icon size={26} strokeWidth={2.5} />
                     </span>
-                    <span className="text-[11px] font-bold uppercase tracking-wide text-muted">
-                      {t(label)}
-                    </span>
+                    <span className="text-[11px] font-bold text-muted">{t(label)}</span>
                   </>
                 ) : (
                   <>
-                    <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                    <span
+                      className={`flex h-9 w-9 items-center justify-center rounded-xl transition ${
+                        isActive ? 'bg-brand/10' : ''
+                      }`}
+                    >
+                      <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                    </span>
                     <span>{t(label)}</span>
                   </>
                 )

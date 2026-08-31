@@ -1,8 +1,44 @@
 import { ApiError } from '@hyrox/api-client';
+import { ArrowRight } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { api } from '../../lib/api';
 import { useAuthStore } from '../../lib/auth';
+
+/** Free Unsplash photo (Unsplash License), runtime-cached for offline. */
+const HERO_PHOTO = 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1080&q=60&fit=crop';
+
+/** Segmented 6-digit code input: an invisible input drives the display boxes. */
+function OtpBoxes({ value, onChange }: { value: string; onChange: (next: string) => void }) {
+  return (
+    <div className="relative">
+      <input
+        autoFocus
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        maxLength={6}
+        value={value}
+        onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 6))}
+        className="absolute inset-0 z-10 h-full w-full cursor-text opacity-0"
+        aria-label="Verification code"
+      />
+      <div className="flex gap-2">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div
+            key={i}
+            className={`flex h-14 flex-1 items-center justify-center rounded-2xl border-2 text-2xl font-extrabold transition ${
+              i === value.length
+                ? 'border-brand bg-surface'
+                : 'border-transparent bg-surface-raised'
+            }`}
+          >
+            {value[i] ?? ''}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -20,11 +56,12 @@ export function LoginPage() {
     try {
       const res = await api.auth.requestOtp(identifier);
       if (!res.memberExists) {
-        setError('No account found — register below.');
+        setError('No account found — create your membership below.');
         return;
       }
       setChallengeId(res.challengeId);
       setHint(res.hint);
+      setCode('');
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Something went wrong.');
     } finally {
@@ -48,70 +85,105 @@ export function LoginPage() {
   };
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 px-6">
-      <div>
-        <h1 className="display text-4xl font-black leading-none">
-          HYROX<span className="text-brand">STUDIO</span>
-        </h1>
-        <p className="mt-2 text-muted">Train. Book. Scan. Go.</p>
+    <div className="mx-auto min-h-dvh max-w-md">
+      {/* Photo hero, fading into the page background */}
+      <div className="relative h-[46dvh] min-h-80 w-full overflow-hidden">
+        <img src={HERO_PHOTO} alt="" className="h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/25 to-[#f6f6f2]" />
+        <div className="absolute inset-x-0 top-0 p-6 pt-[max(env(safe-area-inset-top),1.5rem)]">
+          <p className="display text-lg text-white">
+            HYROX<span className="text-[#ff4348]">STUDIO</span>
+          </p>
+        </div>
+        <div className="absolute inset-x-0 bottom-14 px-6">
+          <h1 className="display text-4xl leading-[1.05] text-white drop-shadow-[0_2px_12px_rgb(0_0_0/0.4)]">
+            Train hard.
+            <br />
+            Check in faster.
+          </h1>
+        </div>
       </div>
 
-      {!challengeId ? (
-        <div className="flex flex-col gap-4">
-          <div>
-            <label className="label" htmlFor="identifier">
-              Email or phone
-            </label>
-            <input
-              id="identifier"
-              className="input"
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-              placeholder="you@example.com"
-              autoComplete="username"
-            />
-          </div>
-          <button className="btn-brand" disabled={busy || identifier.length < 3} onClick={() => void requestOtp()}>
-            Send code
-          </button>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-4">
-          <div>
-            <label className="label" htmlFor="code">
-              Verification code
-            </label>
-            <input
-              id="code"
-              className="input text-center text-2xl tracking-[0.5em]"
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              inputMode="numeric"
-              placeholder="123456"
-              autoFocus
-            />
-            <p className="mt-2 text-xs text-muted">{hint}</p>
-          </div>
-          <button className="btn-brand" disabled={busy || code.length < 4} onClick={() => void verify()}>
-            Sign in
-          </button>
-          <button className="btn-ghost" onClick={() => setChallengeId(null)}>
-            Back
-          </button>
-        </div>
-      )}
+      {/* Floating form card — relative so it paints above the hero's absolute overlay */}
+      <div className="relative -mt-10 px-4 pb-10">
+        <div className="card !p-6">
+          {!challengeId ? (
+            <div className="flex flex-col gap-4">
+              <div>
+                <p className="display text-2xl">Sign in</p>
+                <p className="mt-0.5 text-sm text-muted">
+                  We'll send a one-time code to verify it's you.
+                </p>
+              </div>
+              <div>
+                <label className="label" htmlFor="identifier">
+                  Email or phone
+                </label>
+                <input
+                  id="identifier"
+                  className="input"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="username"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && identifier.length >= 3) void requestOtp();
+                  }}
+                />
+              </div>
+              <button
+                className="btn-brand flex items-center justify-center gap-2"
+                disabled={busy || identifier.length < 3}
+                onClick={() => void requestOtp()}
+              >
+                Continue <ArrowRight size={18} />
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <div>
+                <p className="display text-2xl">Enter the code</p>
+                <p className="mt-0.5 text-sm text-muted">
+                  Sent to <span className="font-bold text-ink">{identifier}</span>
+                </p>
+              </div>
+              <OtpBoxes
+                value={code}
+                onChange={(next) => {
+                  setCode(next);
+                  setError('');
+                }}
+              />
+              <p className="text-xs text-muted">{hint}</p>
+              <button className="btn-brand" disabled={busy || code.length < 4} onClick={() => void verify()}>
+                Sign in
+              </button>
+              <button
+                className="text-center text-sm font-bold text-muted"
+                onClick={() => {
+                  setChallengeId(null);
+                  setCode('');
+                  setError('');
+                }}
+              >
+                Use a different email or phone
+              </button>
+            </div>
+          )}
 
-      {error ? <p className="text-sm font-bold text-danger">{error}</p> : null}
+          {error ? <p className="mt-3 text-sm font-bold text-danger">{error}</p> : null}
+        </div>
 
-      <p className="text-center text-sm text-muted">
-        New here?{' '}
-        <Link to="/auth/register" className="font-bold text-brand">
+        <Link to="/auth/register" className="btn-ghost mt-3 block">
           Create your membership
         </Link>
-      </p>
-      <p className="text-center text-xs text-muted/60">
-        Demo account: demo@hyrox.id · any 6-digit code
-      </p>
+
+        <p className="mt-6 text-center">
+          <span className="chip bg-surface-raised text-muted">
+            Demo: demo@hyrox.id · any 6-digit code
+          </span>
+        </p>
+      </div>
     </div>
   );
 }

@@ -1,11 +1,9 @@
 # Deploying the demo
 
-Both apps run their entire backend in the visitor's browser (MSW service
-worker) — no database, no API server. Two non-negotiables:
-
-1. **HTTPS (or localhost).** Service workers refuse to register otherwise.
-2. **`mockServiceWorker.js` must be reachable** (the boot screen shows the
-   real error + a Retry button if it isn't).
+Both apps run their entire backend in the visitor's browser as plain
+in-process code — the API client dispatches straight into the bundled mock
+handlers and seed snapshot. No database, no API server, no service worker,
+and therefore no HTTPS requirement and nothing that can fail to register.
 
 ## Docker (recommended)
 
@@ -21,7 +19,7 @@ docker compose up -d --build
 Put Cloudflare / your TLS proxy in front of port 8088. Pieces:
 
 - `deploy/member.Dockerfile` — Vite build served by nginx (SPA fallback,
-  immutable asset caching, no-cache service workers).
+  immutable asset caching, no-cache PWA worker).
 - `deploy/admin.Dockerfile` — Next.js standalone build (basePath `/admin`
   baked in).
 - `deploy/nginx/proxy.conf` — front door; forwards the `/admin` prefix
@@ -43,9 +41,9 @@ for a domain-root deploy).
 
 ## Notes
 
-- The two apps keep separate demo databases (per-origin localStorage — and
-  under one domain, separate localStorage keys are still shared per origin;
-  member and admin use different storage keys so they don't collide).
-- The admin registers its mock worker at `/admin/mockServiceWorker.js` and
-  falls back to the root copy (served by the member app) for embedded
-  browsers that refuse subpath-hosted service-worker scripts.
+- Demo state persists in localStorage under `hyrox.mockdb.v<SEED_VERSION>`;
+  under one domain the member and admin apps share that origin, so a demo
+  reset in one also resets the other after reload.
+- Seed data ships as `packages/mock-api/seed-snapshot.json` (committed).
+  After changing the seed code, regenerate it with
+  `pnpm --filter @hyrox/mock-api dump-seed` and bump `SEED_VERSION`.

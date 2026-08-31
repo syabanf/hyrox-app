@@ -5,8 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./browser": "./src/msw/browser.ts",
-    "./fetch": "./src/browser/fetch-mock.ts",
+    "./in-process": "./src/browser/in-process.ts",
     "./node": "./src/msw/node.ts"
   },
   "scripts": {

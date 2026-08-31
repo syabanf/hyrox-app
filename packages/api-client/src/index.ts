@@ -121,6 +121,12 @@ export class ApiError extends Error {
 export interface ApiClientOptions {
   baseUrl?: string;
   getToken: () => string | null;
+  /**
+   * How requests reach the backend — defaults to the network (global fetch).
+   * The demo passes the in-process mock transport here; a real deployment
+   * simply leaves it unset.
+   */
+  transport?: (request: Request) => Promise<Response>;
 }
 
 type Query = Record<string, string | number | null | undefined>;
@@ -140,14 +146,17 @@ export function createApiClient(options: ApiClientOptions) {
 
   async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
     const token = options.getToken();
-    const res = await fetch(`${base}${path}`, {
-      method,
-      headers: {
-        ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
-        ...(token ? { authorization: `Bearer ${token}` } : {}),
-      },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
+    const send = options.transport ?? ((req: Request) => fetch(req));
+    const res = await send(
+      new Request(`${base}${path}`, {
+        method,
+        headers: {
+          ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
+          ...(token ? { authorization: `Bearer ${token}` } : {}),
+        },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      }),
+    );
     if (!res.ok) {
       const parsed = (await res.json().catch(() => null)) as ApiErrorBody | null;
       throw new ApiError(

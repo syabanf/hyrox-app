@@ -1,6 +1,5 @@
 'use client';
 
-import { installFetchMock } from '@hyrox/mock-api/fetch';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
 
@@ -11,18 +10,14 @@ const queryClient = new QueryClient({
 });
 
 /**
- * The mock backend is a synchronous in-process fetch patch (no service
- * worker), so the only gate needed is one client-side render pass to keep
- * hydration consistent — pages must still fetch client-side only.
+ * The demo backend is plain in-process code wired into the API client (see
+ * lib/api.ts) — nothing to boot. The one-tick mount gate keeps the app
+ * client-only: it skips the hydration render, where persisted stores still
+ * report their empty server snapshot and auth guards would misfire.
  */
 export function Providers({ children }: { children: ReactNode }) {
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    installFetchMock();
-    setReady(true);
-  }, []);
-
-  if (!ready) return null;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }

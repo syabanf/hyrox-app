@@ -13,6 +13,8 @@ export interface StartMockWorkerOptions {
    * `${basePath}/mockServiceWorker.js` or registration 404s.
    */
   serviceWorkerUrl?: string;
+  /** Registration scope; defaults to the script's directory. */
+  serviceWorkerScope?: string;
 }
 
 /**
@@ -27,7 +29,12 @@ export async function startMockWorker(
   await worker.start({
     onUnhandledRequest: 'bypass',
     quiet: true,
-    serviceWorker: { url: options.serviceWorkerUrl ?? '/mockServiceWorker.js' },
+    serviceWorker: {
+      url: options.serviceWorkerUrl ?? '/mockServiceWorker.js',
+      ...(options.serviceWorkerScope
+        ? { options: { scope: options.serviceWorkerScope } }
+        : {}),
+    },
   });
   // Snapshot the db periodically + on unload so state survives reloads.
   setInterval(() => api.persist(), 1500);

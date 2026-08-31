@@ -1,42 +1,51 @@
-# Deploying the demo (frontend-only)
+# Deploying the demo
 
-Both apps are static-friendly and run their entire backend in the browser
-(MSW service worker), so any static host / reverse proxy works — but two
-things are non-negotiable:
+Both apps run their entire backend in the visitor's browser (MSW service
+worker) — no database, no API server. Two non-negotiables:
 
-1. **HTTPS (or localhost).** Service workers refuse to register otherwise —
-   the app will show "Mock backend failed to start".
-2. **`mockServiceWorker.js` must be reachable at the app's own base path.**
+1. **HTTPS (or localhost).** Service workers refuse to register otherwise.
+2. **`mockServiceWorker.js` must be reachable** (the boot screen shows the
+   real error + a Retry button if it isn't).
 
-## Member app (Vite PWA) — served at the domain root
+## Docker (recommended)
 
-```bash
-pnpm --filter @hyrox/member build      # outputs apps/member/dist
-```
-
-Serve `dist/` at `/`. For a subpath instead, build with
-`vite build --base=/app/` and serve under `/app/`.
-
-## Admin panel (Next.js) — always under /admin
-
-The basePath is baked in: routes, assets, and `mockServiceWorker.js` all live
-under `/admin`, in dev and prod alike. A plain build deploys correctly:
+One command brings up the whole stack — member at `/`, admin at `/admin`,
+fronted by nginx:
 
 ```bash
-pnpm --filter @hyrox/admin build
-pnpm --filter @hyrox/admin start       # serves http://host:3000/admin
+docker compose up -d --build
+# http://<host>:8088         → member app
+# http://<host>:8088/admin   → admin panel
 ```
 
-Point the reverse proxy at the app for the whole prefix, WITHOUT stripping it:
+Put Cloudflare / your TLS proxy in front of port 8088. Pieces:
 
-```nginx
-location /admin { proxy_pass http://127.0.0.1:3000; }
+- `deploy/member.Dockerfile` — Vite build served by nginx (SPA fallback,
+  immutable asset caching, no-cache service workers).
+- `deploy/admin.Dockerfile` — Next.js standalone build (basePath `/admin`
+  baked in).
+- `deploy/nginx/proxy.conf` — front door; forwards the `/admin` prefix
+  WITHOUT stripping it.
+
+After pulling new commits: `docker compose up -d --build` again.
+
+## Without Docker
+
+```bash
+pnpm --filter @hyrox/member build   # apps/member/dist → serve at /
+pnpm --filter @hyrox/admin build && pnpm --filter @hyrox/admin start
 ```
 
-(If the proxy strips the prefix — `proxy_pass http://…/;` with a trailing
-slash — routes 404 and the service worker registers at the wrong scope: the
-classic "Starting mock backend…" hang. The boot screen now surfaces the real
-error + a retry button instead of hanging.) To deploy at the domain root
-instead, build with `NEXT_PUBLIC_BASE_PATH=""`.
+Reverse proxy: `location /admin { proxy_pass http://127.0.0.1:3000; }` —
+no trailing slash, so the prefix reaches Next intact. The admin's basePath
+defaults to `/admin` (override with `NEXT_PUBLIC_BASE_PATH`, empty string
+for a domain-root deploy).
 
-Note: the two apps keep separate demo databases (per-origin localStorage).
+## Notes
+
+- The two apps keep separate demo databases (per-origin localStorage — and
+  under one domain, separate localStorage keys are still shared per origin;
+  member and admin use different storage keys so they don't collide).
+- The admin registers its mock worker at `/admin/mockServiceWorker.js` and
+  falls back to the root copy (served by the member app) for embedded
+  browsers that refuse subpath-hosted service-worker scripts.

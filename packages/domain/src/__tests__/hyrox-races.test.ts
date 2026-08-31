@@ -24,10 +24,11 @@ const station = (
   hyroxStationOrder: order,
   difficulty: 2,
   defaultSpec: { distanceM: spec.distanceM ?? null, reps: spec.reps ?? null },
+  videoUrl: null,
 });
 
 const EXERCISES: Exercise[] = [
-  { id: 'ex_run', name: 'Running', category: 'RUN', equipment: [], hyroxStationOrder: null, difficulty: 1, defaultSpec: { distanceM: 1000, reps: null } },
+  { id: 'ex_run', name: 'Running', category: 'RUN', equipment: [], hyroxStationOrder: null, difficulty: 1, defaultSpec: { distanceM: 1000, reps: null }, videoUrl: null },
   station('ex_ski', 'SkiErg', 1, { distanceM: 1000 }),
   station('ex_push', 'Sled Push', 2, { distanceM: 50 }),
   station('ex_pull', 'Sled Pull', 3, { distanceM: 50 }),
@@ -36,7 +37,7 @@ const EXERCISES: Exercise[] = [
   station('ex_carry', 'Farmers Carry', 6, { distanceM: 200 }),
   station('ex_lunge', 'Sandbag Lunge', 7, { distanceM: 100 }),
   station('ex_wb', 'Wall Balls', 8, { reps: 100 }),
-  { id: 'ex_slam', name: 'Ball Slam', category: 'CONDITIONING', equipment: ['ball'], hyroxStationOrder: null, difficulty: 2, defaultSpec: { distanceM: null, reps: 30 } },
+  { id: 'ex_slam', name: 'Ball Slam', category: 'CONDITIONING', equipment: ['ball'], hyroxStationOrder: null, difficulty: 2, defaultSpec: { distanceM: null, reps: 30 }, videoUrl: null },
 ];
 const SUBS: SubstitutionRule[] = [
   { originalExerciseId: 'ex_ski', alternativeExerciseId: 'ex_slam', similarity: 0.8, conversionNote: '1000m → 60 slams' },

@@ -1,8 +1,8 @@
 import { ApiError } from '@hyrox/api-client';
-import type { ActivityType, ActivityVisibility, Route, TrackPoint } from '@hyrox/domain';
+import type { ActivityType, ActivityVisibility, Division, Route, TrackPoint } from '@hyrox/domain';
 import { haversineM } from '@hyrox/domain';
 import { formatDistanceM, formatDuration, formatPace } from '@hyrox/ui';
-import { ImagePlus, Pause, Play, Square, X } from 'lucide-react';
+import { Flame, ImagePlus, Pause, Play, Square, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { GeoMap } from '../../components/geo-map';
@@ -15,6 +15,13 @@ import { useInvalidateAll } from '../../lib/queries';
 import { TrainTabs } from './train-tabs';
 
 type Phase = 'idle' | 'recording' | 'paused' | 'saving';
+
+const DIVISIONS: { id: Division; label: string }[] = [
+  { id: 'MEN_OPEN', label: 'Men Open' },
+  { id: 'WOMEN_OPEN', label: 'Women Open' },
+  { id: 'MEN_PRO', label: 'Men Pro' },
+  { id: 'WOMEN_PRO', label: 'Women Pro' },
+];
 
 const SIM_SPEED: Record<ActivityType, number> = { RUN: 3.2, RIDE: 7.5, WALK: 1.5, WORKOUT: 0 };
 const M_PER_DEG_LAT = 111_320;
@@ -42,6 +49,9 @@ export function RecordPage() {
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [type, setType] = useState<ActivityType>('RUN');
+  const [division, setDivision] = useState<Division>('MEN_OPEN');
+  const [simBusy, setSimBusy] = useState(false);
+  const [simError, setSimError] = useState('');
   const [useDemoGps, setUseDemoGps] = useState(true);
   const [points, setPoints] = useState<TrackPoint[]>([]);
   const [elapsedSec, setElapsedSec] = useState(0);
@@ -178,6 +188,26 @@ export function RecordPage() {
     setElapsedSec(0);
   };
 
+  // Generate a full HYROX simulation and drop straight into the guided
+  // station-by-station session (which saves to the feed as a WORKOUT).
+  const startHyroxSim = async () => {
+    setSimBusy(true);
+    setSimError('');
+    try {
+      const workout = await api.workout.generate({
+        type: 'FULL_SIMULATION',
+        division,
+        stationOrders: [],
+        excludedExerciseIds: [],
+      });
+      const session = await api.workout.start(workout.id);
+      navigate(`/workout/active/${session.session.id}`);
+    } catch (e) {
+      setSimError(e instanceof ApiError ? e.message : 'Could not start the simulation.');
+      setSimBusy(false);
+    }
+  };
+
   const avgPace = distanceM > 50 ? (elapsedSec / distanceM) * 1000 : null;
 
   return (
@@ -226,6 +256,47 @@ export function RecordPage() {
           <button onClick={start} className="btn-brand flex items-center justify-center gap-2 !py-5 text-lg">
             <Play size={22} fill="currentColor" /> {t('Start')}
           </button>
+
+          {/* Guided HYROX full simulation — jumps into the station-by-station session */}
+          <div className="card surface-ink relative overflow-hidden !border-0 !p-6 text-white">
+            <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
+            <div className="relative">
+              <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.22em] text-white/50">
+                <Flame size={13} className="text-[#ff4348]" /> {t('HYROX simulation')}
+              </p>
+              <p className="display mt-1 text-2xl leading-tight">8 runs. 8 stations. Race pace.</p>
+              <p className="mt-1.5 text-sm text-white/60">
+                {t('Guided station by station with your division loads — timed like race day.')}
+              </p>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                {DIVISIONS.map((d) => (
+                  <button
+                    key={d.id}
+                    onClick={() => setDivision(d.id)}
+                    className={`rounded-xl px-3 py-2 text-xs font-black uppercase transition ${
+                      division === d.id
+                        ? 'bg-white text-ink'
+                        : 'bg-white/10 text-white/60 hover:bg-white/15'
+                    }`}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+              {simError ? <p className="mt-3 text-sm font-bold text-[#ff4348]">{simError}</p> : null}
+              <button
+                onClick={() => void startHyroxSim()}
+                disabled={simBusy}
+                className="btn-brand mt-4 flex w-full items-center justify-center gap-2 disabled:opacity-40"
+              >
+                <Play size={18} fill="currentColor" />
+                {simBusy ? t('Preparing…') : t('Start simulation')}
+              </button>
+              <p className="mt-2.5 text-center text-xs text-white/40">
+                {t('Finishing saves it to your training feed and race readiness.')}
+              </p>
+            </div>
+          </div>
         </>
       ) : null}
 

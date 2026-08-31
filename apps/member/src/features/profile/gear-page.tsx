@@ -112,14 +112,17 @@ export function GearPage() {
       <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm font-bold text-muted">
         <ArrowLeft size={16} /> Back
       </button>
-      <div className="flex items-end justify-between">
-        <div>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
           <h1 className="display text-3xl">My gear</h1>
-          <p className="mt-0.5 text-sm text-muted">
+          <p className="mt-1 text-sm text-muted">
             Mileage adds up automatically from your activities.
           </p>
         </div>
-        <button className="btn-brand flex items-center gap-1.5 !px-4 !py-2.5 text-sm" onClick={() => setAddOpen(true)}>
+        <button
+          className="btn-brand mt-1 flex shrink-0 items-center gap-1.5 !px-4 !py-2.5 text-sm"
+          onClick={() => setAddOpen(true)}
+        >
           <Plus size={16} /> Add
         </button>
       </div>

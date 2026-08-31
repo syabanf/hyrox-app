@@ -41,7 +41,7 @@ import type {
 import { DEFAULT_BUSINESS_RULES } from '@hyrox/domain';
 
 /** Bump to invalidate persisted localStorage snapshots after seed/schema changes. */
-export const SEED_VERSION = 7;
+export const SEED_VERSION = 8;
 
 export interface MockDb {
   seedVersion: number;

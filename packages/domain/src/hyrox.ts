@@ -21,6 +21,8 @@ export interface Exercise {
   hyroxStationOrder: number | null;
   difficulty: 1 | 2 | 3;
   defaultSpec: { distanceM: number | null; reps: number | null };
+  /** How-to video (YouTube) shown from the workout player. */
+  videoUrl: string | null;
 }
 
 /** Substitution modeled as data (blueprint §45). */

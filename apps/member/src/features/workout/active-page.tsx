@@ -1,9 +1,11 @@
 import type { WorkoutSessionView } from '@hyrox/contracts';
 import { Spinner, formatDuration } from '@hyrox/ui';
-import { CheckCircle2, Pause, Play, Square } from 'lucide-react';
+import { CheckCircle2, CirclePlay, Pause, Play, Square } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { api } from '../../lib/api';
+import { VideoSheet } from '../../components/video-sheet';
+import { useExerciseLibrary } from '../../lib/athlete-queries';
 import { useInvalidateAll } from '../../lib/queries';
 import { BlockLine } from './preview-page';
 
@@ -15,8 +17,11 @@ export function WorkoutActivePage() {
   const [totalSec, setTotalSec] = useState(0);
   const [blockSec, setBlockSec] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [videoOpen, setVideoOpen] = useState(false);
   const pauseStartedRef = useRef(0);
   const [busy, setBusy] = useState(false);
+
+  const { data: library } = useExerciseLibrary();
 
   useEffect(() => {
     void api.workout.session(sessionId).then(setView);
@@ -36,6 +41,9 @@ export function WorkoutActivePage() {
   const { session, workout } = view;
   const done = session.status === 'COMPLETED' || session.status === 'PARTIAL';
   const currentBlock = workout.blocks.find((b) => b.order === session.currentBlock);
+  const currentVideo = currentBlock
+    ? (library?.exercises.find((e) => e.id === currentBlock.exerciseId)?.videoUrl ?? null)
+    : null;
   const completedCount = session.blockResults.length;
   const pct = Math.round((completedCount / workout.blocks.length) * 100);
 
@@ -158,6 +166,14 @@ export function WorkoutActivePage() {
             {formatDuration(currentBlock.targetSec)}
           </p>
           <p className="display mt-2 text-5xl text-brand">{formatDuration(blockSec)}</p>
+          {currentVideo ? (
+            <button
+              className="chip mt-3 bg-brand/10 text-brand"
+              onClick={() => setVideoOpen(true)}
+            >
+              <CirclePlay size={13} /> How to perform
+            </button>
+          ) : null}
         </div>
       ) : null}
 
@@ -178,6 +194,14 @@ export function WorkoutActivePage() {
         <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${pct}%` }} />
       </div>
       <p className="text-center text-xs font-black uppercase tracking-widest text-muted">{pct}% complete</p>
+
+      {videoOpen && currentBlock && currentVideo ? (
+        <VideoSheet
+          title={currentBlock.exerciseName}
+          videoUrl={currentVideo}
+          onClose={() => setVideoOpen(false)}
+        />
+      ) : null}
 
       <div className="card">
         <p className="label">Up next</p>

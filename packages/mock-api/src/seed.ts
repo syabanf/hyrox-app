@@ -1106,7 +1106,7 @@ function seedHyroxModule(
     equipment: string[],
     spec: { distanceM?: number; reps?: number },
     difficulty: 1 | 2 | 3,
-  ): Exercise => ({
+  ): Omit<Exercise, 'videoUrl'> => ({
     id,
     name,
     category,
@@ -1116,7 +1116,24 @@ function seedHyroxModule(
     defaultSpec: { distanceM: spec.distanceM ?? null, reps: spec.reps ?? null },
   });
 
-  db.exercises = [
+  // Real how-to videos (YouTube), one per exercise.
+  const HOW_TO: Record<string, string> = {
+    ex_run: 'https://www.youtube.com/watch?v=CpdciSr5gnQ',
+    ex_ski: 'https://www.youtube.com/watch?v=9RJiSvgaiJU',
+    ex_sledpush: 'https://www.youtube.com/watch?v=SAh6C_QluJE',
+    ex_sledpull: 'https://www.youtube.com/watch?v=9lTv65mWPHA',
+    ex_bbj: 'https://www.youtube.com/watch?v=UTO-GzRXF-Q',
+    ex_row: 'https://www.youtube.com/watch?v=cGy29PC4oPk',
+    ex_carry: 'https://www.youtube.com/watch?v=o8bdBfBvWdc',
+    ex_lunge: 'https://www.youtube.com/watch?v=YlFsbfK5Doc',
+    ex_wb: 'https://www.youtube.com/watch?v=bm7QLEOx26c',
+    ex_slam: 'https://www.youtube.com/watch?v=6vXHh-Lhb2o',
+    ex_plate: 'https://www.youtube.com/watch?v=oRyDt3ivTag',
+    ex_band: 'https://www.youtube.com/watch?v=aA2yvYz6xs8',
+    ex_dblunge: 'https://www.youtube.com/watch?v=Tc1TsAdoDRo',
+    ex_thruster: 'https://www.youtube.com/watch?v=FVKHh-sotqY',
+  };
+  const baseExercises: Omit<Exercise, 'videoUrl'>[] = [
     { id: 'ex_run', name: 'Running', category: 'RUN', equipment: [], hyroxStationOrder: null, difficulty: 1, defaultSpec: { distanceM: 1000, reps: null } },
     station('ex_ski', 'SkiErg', 1, 'ERG', ['SkiErg'], { distanceM: 1000 }, 2),
     station('ex_sledpush', 'Sled Push', 2, 'SLED', ['Sled'], { distanceM: 50 }, 3),
@@ -1132,6 +1149,7 @@ function seedHyroxModule(
     { id: 'ex_dblunge', name: 'Dumbbell Lunge', category: 'LUNGE', equipment: ['Dumbbells'], hyroxStationOrder: null, difficulty: 2, defaultSpec: { distanceM: 100, reps: null } },
     { id: 'ex_thruster', name: 'Dumbbell Thruster', category: 'THROW', equipment: ['Dumbbells'], hyroxStationOrder: null, difficulty: 2, defaultSpec: { distanceM: null, reps: 60 } },
   ];
+  db.exercises = baseExercises.map((ex) => ({ ...ex, videoUrl: HOW_TO[ex.id] ?? null }));
 
   db.substitutions = [
     { originalExerciseId: 'ex_ski', alternativeExerciseId: 'ex_row', similarity: 0.9, conversionNote: '1:1 distance' },

@@ -2,10 +2,11 @@ import { ApiError } from '@hyrox/api-client';
 import type { WorkoutBlock } from '@hyrox/domain';
 import { listSubstitutes } from '@hyrox/domain';
 import { Spinner, formatDuration } from '@hyrox/ui';
-import { ArrowLeft, Footprints, Play, RefreshCcw } from 'lucide-react';
+import { ArrowLeft, CirclePlay, Footprints, Play, RefreshCcw } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { api } from '../../lib/api';
+import { VideoSheet } from '../../components/video-sheet';
 import { useExerciseLibrary, useWorkout } from '../../lib/athlete-queries';
 import { useInvalidateAll } from '../../lib/queries';
 
@@ -42,6 +43,7 @@ export function WorkoutPreviewPage() {
   const { data: workout, isLoading } = useWorkout(workoutId);
   const { data: library } = useExerciseLibrary();
   const [swapTarget, setSwapTarget] = useState<WorkoutBlock | null>(null);
+  const [videoTarget, setVideoTarget] = useState<{ title: string; url: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -59,6 +61,9 @@ export function WorkoutPreviewPage() {
       setBusy(false);
     }
   };
+
+  const videoFor = (block: WorkoutBlock) =>
+    library?.exercises.find((e) => e.id === block.exerciseId)?.videoUrl ?? null;
 
   const substitutesFor = (block: WorkoutBlock) =>
     library
@@ -86,6 +91,15 @@ export function WorkoutPreviewPage() {
             <div className="min-w-0 flex-1">
               <BlockLine block={block} />
             </div>
+            {videoFor(block) ? (
+              <button
+                className="shrink-0 text-muted hover:text-brand"
+                aria-label="How to perform"
+                onClick={() => setVideoTarget({ title: block.exerciseName, url: videoFor(block)! })}
+              >
+                <CirclePlay size={16} />
+              </button>
+            ) : null}
             {block.kind === 'STATION' && substitutesFor(block).length > 0 ? (
               <button
                 className="shrink-0 text-muted hover:text-brand"
@@ -104,6 +118,9 @@ export function WorkoutPreviewPage() {
         <Play size={20} fill="currentColor" /> Start workout
       </button>
 
+      {videoTarget ? (
+        <VideoSheet title={videoTarget.title} videoUrl={videoTarget.url} onClose={() => setVideoTarget(null)} />
+      ) : null}
       {swapTarget ? (
         <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/50" onClick={() => setSwapTarget(null)}>
           <div className="w-full max-w-md rounded-t-3xl bg-surface p-5" onClick={(e) => e.stopPropagation()}>

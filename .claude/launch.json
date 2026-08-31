@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "member",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@hyrox/member", "dev"],
+      "port": 5173,
+      "autoPort": true
+    },
+    {
+      "name": "admin",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@hyrox/admin", "dev"],
+      "port": 3000,
+      "autoPort": true
+    }
+  ]
+}

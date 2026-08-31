@@ -1,0 +1,206 @@
+'use client';
+
+import { Spinner, StatusBadge, formatDayTime } from '@hyrox/ui';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import Link from 'next/link';
+import { useState } from 'react';
+import { api, ApiError } from '../../../../lib/api';
+import { usePermissions } from '../../../../lib/auth';
+import { ErrorNote, Modal, PageTitle } from '../../../../components/ui';
+
+export default function SessionsPage() {
+  const qc = useQueryClient();
+  const { can } = usePermissions();
+  const [branchId, setBranchId] = useState('');
+  const [createOpen, setCreateOpen] = useState(false);
+  const [showPast, setShowPast] = useState(false);
+
+  const { data: branches } = useQuery({ queryKey: ['branches'], queryFn: api.catalog.branches });
+  const { data: sessions, isLoading } = useQuery({
+    queryKey: ['admin-sessions', branchId],
+    queryFn: () => api.admin.sessions.list(branchId ? { branchId } : undefined),
+  });
+
+  const visible = (sessions ?? []).filter(
+    (v) => showPast || new Date(v.session.endsAt).getTime() > Date.now() - 3600_000,
+  );
+
+  return (
+    <div>
+      <PageTitle
+        title="Class Sessions"
+        subtitle="Scheduled occurrences (class type ≠ session)"
+        actions={
+          can('sessions.manage') ? (
+            <button className="a-btn" onClick={() => setCreateOpen(true)}>
+              + New session
+            </button>
+          ) : undefined
+        }
+      />
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <select className="a-input max-w-44" value={branchId} onChange={(e) => setBranchId(e.target.value)}>
+          <option value="">All branches</option>
+          {(branches ?? []).map((b) => (
+            <option key={b.id} value={b.id}>
+              {b.name}
+            </option>
+          ))}
+        </select>
+        <label className="flex items-center gap-2 text-sm text-muted">
+          <input type="checkbox" checked={showPast} onChange={(e) => setShowPast(e.target.checked)} />
+          Show past sessions
+        </label>
+      </div>
+      {isLoading ? (
+        <Spinner label="Loading sessions…" />
+      ) : (
+        <div className="a-card !p-0">
+          <table className="a-table">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Class</th>
+                <th>Branch</th>
+                <th>Coach</th>
+                <th>Cost</th>
+                <th>Booked</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((v) => (
+                <tr key={v.session.id}>
+                  <td className="whitespace-nowrap font-bold">{formatDayTime(v.session.startsAt)}</td>
+                  <td>
+                    <Link href={`/operations/sessions/${v.session.id}`} className="font-bold hover:text-brand">
+                      {v.classTypeName}
+                    </Link>
+                  </td>
+                  <td>{v.branchName}</td>
+                  <td>{v.coachName}</td>
+                  <td>{v.session.creditCost} cr</td>
+                  <td>
+                    {v.confirmedCount}/{v.session.capacity}
+                    {v.waitlistCount > 0 ? <span className="text-warn"> +{v.waitlistCount} WL</span> : null}
+                  </td>
+                  <td>
+                    <StatusBadge status={v.session.status} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {createOpen ? (
+        <CreateSessionModal
+          onClose={() => setCreateOpen(false)}
+          onDone={() => {
+            setCreateOpen(false);
+            void qc.invalidateQueries();
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function CreateSessionModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+  const { data: classTypes } = useQuery({ queryKey: ['class-types'], queryFn: api.admin.classTypes.list });
+  const { data: branches } = useQuery({ queryKey: ['branches'], queryFn: api.catalog.branches });
+  const { data: coaches } = useQuery({ queryKey: ['coaches'], queryFn: api.admin.coaches.list });
+  const [classTypeId, setClassTypeId] = useState('');
+  const [branchId, setBranchId] = useState('');
+  const [coachId, setCoachId] = useState('');
+  const [startsAt, setStartsAt] = useState('');
+  const [capacity, setCapacity] = useState('');
+  const [publish, setPublish] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      api.admin.sessions.create({
+        classTypeId,
+        branchId,
+        coachId,
+        startsAt: new Date(startsAt).toISOString(),
+        capacity: capacity ? Number(capacity) : undefined,
+        area: null,
+        publish,
+      }),
+    onSuccess: onDone,
+    onError: (e) => setError(e instanceof ApiError ? e.message : 'Create failed.'),
+  });
+
+  return (
+    <Modal title="New class session" onClose={onClose}>
+      <div className="flex flex-col gap-3">
+        <div>
+          <label className="a-label">Class type</label>
+          <select className="a-input" value={classTypeId} onChange={(e) => setClassTypeId(e.target.value)}>
+            <option value="">Select…</option>
+            {(classTypes ?? []).map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name} ({t.defaultCreditCost} cr · cap {t.defaultCapacity})
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="a-label">Branch</label>
+            <select className="a-input" value={branchId} onChange={(e) => setBranchId(e.target.value)}>
+              <option value="">Select…</option>
+              {(branches ?? []).map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="a-label">Coach</label>
+            <select className="a-input" value={coachId} onChange={(e) => setCoachId(e.target.value)}>
+              <option value="">Select…</option>
+              {(coaches ?? [])
+                .filter((c) => !branchId || c.branchId === branchId)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="a-label">Starts at</label>
+            <input
+              type="datetime-local"
+              className="a-input"
+              value={startsAt}
+              onChange={(e) => setStartsAt(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="a-label">Capacity (blank = type default)</label>
+            <input className="a-input" value={capacity} onChange={(e) => setCapacity(e.target.value)} />
+          </div>
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={publish} onChange={(e) => setPublish(e.target.checked)} />
+          Publish immediately (bookable)
+        </label>
+        <ErrorNote message={error} />
+        <button
+          className="a-btn"
+          disabled={mutation.isPending || !classTypeId || !branchId || !coachId || !startsAt}
+          onClick={() => mutation.mutate()}
+        >
+          Create session
+        </button>
+      </div>
+    </Modal>
+  );
+}

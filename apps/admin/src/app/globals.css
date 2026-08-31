@@ -1,0 +1,68 @@
+@import 'tailwindcss';
+@import '@hyrox/ui/tokens.css';
+@source '../../../packages/ui/src';
+
+/* Admin defaults to LIGHT mode: light content surface, dark sidebar accent,
+   HYROX yellow kept for emphasis. (The member PWA stays dark by design.) */
+:root {
+  color-scheme: light;
+  --color-surface: #ffffff;
+  --color-surface-raised: #f4f4f1;
+  --color-line: #e4e4de;
+  --color-muted: #6f6f76;
+}
+
+body {
+  background: #f6f6f2;
+  color: #191919;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+.display {
+  font-family: var(--font-display);
+  font-weight: 400; /* Anton ships one heavy weight */
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* WIT Red is a background/accent color; as TEXT on light surfaces it uses a
+   slightly darker ink to stay readable. */
+.text-brand {
+  color: #c4161c;
+}
+.hover\:text-brand:hover {
+  color: #c4161c;
+}
+
+/* Admin primitives — info-dense, table-first. */
+.a-card {
+  @apply rounded-xl border border-line bg-surface p-4 shadow-[0_1px_2px_rgb(0_0_0/0.04)];
+}
+.a-btn {
+  @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand px-3.5 py-2 text-sm font-bold text-white transition hover:bg-brand-press disabled:pointer-events-none disabled:opacity-40;
+}
+.a-btn-ghost {
+  @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-line bg-surface-raised px-3.5 py-2 text-sm font-bold text-ink transition hover:border-muted disabled:pointer-events-none disabled:opacity-40;
+}
+.a-btn-danger {
+  @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-danger/40 bg-danger/10 px-3.5 py-2 text-sm font-bold text-danger transition hover:bg-danger/20 disabled:pointer-events-none disabled:opacity-40;
+}
+.a-input {
+  @apply w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-[#ed1c24] focus:outline-none;
+}
+.a-label {
+  @apply mb-1 block text-[11px] font-bold uppercase tracking-wider text-muted;
+}
+.a-table {
+  @apply w-full border-collapse text-sm;
+}
+.a-table th {
+  @apply border-b border-line px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-muted;
+}
+.a-table td {
+  @apply border-b border-line/70 px-3 py-2.5 align-middle;
+}
+.a-table tbody tr:hover {
+  background: rgb(0 0 0 / 0.025);
+}

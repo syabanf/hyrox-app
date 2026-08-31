@@ -1,0 +1,48 @@
+/* HYROX Studio design tokens — dark ground, WIT.ID red, bold type. */
+@theme {
+  --color-brand: #ed1c24; /* WIT Red */
+  --color-brand-press: #c4161c;
+  --color-ink: #0a0a0a;
+  --color-ink-soft: #161616;
+  --color-surface: #1b1b1b;
+  --color-surface-raised: #242424;
+  --color-line: #2e2e2e;
+  --color-muted: #9a9a9a;
+  --color-ok: #34d27b;
+  --color-warn: #ffb020;
+  --color-danger: #ff4d4f;
+  --color-info: #4dabf7;
+
+  --font-display: 'Anton', 'Arial Narrow', ui-sans-serif, sans-serif;
+  --font-body: 'Barlow', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --radius-card: 1rem;
+}
+
+/* Shared component classes (kept as plain CSS so both apps compile them identically). */
+.hx-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.hx-spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  border: 3px solid rgb(0 0 0 / 0.15);
+  border-top-color: currentColor;
+  animation: hx-spin 0.7s linear infinite;
+}
+@keyframes hx-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

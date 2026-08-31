@@ -1,0 +1,28 @@
+{
+  "name": "@hyrox/mock-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./browser": "./src/msw/browser.ts",
+    "./node": "./src/msw/node.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^9.0.0",
+    "@hyrox/application": "workspace:*",
+    "@hyrox/contracts": "workspace:*",
+    "@hyrox/domain": "workspace:*",
+    "msw": "^2.7.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@hyrox/tsconfig": "workspace:*",
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0"
+  }
+}

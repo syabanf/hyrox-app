@@ -1,0 +1,11 @@
+{
+  "extends": "@hyrox/tsconfig/react.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "types": ["vite/client", "vite-plugin-pwa/react"]
+  },
+  "include": ["src", "vite.config.ts"]
+}

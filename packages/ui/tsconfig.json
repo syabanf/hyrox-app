@@ -1,0 +1,4 @@
+{
+  "extends": "@hyrox/tsconfig/react.json",
+  "include": ["src"]
+}

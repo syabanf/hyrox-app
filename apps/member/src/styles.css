@@ -1,0 +1,48 @@
+@import 'tailwindcss';
+@import '@hyrox/ui/tokens.css';
+@source '../../../packages/ui/src';
+
+/* Member app defaults to LIGHT mode: light ground, WIT Red accents. */
+:root {
+  color-scheme: light;
+  --color-surface: #ffffff;
+  --color-surface-raised: #f4f4f1;
+  --color-line: #e4e4de;
+  --color-muted: #6f6f76;
+}
+
+body {
+  background: #f6f6f2;
+  color: #191919;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+.display {
+  font-family: var(--font-display);
+  font-weight: 400; /* Anton ships one heavy weight */
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.btn-brand {
+  @apply bg-brand text-white font-extrabold uppercase tracking-wide rounded-xl px-5 py-3.5 text-center transition active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none;
+}
+.btn-ghost {
+  @apply bg-surface text-ink font-bold rounded-xl px-5 py-3.5 text-center border border-line transition active:scale-[0.98] disabled:opacity-40;
+}
+
+/* WIT Red as TEXT on light surfaces uses a slightly darker ink for legibility;
+   backgrounds keep the pure brand red. */
+.text-brand {
+  color: #c4161c;
+}
+.card {
+  @apply bg-surface rounded-2xl border border-line p-4 shadow-[0_1px_2px_rgb(0_0_0/0.04)];
+}
+.input {
+  @apply w-full rounded-xl bg-surface border border-line px-4 py-3 text-ink placeholder:text-muted focus:outline-none focus:border-brand;
+}
+.label {
+  @apply block text-xs font-bold uppercase tracking-wider text-muted mb-1.5;
+}

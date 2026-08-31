@@ -1,0 +1,138 @@
+'use client';
+
+import type { Coach } from '@hyrox/domain';
+import { Spinner, StatusBadge } from '@hyrox/ui';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { api, ApiError } from '../../../../lib/api';
+import { usePermissions } from '../../../../lib/auth';
+import { ErrorNote, Modal, PageTitle } from '../../../../components/ui';
+
+export default function CoachesPage() {
+  const qc = useQueryClient();
+  const { can } = usePermissions();
+  const [editing, setEditing] = useState<Coach | 'new' | null>(null);
+  const { data: coaches, isLoading } = useQuery({ queryKey: ['coaches'], queryFn: api.admin.coaches.list });
+  const { data: branches } = useQuery({ queryKey: ['branches'], queryFn: api.catalog.branches });
+
+  if (isLoading) return <Spinner label="Loading coaches…" />;
+
+  return (
+    <div>
+      <PageTitle
+        title="Coaches"
+        subtitle="Assignable to class sessions"
+        actions={
+          can('coaches.manage') ? (
+            <button className="a-btn" onClick={() => setEditing('new')}>
+              + New coach
+            </button>
+          ) : undefined
+        }
+      />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {(coaches ?? []).map((c) => (
+          <div key={c.id} className="a-card">
+            <div className="flex items-center justify-between">
+              <p className="font-black">{c.name}</p>
+              <StatusBadge status={c.status} />
+            </div>
+            <p className="text-sm text-brand">{c.specialization}</p>
+            <p className="mt-1 text-sm text-muted">{c.bio}</p>
+            <div className="mt-2 flex items-center justify-between">
+              <p className="text-xs font-bold uppercase tracking-wide text-muted">
+                {(branches ?? []).find((b) => b.id === c.branchId)?.name ?? c.branchId}
+              </p>
+              {can('coaches.manage') ? (
+                <button className="text-sm font-bold text-brand" onClick={() => setEditing(c)}>
+                  Edit
+                </button>
+              ) : null}
+            </div>
+          </div>
+        ))}
+      </div>
+      {editing ? (
+        <CoachModal
+          coach={editing === 'new' ? null : editing}
+          branches={(branches ?? []).map((b) => ({ id: b.id, name: b.name }))}
+          onClose={() => setEditing(null)}
+          onDone={() => {
+            setEditing(null);
+            void qc.invalidateQueries();
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function CoachModal({
+  coach,
+  branches,
+  onClose,
+  onDone,
+}: {
+  coach: Coach | null;
+  branches: { id: string; name: string }[];
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [name, setName] = useState(coach?.name ?? '');
+  const [bio, setBio] = useState(coach?.bio ?? '');
+  const [specialization, setSpecialization] = useState(coach?.specialization ?? '');
+  const [branchId, setBranchId] = useState(coach?.branchId ?? branches[0]?.id ?? '');
+  const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE'>(coach?.status ?? 'ACTIVE');
+  const [error, setError] = useState<string | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: () => {
+      const body = { name, bio, specialization, branchId, status };
+      return coach ? api.admin.coaches.update(coach.id, body) : api.admin.coaches.create(body);
+    },
+    onSuccess: onDone,
+    onError: (e) => setError(e instanceof ApiError ? e.message : 'Save failed.'),
+  });
+
+  return (
+    <Modal title={coach ? `Edit ${coach.name}` : 'New coach'} onClose={onClose}>
+      <div className="flex flex-col gap-3">
+        <div>
+          <label className="a-label">Name</label>
+          <input className="a-input" value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+        <div>
+          <label className="a-label">Specialization</label>
+          <input className="a-input" value={specialization} onChange={(e) => setSpecialization(e.target.value)} />
+        </div>
+        <div>
+          <label className="a-label">Bio</label>
+          <input className="a-input" value={bio} onChange={(e) => setBio(e.target.value)} />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="a-label">Branch</label>
+            <select className="a-input" value={branchId} onChange={(e) => setBranchId(e.target.value)}>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="a-label">Status</label>
+            <select className="a-input" value={status} onChange={(e) => setStatus(e.target.value as typeof status)}>
+              <option>ACTIVE</option>
+              <option>INACTIVE</option>
+            </select>
+          </div>
+        </div>
+        <ErrorNote message={error} />
+        <button className="a-btn" disabled={mutation.isPending || name.length < 2 || !branchId} onClick={() => mutation.mutate()}>
+          {coach ? 'Save changes' : 'Create coach'}
+        </button>
+      </div>
+    </Modal>
+  );
+}

@@ -45,11 +45,7 @@ export function GearPage() {
 
   const GearRow = ({ g }: { g: (typeof gear)[number] }) => (
     <div className={`card flex items-center gap-3 !py-4 ${g.retired ? 'opacity-60' : ''}`}>
-      <span
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-          g.kind === 'SHOES' ? 'bg-brand/10 text-brand' : 'bg-[#2563eb]/10 text-[#2563eb]'
-        }`}
-      >
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1b1b1f] text-white">
         {g.kind === 'SHOES' ? <Footprints size={19} /> : <Bike size={19} />}
       </span>
       <div className="min-w-0 flex-1">
@@ -189,8 +185,8 @@ function AddGearSheet({ onClose, onDone }: { onClose: () => void; onDone: () => 
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/50" onClick={onClose}>
-      <div className="w-full max-w-md rounded-t-3xl bg-surface p-5 pb-8" onClick={(e) => e.stopPropagation()}>
+    <div className="sheet-backdrop fixed inset-0 z-40 flex items-end justify-center bg-black/50" onClick={onClose}>
+      <div className="sheet-panel w-full max-w-md rounded-t-3xl bg-surface p-5 pb-8" onClick={(e) => e.stopPropagation()}>
         <h2 className="display mb-4 text-xl">Add gear</h2>
         <div className="flex flex-col gap-3">
           <div>

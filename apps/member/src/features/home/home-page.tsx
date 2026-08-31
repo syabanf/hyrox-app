@@ -76,10 +76,10 @@ export function HomePage() {
       {/* Quick actions — each with its own soft accent tint */}
       <div className="grid grid-cols-2 gap-3">
         {[
-          { to: '/qr', icon: QrCode, label: t('Check in'), tint: 'bg-brand/10 text-brand' },
-          { to: '/classes', icon: CalendarDays, label: t('Book a class'), tint: 'bg-[#2563eb]/10 text-[#2563eb]' },
-          { to: '/workout', icon: Dumbbell, label: t('Generate workout'), tint: 'bg-warn/10 text-warn' },
-          { to: '/races', icon: Flag, label: t('Races'), tint: 'bg-ok/10 text-ok' },
+          { to: '/qr', icon: QrCode, label: t('Check in'), tint: 'surface-brand text-white' },
+          { to: '/classes', icon: CalendarDays, label: t('Book a class'), tint: 'bg-[#1b1b1f] text-white' },
+          { to: '/workout', icon: Dumbbell, label: t('Generate workout'), tint: 'bg-[#1b1b1f] text-white' },
+          { to: '/races', icon: Flag, label: t('Races'), tint: 'bg-[#1b1b1f] text-white' },
         ].map(({ to, icon: Icon, label, tint }) => (
           <Link key={to} to={to} className="card flex items-center gap-3 !p-4 active:scale-[0.98]">
             <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tint}`}>
@@ -167,7 +167,7 @@ export function HomePage() {
           <SectionHeader label={t('Announcements')} />
           <div className="card divide-y divide-line !py-1">
             {home.announcements.slice(0, 4).map((a, i) => {
-              const dot = ['bg-brand', 'bg-warn', 'bg-[#2563eb]'][i % 3];
+              const dot = i === 0 ? 'bg-brand' : 'bg-ink/25';
               const inner = (
                 <div className="flex gap-3">
                   <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${dot}`} />
@@ -255,7 +255,7 @@ export function HomePage() {
       {/* Challenge progress */}
       {home?.challenge ? (
         <Link to="/train/explore" className="card flex items-center gap-4 !py-4">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warn/10 text-warn">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1b1b1f] text-white">
             <Trophy size={19} strokeWidth={2.2} />
           </span>
           <div className="min-w-0 flex-1">

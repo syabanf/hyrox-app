@@ -56,10 +56,10 @@ export function WorkoutGeneratorPage() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <div className="flex items-center gap-2">
         <Dumbbell size={22} className="text-brand" />
-        <h1 className="display text-2xl">{t('Workout generator')}</h1>
+        <h1 className="display text-3xl">{t('Workout generator')}</h1>
       </div>
 
       <div>

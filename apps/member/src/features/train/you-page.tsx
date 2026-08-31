@@ -41,8 +41,8 @@ export function YouPage() {
   const CIRC = 2 * Math.PI * R;
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="display text-2xl">You</h1>
+    <div className="flex flex-col gap-5">
+      <h1 className="display text-3xl">You</h1>
       <TrainTabs />
 
       <div className="card flex items-center gap-5">

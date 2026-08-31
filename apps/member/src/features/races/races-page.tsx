@@ -24,10 +24,10 @@ export function RacesPage() {
   const [region, setRegion] = useState('');
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <div className="flex items-center gap-2">
         <Flag size={22} className="text-brand" />
-        <h1 className="display text-2xl">Races</h1>
+        <h1 className="display text-3xl">Races</h1>
       </div>
       <div className="flex rounded-xl bg-surface p-1">
         {TABS.map((t) => (

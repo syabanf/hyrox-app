@@ -135,7 +135,7 @@ export function WorkoutActivePage() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <div className="card flex flex-col items-center !py-6">
         <p className="label !mb-0">Total time</p>
         <p className="display text-6xl leading-none">{formatDuration(totalSec)}</p>

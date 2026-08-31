@@ -9,12 +9,12 @@ export function HeatmapPage() {
   const { data, isLoading } = useHeatmap();
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm font-bold text-muted">
         <ArrowLeft size={16} /> Back
       </button>
       <div>
-        <h1 className="display text-2xl">Personal heatmap</h1>
+        <h1 className="display text-3xl">Personal heatmap</h1>
         <p className="text-sm text-muted">Every GPS track you have recorded, on one map.</p>
       </div>
       {isLoading || !data ? (

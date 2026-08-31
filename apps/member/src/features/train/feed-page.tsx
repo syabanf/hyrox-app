@@ -101,8 +101,8 @@ export function FeedPage() {
   const { data: feed, isLoading } = useFeed(scope);
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="display text-2xl">Train</h1>
+    <div className="flex flex-col gap-5">
+      <h1 className="display text-3xl">Train</h1>
       <TrainTabs />
       <div className="-mt-1 flex gap-2">
         {(['everyone', 'following'] as const).map((s) => (

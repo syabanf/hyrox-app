@@ -46,7 +46,7 @@ export function QrPage() {
   return (
     <div className="flex flex-col items-center gap-5 pt-2">
       <div className="text-center">
-        <h1 className="display text-2xl font-black">Gate access</h1>
+        <h1 className="display text-3xl font-black">Gate access</h1>
         <p className="text-sm text-muted">Show this at the scanner</p>
       </div>
 

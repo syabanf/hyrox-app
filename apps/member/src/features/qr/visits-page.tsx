@@ -6,8 +6,8 @@ export function VisitsPage() {
   if (isLoading) return <Spinner label="Loading visits…" />;
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="display text-2xl font-black">Visit history</h1>
+    <div className="flex flex-col gap-5">
+      <h1 className="display text-3xl font-black">Visit history</h1>
       {!visits || visits.length === 0 ? (
         <EmptyState title="No visits yet" hint="Your gate check-ins will appear here." />
       ) : (

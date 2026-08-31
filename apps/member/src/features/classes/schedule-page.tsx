@@ -41,8 +41,8 @@ export function SchedulePage() {
   );
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="display text-2xl font-black">Classes</h1>
+    <div className="flex flex-col gap-5">
+      <h1 className="display text-3xl font-black">Classes</h1>
 
       <div className="flex gap-2 overflow-x-auto pb-1">
         {days.map((d) => (

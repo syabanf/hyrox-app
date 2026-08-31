@@ -181,8 +181,8 @@ export function RecordPage() {
   const avgPace = distanceM > 50 ? (elapsedSec / distanceM) * 1000 : null;
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="display text-2xl">{t('Record')}</h1>
+    <div className="flex flex-col gap-5">
+      <h1 className="display text-3xl">{t('Record')}</h1>
       <TrainTabs />
 
       {followRoute ? (
@@ -343,7 +343,7 @@ function SaveForm({
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <div className="card flex gap-6 text-sm">
         <div>
           <p className="label !mb-0">{t('Time')}</p>

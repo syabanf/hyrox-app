@@ -66,7 +66,7 @@ export function WorkoutPreviewPage() {
       : [];
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <button onClick={() => navigate('/workout')} className="flex items-center gap-1 text-sm font-bold text-muted">
         <ArrowLeft size={16} /> Back
       </button>

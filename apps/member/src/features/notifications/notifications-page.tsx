@@ -37,9 +37,9 @@ export function NotificationsPage() {
   if (isLoading) return <Spinner label="Loading notifications…" />;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
-        <h1 className="display text-2xl font-black">Notifications</h1>
+        <h1 className="display text-3xl font-black">Notifications</h1>
         <button
           className="text-sm font-bold text-brand"
           onClick={() => readAll.mutate()}

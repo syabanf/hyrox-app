@@ -22,8 +22,8 @@ type Tab = (typeof TABS)[number];
 export function ExplorePage() {
   const [tab, setTab] = useState<Tab>('Segments');
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="display text-2xl">Explore</h1>
+    <div className="flex flex-col gap-5">
+      <h1 className="display text-3xl">Explore</h1>
       <TrainTabs />
       <div className="-mt-1 flex gap-2 overflow-x-auto pb-1">
         {TABS.map((t) => (
@@ -271,7 +271,7 @@ function AthletesTab() {
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       {data.suggestions.length > 0 ? (
         <section>
           <p className="label">Suggested</p>

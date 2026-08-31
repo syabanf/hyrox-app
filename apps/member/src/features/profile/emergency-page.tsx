@@ -33,11 +33,11 @@ export function EmergencyContactPage() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm font-bold text-muted">
         <ArrowLeft size={16} /> Back
       </button>
-      <h1 className="display text-2xl">Emergency contact</h1>
+      <h1 className="display text-3xl">Emergency contact</h1>
       <p className="-mt-2 text-sm text-muted">
         Shown to studio staff if something happens during training.
       </p>

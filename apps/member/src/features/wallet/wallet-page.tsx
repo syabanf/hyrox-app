@@ -18,8 +18,8 @@ export function WalletPage() {
   if (isLoading || !wallet) return <Spinner label="Loading wallet…" />;
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="display text-2xl font-black">Wallet</h1>
+    <div className="flex flex-col gap-5">
+      <h1 className="display text-3xl font-black">Wallet</h1>
 
       <div className="card surface-ink relative overflow-hidden !border-0 !p-6 text-white">
         <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />

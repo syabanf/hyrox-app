@@ -19,8 +19,8 @@ export function BookingsPage() {
   );
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="display text-2xl font-black">My bookings</h1>
+    <div className="flex flex-col gap-5">
+      <h1 className="display text-3xl font-black">My bookings</h1>
       <div className="flex rounded-xl bg-surface p-1">
         {(['upcoming', 'history'] as const).map((t) => (
           <button

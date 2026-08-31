@@ -50,7 +50,7 @@ export function ProfilePage() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <div className="flex items-center gap-4">
         <label className="relative cursor-pointer" title="Change photo">
           {m.avatarUrl ? (
@@ -75,7 +75,7 @@ export function ProfilePage() {
           />
         </label>
         <div>
-          <h1 className="display text-2xl font-black">{m.fullName}</h1>
+          <h1 className="display text-3xl font-black">{m.fullName}</h1>
           <StatusBadge status={m.status} />
         </div>
       </div>

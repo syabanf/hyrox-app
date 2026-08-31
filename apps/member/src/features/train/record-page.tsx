@@ -2,7 +2,7 @@ import { ApiError } from '@hyrox/api-client';
 import type { ActivityType, ActivityVisibility, Division, Route, TrackPoint } from '@hyrox/domain';
 import { haversineM } from '@hyrox/domain';
 import { formatDistanceM, formatDuration, formatPace } from '@hyrox/ui';
-import { Flame, ImagePlus, Pause, Play, Square, X } from 'lucide-react';
+import { Bike, Dumbbell, Flame, Footprints, ImagePlus, Pause, PersonStanding, Play, Square, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { GeoMap } from '../../components/geo-map';
@@ -24,6 +24,19 @@ const DIVISIONS: { id: Division; label: string }[] = [
 ];
 
 const SIM_SPEED: Record<ActivityType, number> = { RUN: 3.2, RIDE: 7.5, WALK: 1.5, WORKOUT: 0 };
+
+const TYPE_TILES: {
+  id: ActivityType | 'HYROX';
+  label: string;
+  hint: string;
+  icon: typeof Footprints;
+}[] = [
+  { id: 'RUN', label: 'Run', hint: 'GPS tracked', icon: Footprints },
+  { id: 'RIDE', label: 'Ride', hint: 'GPS tracked', icon: Bike },
+  { id: 'WALK', label: 'Walk', hint: 'GPS tracked', icon: PersonStanding },
+  { id: 'WORKOUT', label: 'Workout', hint: 'Timer only', icon: Dumbbell },
+  { id: 'HYROX', label: 'HYROX Sim', hint: 'Guided race', icon: Flame },
+];
 const M_PER_DEG_LAT = 111_320;
 
 function defaultTitle(type: ActivityType): string {
@@ -226,18 +239,35 @@ export function RecordPage() {
         <>
           <div>
             <p className="label">Activity type</p>
-            <div className="grid grid-cols-5 gap-1.5">
-              {(['RUN', 'RIDE', 'WALK', 'WORKOUT', 'HYROX'] as const).map((option) => (
-                <button
-                  key={option}
-                  onClick={() => setType(option)}
-                  className={`rounded-xl border px-1 py-2.5 text-[10px] font-black uppercase ${
-                    type === option ? 'border-brand bg-brand/10 text-brand' : 'border-line bg-surface text-muted'
-                  }`}
-                >
-                  {option === 'HYROX' ? 'HYROX Sim' : option}
-                </button>
-              ))}
+            <div className="-mx-5 flex snap-x gap-2.5 overflow-x-auto px-5 pb-1">
+              {TYPE_TILES.map(({ id, label, hint, icon: Icon }) => {
+                const selected = type === id;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => setType(id)}
+                    className={`flex min-w-[104px] shrink-0 snap-start flex-col items-start gap-2.5 rounded-2xl p-3.5 text-left transition active:scale-[0.97] ${
+                      selected
+                        ? 'surface-ink text-white shadow-[0_10px_26px_rgb(13_13_16/0.3)]'
+                        : 'card !p-3.5'
+                    }`}
+                  >
+                    <span
+                      className={`flex h-9 w-9 items-center justify-center rounded-full ${
+                        selected ? 'surface-brand text-white' : 'bg-[#1b1b1f] text-white'
+                      }`}
+                    >
+                      <Icon size={17} strokeWidth={2.2} />
+                    </span>
+                    <span>
+                      <span className="block text-sm font-extrabold leading-tight">{label}</span>
+                      <span className={`block text-[11px] font-semibold ${selected ? 'text-white/55' : 'text-muted'}`}>
+                        {hint}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
           {type === 'HYROX' ? null : type !== 'WORKOUT' ? (

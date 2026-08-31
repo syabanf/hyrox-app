@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, Modal, PageTitle } from '../../../../components/ui';
+import { ErrorNote, Modal, PageTitle, SearchSelect } from '../../../../components/ui';
 
 export default function SessionsPage() {
   const qc = useQueryClient();
@@ -49,14 +49,16 @@ export default function SessionsPage() {
         }
       />
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <select className="a-input max-w-44" value={branchId} onChange={(e) => setBranchId(e.target.value)}>
-          <option value="">All branches</option>
-          {(branches ?? []).map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.name}
-            </option>
-          ))}
-        </select>
+        <div className="w-44">
+          <SearchSelect
+            value={branchId}
+            onChange={setBranchId}
+            allowEmpty
+            emptyLabel="All branches"
+            placeholder="Search branch…"
+            options={(branches ?? []).map((b) => ({ value: b.id, label: b.name }))}
+          />
+        </div>
         <label className="flex items-center gap-2 text-sm text-muted">
           <input type="checkbox" checked={showPast} onChange={(e) => setShowPast(e.target.checked)} />
           Show past sessions
@@ -163,39 +165,37 @@ function CreateSessionModal({ onClose, onDone }: { onClose: () => void; onDone: 
       <div className="flex flex-col gap-3">
         <div>
           <label className="a-label">Class type</label>
-          <select className="a-input" value={classTypeId} onChange={(e) => setClassTypeId(e.target.value)}>
-            <option value="">Select…</option>
-            {(classTypes ?? []).map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name} ({t.defaultCreditCost} cr · cap {t.defaultCapacity})
-              </option>
-            ))}
-          </select>
+          <SearchSelect
+            value={classTypeId}
+            onChange={setClassTypeId}
+            placeholder="Search class type…"
+            options={(classTypes ?? []).map((t) => ({
+              value: t.id,
+              label: t.name,
+              hint: `${t.defaultCreditCost} cr · cap ${t.defaultCapacity}`,
+            }))}
+          />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="a-label">Branch</label>
-            <select className="a-input" value={branchId} onChange={(e) => setBranchId(e.target.value)}>
-              <option value="">Select…</option>
-              {(branches ?? []).map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
+            <SearchSelect
+              value={branchId}
+              onChange={setBranchId}
+              placeholder="Search branch…"
+              options={(branches ?? []).map((b) => ({ value: b.id, label: b.name }))}
+            />
           </div>
           <div>
             <label className="a-label">Coach</label>
-            <select className="a-input" value={coachId} onChange={(e) => setCoachId(e.target.value)}>
-              <option value="">Select…</option>
-              {(coaches ?? [])
+            <SearchSelect
+              value={coachId}
+              onChange={setCoachId}
+              placeholder="Search coach…"
+              options={(coaches ?? [])
                 .filter((c) => !branchId || c.branchId === branchId)
-                .map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-            </select>
+                .map((c) => ({ value: c.id, label: c.name, hint: c.specialization }))}
+            />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">

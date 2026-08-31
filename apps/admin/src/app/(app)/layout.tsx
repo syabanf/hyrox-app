@@ -21,7 +21,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Menu, X } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useAdminAuth, usePermissions } from '../../lib/auth';
 
@@ -91,10 +92,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { user, token, clear } = useAdminAuth();
   const { can } = usePermissions();
+  const [navOpen, setNavOpen] = useState(false);
 
   useEffect(() => {
     if (!token) router.replace('/login');
   }, [token, router]);
+  // Close the mobile drawer whenever navigation happens.
+  useEffect(() => {
+    setNavOpen(false);
+  }, [pathname]);
   if (!token || !user) return null;
 
   const logout = () => {
@@ -117,7 +123,27 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-dvh">
-      <aside className="surface-ink fixed inset-y-0 left-0 flex w-60 flex-col text-white">
+      {/* Mobile top bar */}
+      <header className="surface-ink fixed inset-x-0 top-0 z-30 flex items-center justify-between px-4 py-3 text-white lg:hidden">
+        <Link href="/dashboard" className="display text-base font-black">
+          HYROX<span className="text-[#ff4348]">STUDIO</span>
+        </Link>
+        <button
+          onClick={() => setNavOpen((v) => !v)}
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10"
+          aria-label="Toggle menu"
+        >
+          {navOpen ? <X size={18} /> : <Menu size={18} />}
+        </button>
+      </header>
+      {navOpen ? (
+        <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={() => setNavOpen(false)} />
+      ) : null}
+      <aside
+        className={`surface-ink fixed inset-y-0 left-0 z-40 flex w-60 flex-col text-white transition-transform max-lg:pt-2 lg:translate-x-0 ${
+          navOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
         <div className="px-6 pb-4 pt-6">
           <Link href="/dashboard" className="display text-lg font-black">
             HYROX<span className="text-[#ff4348]">STUDIO</span>
@@ -180,7 +206,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
       </aside>
-      <main className="ml-60 min-w-0 flex-1 px-8 py-7">{children}</main>
+      <main className="min-w-0 flex-1 px-4 py-5 pt-16 sm:px-6 lg:ml-60 lg:px-8 lg:py-7 lg:pt-7">
+        {children}
+      </main>
     </div>
   );
 }

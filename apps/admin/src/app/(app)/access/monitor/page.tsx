@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, PageTitle } from '../../../../components/ui';
+import { ErrorNote, PageTitle, SearchSelect } from '../../../../components/ui';
 
 const PIPELINE_STEPS = [
   { key: 'token', label: 'QR valid' },
@@ -115,25 +115,25 @@ function GateSimulator({ onScanned }: { onScanned: () => void }) {
       <div className="flex flex-col gap-3">
         <div>
           <label className="a-label">Gate</label>
-          <select className="a-input" value={gateId} onChange={(e) => setGateId(e.target.value)}>
-            <option value="">Select…</option>
-            {(gates ?? []).map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name}
-              </option>
-            ))}
-          </select>
+          <SearchSelect
+            value={gateId}
+            onChange={setGateId}
+            placeholder="Search gate…"
+            options={(gates ?? []).map((g) => ({ value: g.id, label: g.name }))}
+          />
         </div>
         <div>
           <label className="a-label">Member</label>
-          <select className="a-input" value={memberId} onChange={(e) => setMemberId(e.target.value)}>
-            <option value="">Select…</option>
-            {(members ?? []).map((m) => (
-              <option key={m.member.id} value={m.member.id}>
-                {m.member.fullName} · {m.member.status} · {m.balance} cr
-              </option>
-            ))}
-          </select>
+          <SearchSelect
+            value={memberId}
+            onChange={setMemberId}
+            placeholder="Search member…"
+            options={(members ?? []).map((m) => ({
+              value: m.member.id,
+              label: m.member.fullName,
+              hint: `${m.member.status} · ${m.balance} cr`,
+            }))}
+          />
         </div>
         <button className="a-btn" disabled={scan.isPending || !gateId || !memberId} onClick={() => scan.mutate()}>
           Scan QR at gate

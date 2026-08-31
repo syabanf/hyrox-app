@@ -68,8 +68,13 @@ body {
 .a-label {
   @apply mb-1.5 block text-[11px] font-extrabold uppercase tracking-[0.12em] text-muted;
 }
+/* Tables scroll sideways inside their card on narrow screens. */
+.a-card:has(.a-table) {
+  overflow-x: auto;
+}
 .a-table {
   @apply w-full border-collapse text-sm;
+  min-width: 640px;
 }
 .a-table th {
   @apply border-b border-line px-3 py-2.5 text-left text-[11px] font-extrabold uppercase tracking-[0.12em] text-muted;

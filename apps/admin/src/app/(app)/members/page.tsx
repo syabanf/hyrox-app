@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api, ApiError } from '../../../lib/api';
 import { usePermissions } from '../../../lib/auth';
-import { ErrorNote, Modal, PageTitle } from '../../../components/ui';
+import { ErrorNote, Modal, PageTitle, SearchSelect } from '../../../components/ui';
 
 const STATUSES = ['', 'ACTIVE', 'SUSPENDED', 'INACTIVE', 'ARCHIVED'];
 
@@ -140,18 +140,14 @@ function CreateMemberModal({ onClose }: { onClose: () => void }) {
         </div>
         <div>
           <label className="a-label">Preferred branch</label>
-          <select
-            className="a-input"
+          <SearchSelect
             value={preferredBranchId}
-            onChange={(e) => setPreferredBranchId(e.target.value)}
-          >
-            <option value="">None</option>
-            {(branches ?? []).map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
+            onChange={setPreferredBranchId}
+            allowEmpty
+            emptyLabel="None"
+            placeholder="Search branch…"
+            options={(branches ?? []).map((b) => ({ value: b.id, label: b.name }))}
+          />
         </div>
         <div>
           <label className="a-label">Notes (optional)</label>

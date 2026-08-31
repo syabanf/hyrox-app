@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, Modal, PageTitle } from '../../../../components/ui';
+import { ErrorNote, Modal, PageTitle, SearchSelect } from '../../../../components/ui';
 
 export default function CoachesPage() {
   const qc = useQueryClient();
@@ -133,13 +133,12 @@ function CoachModal({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="a-label">Branch</label>
-            <select className="a-input" value={branchId} onChange={(e) => setBranchId(e.target.value)}>
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
+            <SearchSelect
+              value={branchId}
+              onChange={setBranchId}
+              placeholder="Search branch…"
+              options={branches.map((b) => ({ value: b.id, label: b.name }))}
+            />
           </div>
           <div>
             <label className="a-label">Status</label>

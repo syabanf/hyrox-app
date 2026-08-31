@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, Modal, PageTitle } from '../../../../components/ui';
+import { ErrorNote, Modal, PageTitle, SearchSelect } from '../../../../components/ui';
 
 export default function BookingsPage() {
   const qc = useQueryClient();
@@ -180,28 +180,31 @@ function BookModal({ onClose, onDone }: { onClose: () => void; onDone: (msg: str
       <div className="flex flex-col gap-3">
         <div>
           <label className="a-label">Member</label>
-          <select className="a-input" value={memberId} onChange={(e) => setMemberId(e.target.value)}>
-            <option value="">Select…</option>
-            {(members ?? [])
+          <SearchSelect
+            value={memberId}
+            onChange={setMemberId}
+            placeholder="Search member…"
+            options={(members ?? [])
               .filter((m) => m.member.status === 'ACTIVE')
-              .map((m) => (
-                <option key={m.member.id} value={m.member.id}>
-                  {m.member.fullName} ({m.balance} cr)
-                </option>
-              ))}
-          </select>
+              .map((m) => ({
+                value: m.member.id,
+                label: m.member.fullName,
+                hint: `${m.member.email} · ${m.balance} cr`,
+              }))}
+          />
         </div>
         <div>
           <label className="a-label">Session</label>
-          <select className="a-input" value={sessionId} onChange={(e) => setSessionId(e.target.value)}>
-            <option value="">Select…</option>
-            {bookable.map((v) => (
-              <option key={v.session.id} value={v.session.id}>
-                {formatDayTime(v.session.startsAt)} · {v.classTypeName} · {v.branchName} (
-                {v.spotsLeft > 0 ? `${v.spotsLeft} left` : 'FULL → waitlist'})
-              </option>
-            ))}
-          </select>
+          <SearchSelect
+            value={sessionId}
+            onChange={setSessionId}
+            placeholder="Search session…"
+            options={bookable.map((v) => ({
+              value: v.session.id,
+              label: `${formatDayTime(v.session.startsAt)} · ${v.classTypeName}`,
+              hint: `${v.branchName} · ${v.spotsLeft > 0 ? `${v.spotsLeft} left` : 'FULL → waitlist'}`,
+            }))}
+          />
         </div>
         <ErrorNote message={error} />
         <button className="a-btn" disabled={mutation.isPending || !memberId || !sessionId} onClick={() => mutation.mutate()}>

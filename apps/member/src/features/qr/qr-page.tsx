@@ -44,20 +44,22 @@ export function QrPage() {
   const CIRC = 2 * Math.PI * R;
 
   return (
-    <div className="flex flex-col items-center gap-5 pt-2">
-      <div className="text-center">
-        <h1 className="display text-3xl font-black">Gate access</h1>
-        <p className="text-sm text-muted">Show this at the scanner</p>
+    <div className="flex flex-col gap-5">
+      <div>
+        <h1 className="display text-3xl">Gate access</h1>
+        <p className="mt-1 text-sm text-muted">Show this at the scanner to check in.</p>
       </div>
 
-      <div className="rounded-3xl bg-white p-5 shadow-[0_0_60px_rgba(237,28,36,0.25)]">
-        <QRCodeSVG value={qr.data.token} size={240} level="M" marginSize={0} />
-      </div>
+      <div className="card surface-ink relative overflow-hidden !border-0 !p-6 text-white">
+        <div className="pointer-events-none absolute -right-20 -top-28 h-64 w-64 rounded-full bg-brand/30 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -left-16 h-48 w-48 rounded-full bg-white/[0.05] blur-2xl" />
 
-      <div className="card surface-ink relative w-full overflow-hidden !border-0 !p-5 text-white">
-        <div className="pointer-events-none absolute -right-14 -top-20 h-44 w-44 rounded-full bg-brand/25 blur-3xl" />
-        <div className="relative flex items-center gap-4">
-          <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden>
+        <div className="relative mx-auto w-fit rounded-2xl bg-white p-4">
+          <QRCodeSVG value={qr.data.token} size={212} level="M" marginSize={0} />
+        </div>
+
+        <div className="relative mt-6 flex items-center gap-4">
+          <svg width="56" height="56" viewBox="0 0 64 64" aria-hidden className="shrink-0">
             <circle cx="32" cy="32" r={R} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="5" />
             <circle
               cx="32"
@@ -84,23 +86,25 @@ export function QrPage() {
               {secondsLeft}
             </text>
           </svg>
-          <div className="text-sm text-white/60">
-            <p className="font-bold text-white">{member?.fullName}</p>
-            <p>
-              Balance:{' '}
-              <span className="font-black text-[#ff4348]">{me?.balance ?? '…'} credits</span>
-            </p>
-            <p className="text-xs">Code refreshes automatically.</p>
+          <div className="min-w-0 flex-1 text-sm text-white/55">
+            <p className="truncate font-extrabold text-white">{member?.fullName}</p>
+            <p className="text-xs">Refreshes automatically every {qr.data.ttlSeconds}s.</p>
+          </div>
+          <div className="shrink-0 text-right">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">Credits</p>
+            <p className="display text-2xl leading-none text-[#ff4348]">{me?.balance ?? '…'}</p>
           </div>
         </div>
-      </div>
 
-      <Link to="/visits" className="text-sm font-bold text-brand">
-        Visit history →
-      </Link>
-      <p className="max-w-64 text-center text-xs text-muted/70">
-        Tip: use the flask button (dev tools) to simulate scanning this code at a gate.
-      </p>
+        <div className="relative mt-5 flex items-center justify-between border-t border-white/10 pt-4">
+          <Link to="/visits" className="chip bg-white/10 text-white/80">
+            Visit history →
+          </Link>
+          <Link to="/wallet/topup" className="chip bg-white/10 text-white/80">
+            Top up
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

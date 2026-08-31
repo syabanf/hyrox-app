@@ -619,8 +619,9 @@ export function createSeedDb(nowIso: string): MockDb {
       const gate = s.branchId === 'brn_senopati' ? 'gat_sen_a' : 'gat_pik_a';
       addAccess(member.id, gate, 'ALLOWED', s.startsAt, -s.creditCost, null, 'ONLINE', b.id);
     }
-    if (i % 5 === 0 && futureSessions[i + 3]) {
-      addBooking(member.id, futureSessions[i + 3]!, 'CONFIRMED');
+    const upcoming = futureSessions[i + 3];
+    if (i % 5 === 0 && upcoming && upcoming.id !== fullSession?.id) {
+      addBooking(member.id, upcoming, 'CONFIRMED');
     }
     if (i === 3) addPayment(member.id, 'pkg_10', 'PENDING', 1);
     if (i === 4) addPayment(member.id, 'pkg_5', 'FAILED', 3);
@@ -894,8 +895,7 @@ function seedAthleteModule(
     addDays: (iso: string, days: number) => string;
   },
 ): void {
-  const { nowIso, daysAgo } = helpers;
-  const now = new Date(nowIso);
+  const { nowIso, daysAgo, addDays } = helpers;
 
   // Segment polylines live on shared "corridors", so tracks that follow the
   // corridor genuinely pass the start/end gates (GPS matching, not shortcuts).
@@ -906,8 +906,6 @@ function seedAthleteModule(
     { id: 'seg_ride', name: 'PIK Coastal Ride', type: 'RIDE', distanceM: 10_000, location: 'PIK', path: corridorTrack(RIDE_BASE, WEST, 10_000, 8, 0) },
   ];
 
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
   db.challenges = [
     {
       id: 'chal_run50',
@@ -915,8 +913,8 @@ function seedAthleteModule(
       description: 'Run 50 kilometers this month.',
       type: 'RUN',
       targetKm: 50,
-      startsAt: monthStart,
-      endsAt: monthEnd,
+      startsAt: daysAgo(20),
+      endsAt: addDays(nowIso, 10),
     },
     {
       id: 'chal_any100',
@@ -924,8 +922,8 @@ function seedAthleteModule(
       description: 'Cover 100 kilometers any way you like.',
       type: 'ANY',
       targetKm: 100,
-      startsAt: monthStart,
-      endsAt: monthEnd,
+      startsAt: daysAgo(20),
+      endsAt: addDays(nowIso, 10),
     },
   ];
 

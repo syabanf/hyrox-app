@@ -15,6 +15,7 @@ import { PromoDetailPage } from '../features/home/promo-detail-page';
 import { ChallengeDetailPage } from '../features/train/challenge-detail-page';
 import { AthleteProfilePage } from '../features/train/athlete-profile-page';
 import { RaceDetailPage } from '../features/races/race-detail-page';
+import { MyClassesPage } from '../features/classes/my-classes-page';
 import { ProfilePage } from '../features/profile/profile-page';
 import { SettingsPage } from '../features/profile/settings-page';
 import { QrPage } from '../features/qr/qr-page';
@@ -46,6 +47,7 @@ export const router = createBrowserRouter([
     children: [
       { path: '/', element: <HomePage /> },
       { path: '/classes', element: <SchedulePage /> },
+      { path: '/my-classes', element: <MyClassesPage /> },
       { path: '/classes/:sessionId', element: <SessionDetailPage /> },
       { path: '/bookings', element: <BookingsPage /> },
       { path: '/qr', element: <QrPage /> },

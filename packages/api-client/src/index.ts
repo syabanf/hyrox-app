@@ -208,6 +208,7 @@ export function createApiClient(options: ApiClientOptions) {
     },
     catalog: {
       branches: () => get<Branch[]>('/api/branches'),
+      classTypes: () => get<ClassType[]>('/api/class-types'),
       packages: () => get<(CreditPackage & { coverageNames: string[] | null })[]>('/api/packages'),
       sessions: (query?: { branchId?: string; from?: string; to?: string }) =>
         get<SessionView[]>('/api/sessions', query),

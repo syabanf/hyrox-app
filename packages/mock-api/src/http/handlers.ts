@@ -404,6 +404,10 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
     // ── Shared catalog ──────────────────────────────────────────────────────
     http.get('*/api/branches', () => HttpResponse.json(db().branches)),
 
+    http.get('*/api/class-types', () =>
+      HttpResponse.json(db().classTypes.filter((c) => c.active)),
+    ),
+
     http.get('*/api/packages', () =>
       HttpResponse.json(
         db()

@@ -22,7 +22,7 @@ import {
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { GeoMap } from '../../components/geo-map';
 import { RouteMap } from '../../components/route-map';
 import { api } from '../../lib/api';
@@ -106,6 +106,17 @@ function OptionRow({
   );
 }
 
+const WORKOUT_FOCUS = [
+  'Back',
+  'Chest',
+  'Legs',
+  'Shoulders',
+  'Arms',
+  'Core',
+  'Glutes',
+  'Full body',
+] as const;
+
 const TYPE_TILES: {
   id: ActivityType | 'HYROX';
   label: string;
@@ -153,6 +164,7 @@ export function RecordPage() {
   const [liveCopied, setLiveCopied] = useState(false);
   const [sensorOpen, setSensorOpen] = useState(false);
   const [laps, setLaps] = useState<number[]>([]);
+  const [focus, setFocus] = useState<string[]>([]);
   const [points, setPoints] = useState<TrackPoint[]>([]);
   const [elapsedSec, setElapsedSec] = useState(0);
   const [distanceM, setDistanceM] = useState(0);
@@ -390,7 +402,28 @@ export function RecordPage() {
               />
             </label>
           ) : (
-            <p className="card text-sm text-muted">Workouts record time only — no GPS.</p>
+            <div className="card">
+              <p className="label">What are you training?</p>
+              <div className="flex flex-wrap gap-1.5">
+                {WORKOUT_FOCUS.map((f) => {
+                  const on = focus.includes(f);
+                  return (
+                    <button
+                      key={f}
+                      onClick={() =>
+                        setFocus((prev) => (on ? prev.filter((x) => x !== f) : [...prev, f]))
+                      }
+                      className={`rounded-full px-3.5 py-2 text-xs font-bold transition ${
+                        on ? 'bg-[#1b1b1f] text-white' : 'bg-surface-raised text-muted'
+                      }`}
+                    >
+                      {f}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-2.5 text-xs text-muted">Timer only — no GPS. Focus lands in the title.</p>
+            </div>
           )}
           {type !== 'HYROX' ? (
             <button onClick={start} className="btn-brand flex items-center justify-center gap-2 !py-5 text-lg">
@@ -568,6 +601,7 @@ export function RecordPage() {
       {phase === 'saving' ? (
         <SaveForm
           type={type === 'HYROX' ? 'WORKOUT' : type}
+          focus={focus}
           laps={laps}
           points={points}
           elapsedSec={elapsedSec}
@@ -586,6 +620,7 @@ export function RecordPage() {
 
 function SaveForm({
   type,
+  focus,
   laps,
   points,
   elapsedSec,
@@ -595,6 +630,7 @@ function SaveForm({
   onSaved,
 }: {
   type: ActivityType;
+  focus: string[];
   laps: number[];
   points: TrackPoint[];
   elapsedSec: number;
@@ -605,11 +641,20 @@ function SaveForm({
 }) {
   const t = useT();
   const units = useUnits();
-  const [title, setTitle] = useState(defaultTitle(type));
+  const [title, setTitle] = useState(() =>
+    type === 'WORKOUT' && focus.length > 0
+      ? `${focus.slice(0, 2).join(' & ')} Workout`
+      : defaultTitle(type),
+  );
   const [description, setDescription] = useState(() =>
-    laps.length > 0
-      ? `Laps: ${laps.map((at, i) => `${i + 1}) ${formatDuration(at - (laps[i - 1] ?? 0))}`).join('  ')}`
-      : '',
+    [
+      focus.length > 0 ? `Focus: ${focus.join(', ')}` : null,
+      laps.length > 0
+        ? `Laps: ${laps.map((at, i) => `${i + 1}) ${formatDuration(at - (laps[i - 1] ?? 0))}`).join('  ')}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join('\n'),
   );
   const [gearId, setGearId] = useState('');
   const [visibility, setVisibility] = useState<ActivityVisibility>('EVERYONE');

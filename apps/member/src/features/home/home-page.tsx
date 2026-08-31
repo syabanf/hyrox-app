@@ -1,6 +1,6 @@
 import { Spinner, formatDay, formatDayTime, formatDuration, formatTime } from '@hyrox/ui';
 import { useQuery } from '@tanstack/react-query';
-import { CalendarDays, Dumbbell, Flag, QrCode, Trophy } from 'lucide-react';
+import { BookMarked, CalendarDays, CirclePlay, Dumbbell, Flag, QrCode, Trophy } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { MemberCardSheet } from '../../components/member-card';
@@ -85,8 +85,10 @@ export function HomePage() {
         {[
           { to: '/qr', icon: QrCode, label: t('Check in'), tint: 'surface-brand text-white' },
           { to: '/classes', icon: CalendarDays, label: t('Book a class'), tint: 'bg-[#1b1b1f] text-white' },
+          { to: '/my-classes', icon: BookMarked, label: t('My classes'), tint: 'bg-[#1b1b1f] text-white' },
           { to: '/workout', icon: Dumbbell, label: t('Generate workout'), tint: 'bg-[#1b1b1f] text-white' },
           { to: '/races', icon: Flag, label: t('Races'), tint: 'bg-[#1b1b1f] text-white' },
+          { to: '/train/tutorials', icon: CirclePlay, label: t('Guides'), tint: 'bg-[#1b1b1f] text-white' },
         ].map(({ to, icon: Icon, label, tint }) => (
           <Link key={to} to={to} className="card flex items-center gap-3 !p-4 active:scale-[0.98]">
             <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tint}`}>

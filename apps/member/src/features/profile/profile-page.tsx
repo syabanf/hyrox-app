@@ -1,5 +1,5 @@
 import { Spinner, StatusBadge, formatDay } from '@hyrox/ui';
-import { Camera, ChevronRight, Footprints, HeartPulse, IdCard, LogOut, Settings, Wallet } from 'lucide-react';
+import { BookMarked, Camera, ChevronRight, Footprints, HeartPulse, IdCard, LogOut, Settings, Wallet } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { api } from '../../lib/api';
@@ -140,6 +140,7 @@ export function ProfilePage() {
         </button>
         {[
           { to: '/wallet', icon: Wallet, title: 'Wallet & credits', hint: 'Balance, top up, history' },
+          { to: '/my-classes', icon: BookMarked, title: 'My classes', hint: 'What your packages cover' },
           {
             to: '/profile/emergency',
             icon: HeartPulse,

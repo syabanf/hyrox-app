@@ -12,7 +12,17 @@ export default function ClassTypesPage() {
   const qc = useQueryClient();
   const { can } = usePermissions();
   const [editing, setEditing] = useState<ClassType | 'new' | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const { data, isLoading } = useQuery({ queryKey: ['class-types'], queryFn: api.admin.classTypes.list });
+
+  const remove = useMutation({
+    mutationFn: (id: string) => api.admin.classTypes.remove(id),
+    onSuccess: () => {
+      setError(null);
+      void qc.invalidateQueries();
+    },
+    onError: (e) => setError(e instanceof ApiError ? e.message : 'Delete failed.'),
+  });
 
   return (
     <div>
@@ -27,6 +37,7 @@ export default function ClassTypesPage() {
           ) : undefined
         }
       />
+      <ErrorNote message={error} />
       {isLoading ? (
         <Spinner label="Loading…" />
       ) : (
@@ -57,9 +68,19 @@ export default function ClassTypesPage() {
                   </td>
                   <td className="text-right">
                     {can('class_types.manage') ? (
-                      <button className="text-sm font-bold text-brand" onClick={() => setEditing(t)}>
-                        Edit
-                      </button>
+                      <div className="flex justify-end gap-2">
+                        <button className="text-sm font-bold text-brand" onClick={() => setEditing(t)}>
+                          Edit
+                        </button>
+                        <button
+                          className="text-sm font-bold text-muted hover:text-danger"
+                          onClick={() => {
+                            if (confirm(`Delete class type "${t.name}"?`)) remove.mutate(t.id);
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     ) : null}
                   </td>
                 </tr>

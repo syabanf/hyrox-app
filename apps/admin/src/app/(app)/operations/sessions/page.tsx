@@ -14,11 +14,21 @@ export default function SessionsPage() {
   const [branchId, setBranchId] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [showPast, setShowPast] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const { data: branches } = useQuery({ queryKey: ['branches'], queryFn: api.catalog.branches });
   const { data: sessions, isLoading } = useQuery({
     queryKey: ['admin-sessions', branchId],
     queryFn: () => api.admin.sessions.list(branchId ? { branchId } : undefined),
+  });
+
+  const remove = useMutation({
+    mutationFn: (id: string) => api.admin.sessions.remove(id),
+    onSuccess: () => {
+      setError(null);
+      void qc.invalidateQueries();
+    },
+    onError: (e) => setError(e instanceof ApiError ? e.message : 'Delete failed.'),
   });
 
   const visible = (sessions ?? []).filter(
@@ -52,6 +62,7 @@ export default function SessionsPage() {
           Show past sessions
         </label>
       </div>
+      <ErrorNote message={error} />
       {isLoading ? (
         <Spinner label="Loading sessions…" />
       ) : (
@@ -66,6 +77,7 @@ export default function SessionsPage() {
                 <th>Cost</th>
                 <th>Booked</th>
                 <th>Status</th>
+                <th />
               </tr>
             </thead>
             <tbody>
@@ -86,6 +98,19 @@ export default function SessionsPage() {
                   </td>
                   <td>
                     <StatusBadge status={v.session.status} />
+                  </td>
+                  <td className="text-right">
+                    {can('sessions.manage') && v.confirmedCount === 0 && v.waitlistCount === 0 ? (
+                      <button
+                        className="text-xs font-bold text-muted hover:text-danger"
+                        onClick={() => {
+                          if (confirm('Delete this session? Only possible while nobody is booked.'))
+                            remove.mutate(v.session.id);
+                        }}
+                      >
+                        Delete
+                      </button>
+                    ) : null}
                   </td>
                 </tr>
               ))}

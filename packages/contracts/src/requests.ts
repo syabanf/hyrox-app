@@ -234,6 +234,35 @@ export const ResolveConflictSchema = z.object({
   reason: z.string().min(3),
 });
 
+export const CreateMemberAdminSchema = z.object({
+  fullName: z.string().min(2),
+  email: z.string().email(),
+  phone: z.string().min(6),
+  preferredBranchId: z.string().nullable().default(null),
+  notes: z.string().nullable().default(null),
+});
+
+export const UpsertRaceEventSchema = z.object({
+  name: z.string().min(2),
+  country: z.string().min(2),
+  region: z.enum(['ASIA', 'EUROPE', 'AMERICAS', 'OCEANIA']),
+  city: z.string().min(2),
+  venue: z.string().min(2),
+  startsAt: z.string(),
+  endsAt: z.string().nullable().default(null),
+  registrationUrl: z.string().default(''),
+  imageUrl: z.string().nullable().default(null),
+  status: z.enum([
+    'ANNOUNCED',
+    'REGISTRATION_OPEN',
+    'SOLD_OUT',
+    'UPCOMING',
+    'ONGOING',
+    'COMPLETED',
+    'CANCELLED',
+  ]),
+});
+
 export type OtpRequest = z.infer<typeof OtpRequestSchema>;
 export type OtpVerify = z.infer<typeof OtpVerifySchema>;
 export type RegisterMemberInput = z.infer<typeof RegisterMemberSchema>;
@@ -259,3 +288,5 @@ export type CreateBranchInput = z.infer<typeof CreateBranchSchema>;
 export type UpsertGateInput = z.infer<typeof UpsertGateSchema>;
 export type UpsertAdminUserInput = z.infer<typeof UpsertAdminUserSchema>;
 export type ResolveConflictInput = z.infer<typeof ResolveConflictSchema>;
+export type CreateMemberAdminInput = z.infer<typeof CreateMemberAdminSchema>;
+export type UpsertRaceEventInput = z.infer<typeof UpsertRaceEventSchema>;

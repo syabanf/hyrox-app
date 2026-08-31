@@ -18,10 +18,31 @@ export default function DashboardPage() {
   return (
     <div>
       <PageTitle title="Dashboard" subtitle="Today at a glance" />
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <StatCard label="Visitors today" value={data.visitorsToday} tone="brand" />
-        <StatCard label="Classes today" value={data.classesToday} />
-        <StatCard label="Revenue today" value={formatIdr(data.revenueTodayIdr)} />
+      {/* Hero — the day's headline numbers on a premium black card */}
+      <div className="surface-ink relative mb-4 overflow-hidden rounded-3xl p-6 text-white shadow-[0_18px_40px_rgb(13_13_16/0.25)]">
+        <div className="pointer-events-none absolute -right-20 -top-28 h-64 w-64 rounded-full bg-brand/25 blur-3xl" />
+        <div className="relative grid gap-6 sm:grid-cols-3">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/50">
+              Visitors today
+            </p>
+            <p className="display mt-1 text-5xl leading-none">{data.visitorsToday}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/50">
+              Revenue today
+            </p>
+            <p className="display mt-1 text-5xl leading-none">{formatIdr(data.revenueTodayIdr)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/50">
+              Classes today
+            </p>
+            <p className="display mt-1 text-5xl leading-none">{data.classesToday}</p>
+          </div>
+        </div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-3">
         <StatCard label="Active members" value={data.activeMembers} />
         <StatCard label="Outstanding credits" value={data.outstandingCredits} hint="Total liability" />
         <StatCard

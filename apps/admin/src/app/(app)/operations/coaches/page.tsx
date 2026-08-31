@@ -12,8 +12,18 @@ export default function CoachesPage() {
   const qc = useQueryClient();
   const { can } = usePermissions();
   const [editing, setEditing] = useState<Coach | 'new' | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const { data: coaches, isLoading } = useQuery({ queryKey: ['coaches'], queryFn: api.admin.coaches.list });
   const { data: branches } = useQuery({ queryKey: ['branches'], queryFn: api.catalog.branches });
+
+  const remove = useMutation({
+    mutationFn: (id: string) => api.admin.coaches.remove(id),
+    onSuccess: () => {
+      setError(null);
+      void qc.invalidateQueries();
+    },
+    onError: (e) => setError(e instanceof ApiError ? e.message : 'Delete failed.'),
+  });
 
   if (isLoading) return <Spinner label="Loading coaches…" />;
 
@@ -30,6 +40,7 @@ export default function CoachesPage() {
           ) : undefined
         }
       />
+      <ErrorNote message={error} />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {(coaches ?? []).map((c) => (
           <div key={c.id} className="a-card">
@@ -44,9 +55,19 @@ export default function CoachesPage() {
                 {(branches ?? []).find((b) => b.id === c.branchId)?.name ?? c.branchId}
               </p>
               {can('coaches.manage') ? (
-                <button className="text-sm font-bold text-brand" onClick={() => setEditing(c)}>
-                  Edit
-                </button>
+                <div className="flex gap-2">
+                  <button className="text-sm font-bold text-brand" onClick={() => setEditing(c)}>
+                    Edit
+                  </button>
+                  <button
+                    className="text-sm font-bold text-muted hover:text-danger"
+                    onClick={() => {
+                      if (confirm(`Delete coach "${c.name}"?`)) remove.mutate(c.id);
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
               ) : null}
             </div>
           </div>

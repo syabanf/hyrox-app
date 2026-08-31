@@ -7,6 +7,7 @@ import {
   CreditCard,
   DoorOpen,
   Dumbbell,
+  Flag,
   LayoutDashboard,
   LogOut,
   Megaphone,
@@ -71,7 +72,10 @@ const NAV: NavGroup[] = [
   },
   {
     label: 'Engagement',
-    items: [{ href: '/engagement', label: 'Campaigns', icon: Megaphone, permission: 'engagement.view' }],
+    items: [
+      { href: '/engagement', label: 'Campaigns', icon: Megaphone, permission: 'engagement.view' },
+      { href: '/engagement/races', label: 'Race Events', icon: Flag, permission: 'engagement.view' },
+    ],
   },
   {
     label: 'Insights',
@@ -104,37 +108,48 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     location.href = '/login';
   };
 
+  // Highlight only the deepest matching nav item (so /engagement/races doesn't
+  // also light up /engagement).
+  const allHrefs = NAV.flatMap((g) => g.items.map((i) => i.href));
+  const activeHref = allHrefs
+    .filter((h) => pathname === h || pathname.startsWith(`${h}/`))
+    .sort((a, b) => b.length - a.length)[0];
+
   return (
     <div className="flex min-h-dvh">
-      <aside className="fixed inset-y-0 left-0 flex w-60 flex-col border-r border-black/40 bg-ink-soft text-white">
-        <div className="px-5 py-5">
+      <aside className="surface-ink fixed inset-y-0 left-0 flex w-60 flex-col text-white">
+        <div className="px-6 pb-4 pt-6">
           <Link href="/dashboard" className="display text-lg font-black">
-            HYROX<span className="text-brand">STUDIO</span>
+            HYROX<span className="text-[#ff4348]">STUDIO</span>
           </Link>
-          <p className="text-[11px] font-bold uppercase tracking-widest text-muted">Admin Panel</p>
+          <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.22em] text-white/35">
+            Admin Panel
+          </p>
         </div>
         <nav className="flex-1 overflow-y-auto px-3 pb-4">
           {NAV.map((group) => {
             const visible = group.items.filter((i) => can(i.permission));
             if (visible.length === 0) return null;
             return (
-              <div key={group.label ?? 'root'} className="mb-4">
+              <div key={group.label ?? 'root'} className="mb-5">
                 {group.label ? (
-                  <p className="px-2 pb-1 text-[10px] font-black uppercase tracking-widest text-muted/60">
+                  <p className="px-3 pb-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/30">
                     {group.label}
                   </p>
                 ) : null}
                 {visible.map(({ href, label, icon: Icon }) => {
-                  const active = pathname === href || pathname.startsWith(`${href}/`);
+                  const active = href === activeHref;
                   return (
                     <Link
                       key={href}
                       href={href}
-                      className={`mb-0.5 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-bold ${
-                        active ? 'bg-brand text-white' : 'text-[#c9c9c9] hover:bg-surface-raised'
+                      className={`mb-0.5 flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-bold transition ${
+                        active
+                          ? 'bg-white/10 text-white'
+                          : 'text-white/45 hover:bg-white/5 hover:text-white/80'
                       }`}
                     >
-                      <Icon size={16} />
+                      <Icon size={16} className={active ? 'text-[#ff4348]' : undefined} />
                       {label}
                     </Link>
                   );
@@ -143,18 +158,21 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        <div className="border-t border-line p-4 text-sm">
+        <div className="border-t border-white/10 p-4 text-sm">
           <p className="font-black">{user.name}</p>
-          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-brand">
+          <p className="mb-3 text-[11px] font-bold uppercase tracking-wide text-[#ff4348]">
             {user.role.replaceAll('_', ' ')}
           </p>
           <div className="flex gap-2">
-            <button onClick={logout} className="a-btn-ghost flex-1 !px-2 !py-1.5 text-xs">
+            <button
+              onClick={logout}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white/10 px-2 py-2 text-xs font-bold text-white/80 transition hover:bg-white/15"
+            >
               <LogOut size={13} /> Sign out
             </button>
             <button
               onClick={() => void resetDemo()}
-              className="a-btn-ghost !px-2 !py-1.5 text-xs"
+              className="flex items-center justify-center rounded-xl bg-white/10 px-2.5 py-2 text-white/80 transition hover:bg-white/15"
               title="Reset demo data"
             >
               <RotateCcw size={13} />
@@ -162,7 +180,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
       </aside>
-      <main className="ml-60 min-w-0 flex-1 px-8 py-6">{children}</main>
+      <main className="ml-60 min-w-0 flex-1 px-8 py-7">{children}</main>
     </div>
   );
 }

@@ -169,9 +169,29 @@ function BranchesTab() {
     onSuccess: refresh,
   });
 
+  const [error, setError] = useState<string | null>(null);
+  const onError = (e: unknown) => setError(e instanceof ApiError ? e.message : 'Delete failed.');
+  const removeBranch = useMutation({
+    mutationFn: (id: string) => api.admin.branches.remove(id),
+    onSuccess: () => {
+      setError(null);
+      refresh();
+    },
+    onError,
+  });
+  const removeGate = useMutation({
+    mutationFn: (id: string) => api.admin.gates.remove(id),
+    onSuccess: () => {
+      setError(null);
+      refresh();
+    },
+    onError,
+  });
+
   if (isLoading) return <Spinner label="Loading branches…" />;
   return (
     <div className="flex flex-col gap-3">
+      <ErrorNote message={error} />
       {can('branches.manage') ? (
         <button className="a-btn self-start" onClick={() => setBranchModal('new')}>
           + New branch
@@ -185,9 +205,20 @@ function BranchesTab() {
               <div className="flex items-center gap-2">
                 <StatusBadge status={b.status} />
                 {can('branches.manage') ? (
-                  <button className="text-sm font-bold text-brand" onClick={() => setBranchModal({ id: b.id })}>
-                    Edit
-                  </button>
+                  <>
+                    <button className="text-sm font-bold text-brand" onClick={() => setBranchModal({ id: b.id })}>
+                      Edit
+                    </button>
+                    <button
+                      className="text-sm font-bold text-muted hover:text-danger"
+                      onClick={() => {
+                        if (confirm(`Delete branch "${b.name}"? Gates and sessions must be removed first.`))
+                          removeBranch.mutate(b.id);
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </>
                 ) : null}
               </div>
             </div>
@@ -202,14 +233,24 @@ function BranchesTab() {
                   <span key={g.id} className="flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1 text-xs font-bold">
                     {g.name} <StatusBadge status={g.status} />
                     {can('gates.manage') ? (
-                      <button
-                        className="text-[10px] font-black uppercase text-muted hover:text-brand"
-                        onClick={() =>
-                          toggleGate.mutate({ id: g.id, status: g.status === 'ONLINE' ? 'OFFLINE' : 'ONLINE' })
-                        }
-                      >
-                        toggle
-                      </button>
+                      <>
+                        <button
+                          className="text-[10px] font-black uppercase text-muted hover:text-brand"
+                          onClick={() =>
+                            toggleGate.mutate({ id: g.id, status: g.status === 'ONLINE' ? 'OFFLINE' : 'ONLINE' })
+                          }
+                        >
+                          toggle
+                        </button>
+                        <button
+                          className="text-[10px] font-black uppercase text-muted hover:text-danger"
+                          onClick={() => {
+                            if (confirm(`Delete ${g.name}?`)) removeGate.mutate(g.id);
+                          }}
+                        >
+                          del
+                        </button>
+                      </>
                     ) : null}
                   </span>
                 ))}
@@ -350,11 +391,23 @@ function UsersTab() {
   const qc = useQueryClient();
   const { can } = usePermissions();
   const [editing, setEditing] = useState<AdminUser | 'new' | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const { data: users, isLoading } = useQuery({ queryKey: ['admin-users'], queryFn: api.auth.adminUsers });
   const { data: branches } = useQuery({ queryKey: ['branches'], queryFn: api.catalog.branches });
+
+  const remove = useMutation({
+    mutationFn: (id: string) => api.admin.users.remove(id),
+    onSuccess: () => {
+      setError(null);
+      void qc.invalidateQueries();
+    },
+    onError: (e) => setError(e instanceof ApiError ? e.message : 'Delete failed.'),
+  });
+
   if (isLoading) return <Spinner label="Loading users…" />;
   return (
     <div className="flex flex-col gap-3">
+      <ErrorNote message={error} />
       {can('users.manage') ? (
         <button className="a-btn self-start" onClick={() => setEditing('new')}>
           + New user
@@ -390,9 +443,19 @@ function UsersTab() {
                 </td>
                 <td className="text-right">
                   {can('users.manage') ? (
-                    <button className="text-sm font-bold text-brand" onClick={() => setEditing(u)}>
-                      Edit
-                    </button>
+                    <div className="flex justify-end gap-2">
+                      <button className="text-sm font-bold text-brand" onClick={() => setEditing(u)}>
+                        Edit
+                      </button>
+                      <button
+                        className="text-sm font-bold text-muted hover:text-danger"
+                        onClick={() => {
+                          if (confirm(`Delete staff user "${u.name}"?`)) remove.mutate(u.id);
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   ) : null}
                 </td>
               </tr>

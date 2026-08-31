@@ -2,23 +2,25 @@
 @import '@hyrox/ui/tokens.css';
 @source '../../../packages/ui/src';
 
-/* Admin defaults to LIGHT mode: light content surface, dark sidebar accent,
-   HYROX yellow kept for emphasis. (The member PWA stays dark by design.) */
+/* Admin panel shares the member app's design language: light surfaces,
+   WIT Red as a restrained accent, Archivo display type, premium dark "ink"
+   surfaces for the sidebar and hero cards. */
 :root {
   color-scheme: light;
   --color-surface: #ffffff;
-  --color-surface-raised: #f4f4f1;
-  --color-line: #e4e4de;
+  --color-surface-raised: #f1f1ed;
+  --color-line: #e7e7e1;
   --color-muted: #6f6f76;
 }
 
 body {
   background: #f6f6f2;
-  color: #191919;
+  color: #17171a;
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
 }
 
+/* Modern athletic type: heavy, slightly expanded Archivo with tight tracking. */
 .display {
   font-family: var(--font-display);
   font-weight: 850;
@@ -26,8 +28,7 @@ body {
   letter-spacing: -0.02em;
 }
 
-/* WIT Red is a background/accent color; as TEXT on light surfaces it uses a
-   slightly darker ink to stay readable. */
+/* WIT Red as TEXT on light surfaces uses a slightly darker ink for legibility. */
 .text-brand {
   color: #c4161c;
 }
@@ -35,34 +36,50 @@ body {
   color: #c4161c;
 }
 
-/* Admin primitives — info-dense, table-first. */
+/* Premium dark surface — the "black card" look shared with the member app. */
+.surface-ink {
+  background: linear-gradient(150deg, #2a2a30 0%, #17171b 55%, #0d0d10 100%);
+}
+.surface-brand {
+  background: linear-gradient(140deg, #f5333a 0%, #d5121a 55%, #8f0a10 100%);
+}
+
+/* Small status/info pill. */
+.chip {
+  @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold;
+}
+
+/* Admin primitives — info-dense but soft: hairline borders, quiet shadows. */
 .a-card {
-  @apply rounded-xl border border-line bg-surface p-4 shadow-[0_1px_2px_rgb(0_0_0/0.04)];
+  @apply rounded-2xl border border-black/[0.03] bg-surface p-5 shadow-[0_1px_2px_rgb(17_17_20/0.03),0_10px_30px_rgb(17_17_20/0.04)];
 }
 .a-btn {
-  @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand px-3.5 py-2 text-sm font-bold text-white transition hover:bg-brand-press disabled:pointer-events-none disabled:opacity-40;
+  @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand px-4 py-2 text-sm font-bold text-white shadow-[0_6px_16px_rgb(237_28_36/0.2)] transition hover:bg-brand-press disabled:pointer-events-none disabled:opacity-40;
 }
 .a-btn-ghost {
-  @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-line bg-surface-raised px-3.5 py-2 text-sm font-bold text-ink transition hover:border-muted disabled:pointer-events-none disabled:opacity-40;
+  @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-surface-raised px-4 py-2 text-sm font-bold text-ink transition hover:bg-line disabled:pointer-events-none disabled:opacity-40;
 }
 .a-btn-danger {
-  @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-danger/40 bg-danger/10 px-3.5 py-2 text-sm font-bold text-danger transition hover:bg-danger/20 disabled:pointer-events-none disabled:opacity-40;
+  @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-danger/10 px-4 py-2 text-sm font-bold text-danger transition hover:bg-danger/20 disabled:pointer-events-none disabled:opacity-40;
 }
 .a-input {
-  @apply w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-[#ed1c24] focus:outline-none;
+  @apply w-full rounded-xl border-2 border-transparent bg-surface-raised px-3.5 py-2 text-sm text-ink placeholder:text-muted focus:border-brand focus:bg-surface focus:outline-none;
 }
 .a-label {
-  @apply mb-1 block text-[11px] font-bold uppercase tracking-wider text-muted;
+  @apply mb-1.5 block text-[11px] font-extrabold uppercase tracking-[0.12em] text-muted;
 }
 .a-table {
   @apply w-full border-collapse text-sm;
 }
 .a-table th {
-  @apply border-b border-line px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider text-muted;
+  @apply border-b border-line px-3 py-2.5 text-left text-[11px] font-extrabold uppercase tracking-[0.12em] text-muted;
 }
 .a-table td {
-  @apply border-b border-line/70 px-3 py-2.5 align-middle;
+  @apply border-b border-line/60 px-3 py-3 align-middle;
+}
+.a-table tbody tr:last-child td {
+  border-bottom: none;
 }
 .a-table tbody tr:hover {
-  background: rgb(0 0 0 / 0.025);
+  background: rgb(17 17 20 / 0.02);
 }

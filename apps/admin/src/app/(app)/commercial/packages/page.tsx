@@ -14,9 +14,18 @@ export default function PackagesPage() {
   const [editing, setEditing] = useState<CreditPackage | 'new' | null>(null);
   const { data, isLoading } = useQuery({ queryKey: ['admin-packages'], queryFn: api.admin.packages.list });
 
+  const [error, setError] = useState<string | null>(null);
   const archive = useMutation({
     mutationFn: (id: string) => api.admin.packages.update(id, { status: 'ARCHIVED' }),
     onSuccess: () => void qc.invalidateQueries(),
+  });
+  const remove = useMutation({
+    mutationFn: (id: string) => api.admin.packages.remove(id),
+    onSuccess: () => {
+      setError(null);
+      void qc.invalidateQueries();
+    },
+    onError: (e) => setError(e instanceof ApiError ? e.message : 'Delete failed.'),
   });
 
   return (
@@ -32,6 +41,7 @@ export default function PackagesPage() {
           ) : undefined
         }
       />
+      <ErrorNote message={error} />
       {isLoading ? (
         <Spinner label="Loading packages…" />
       ) : (
@@ -75,6 +85,15 @@ export default function PackagesPage() {
                             Archive
                           </button>
                         ) : null}
+                        <button
+                          className="text-sm font-bold text-muted hover:text-danger"
+                          onClick={() => {
+                            if (confirm(`Delete package "${pkg.name}"? Only possible while unused.`))
+                              remove.mutate(pkg.id);
+                          }}
+                        >
+                          Delete
+                        </button>
                       </div>
                     ) : null}
                   </td>

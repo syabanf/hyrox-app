@@ -1,17 +1,21 @@
 'use client';
 
 import { Spinner, StatusBadge, formatDay } from '@hyrox/ui';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { api } from '../../../lib/api';
-import { PageTitle } from '../../../components/ui';
+import { api, ApiError } from '../../../lib/api';
+import { usePermissions } from '../../../lib/auth';
+import { ErrorNote, Modal, PageTitle } from '../../../components/ui';
 
 const STATUSES = ['', 'ACTIVE', 'SUSPENDED', 'INACTIVE', 'ARCHIVED'];
 
 export default function MembersPage() {
+  const { can } = usePermissions();
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('');
+  const [createOpen, setCreateOpen] = useState(false);
   const { data, isLoading } = useQuery({
     queryKey: ['members', query, status],
     queryFn: () => api.admin.members.list({ query: query || undefined, status: status || undefined }),
@@ -19,7 +23,17 @@ export default function MembersPage() {
 
   return (
     <div>
-      <PageTitle title="Members" subtitle={`${data?.length ?? '…'} members`} />
+      <PageTitle
+        title="Members"
+        subtitle={`${data?.length ?? '…'} members`}
+        actions={
+          can('members.manage') ? (
+            <button className="a-btn" onClick={() => setCreateOpen(true)}>
+              + New member
+            </button>
+          ) : undefined
+        }
+      />
       <div className="mb-4 flex flex-wrap gap-2">
         <input
           className="a-input max-w-xs"
@@ -75,6 +89,87 @@ export default function MembersPage() {
           </table>
         </div>
       )}
+      {createOpen ? <CreateMemberModal onClose={() => setCreateOpen(false)} /> : null}
     </div>
+  );
+}
+
+function CreateMemberModal({ onClose }: { onClose: () => void }) {
+  const qc = useQueryClient();
+  const router = useRouter();
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [preferredBranchId, setPreferredBranchId] = useState('');
+  const [notes, setNotes] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const { data: branches } = useQuery({ queryKey: ['branches'], queryFn: api.catalog.branches });
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      api.admin.members.create({
+        fullName,
+        email,
+        phone,
+        preferredBranchId: preferredBranchId || null,
+        notes: notes.trim() === '' ? null : notes.trim(),
+      }),
+    onSuccess: (detail) => {
+      void qc.invalidateQueries({ queryKey: ['members'] });
+      router.push(`/members/${detail.member.id}`);
+    },
+    onError: (e) => setError(e instanceof ApiError ? e.message : 'Create failed.'),
+  });
+
+  return (
+    <Modal title="New member" onClose={onClose}>
+      <div className="flex flex-col gap-3">
+        <div>
+          <label className="a-label">Full name</label>
+          <input className="a-input" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="a-label">Email</label>
+            <input className="a-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+          <div>
+            <label className="a-label">Phone</label>
+            <input className="a-input" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+62…" />
+          </div>
+        </div>
+        <div>
+          <label className="a-label">Preferred branch</label>
+          <select
+            className="a-input"
+            value={preferredBranchId}
+            onChange={(e) => setPreferredBranchId(e.target.value)}
+          >
+            <option value="">None</option>
+            {(branches ?? []).map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="a-label">Notes (optional)</label>
+          <input className="a-input" value={notes} onChange={(e) => setNotes(e.target.value)} />
+        </div>
+        <ErrorNote message={error} />
+        <button
+          className="a-btn"
+          disabled={mutation.isPending || fullName.length < 2 || !email.includes('@') || phone.length < 6}
+          onClick={() => mutation.mutate()}
+        >
+          Create member
+        </button>
+        <p className="text-xs text-muted">
+          The member signs in with this email via OTP. The wallet starts at zero — record a top-up or
+          adjustment from their profile.
+        </p>
+      </div>
+    </Modal>
   );
 }

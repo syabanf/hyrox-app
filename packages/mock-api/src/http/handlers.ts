@@ -30,6 +30,7 @@ import {
   AdminBookSchema,
   AdminLoginSchema,
   CreateBranchSchema,
+  CreateMemberAdminSchema,
   CreateSessionSchema,
   GateScanSchema,
   OtpRequestSchema,
@@ -51,6 +52,7 @@ import {
   UpsertCoachSchema,
   UpsertGateSchema,
   UpsertPackageSchema,
+  UpsertRaceEventSchema,
   UpsertVoucherSchema,
   ValidateVoucherSchema,
   VoucherStatusActionSchema,
@@ -106,6 +108,14 @@ const fromAppError = (error: AppError) => jsonError(error.status, error.code, er
 
 const param = (params: Record<string, string | readonly string[] | undefined>, key: string): string =>
   String(params[key] ?? '');
+
+/** Splice an entity out of a db collection in place (persisted by the snapshot loop). */
+const removeById = <T extends { id: string }>(arr: T[], id: string): boolean => {
+  const idx = arr.findIndex((item) => item.id === id);
+  if (idx < 0) return false;
+  arr.splice(idx, 1);
+  return true;
+};
 
 export function createHandlers(state: MockApiState, onReset: () => void): HttpHandler[] {
   // `state` is a mutable holder so devReset can swap the db behind every closure.
@@ -959,6 +969,212 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
       const res = sendCampaign(deps(), param(params, 'id'));
       if (!res.ok) return fromAppError(res.error);
       return HttpResponse.json(res.value);
+    }),
+
+    http.patch('*/api/admin/campaigns/:id', async ({ request, params }) => {
+      const auth = requireAdmin(db(), request, 'campaigns.manage');
+      if (!auth.ok) return auth.response;
+      const body = await parsePatch(request, UpsertCampaignSchema);
+      if (!body.ok) return body.response;
+      const campaign = db().campaigns.find((c) => c.id === param(params, 'id'));
+      if (!campaign) return jsonError(404, 'NOT_FOUND', 'Campaign not found.');
+      Object.assign(campaign, body.data);
+      deps().campaigns.save(campaign);
+      return HttpResponse.json(campaign);
+    }),
+
+    http.delete('*/api/admin/campaigns/:id', ({ request, params }) => {
+      const auth = requireAdmin(db(), request, 'campaigns.manage');
+      if (!auth.ok) return auth.response;
+      if (!removeById(db().campaigns, param(params, 'id')))
+        return jsonError(404, 'NOT_FOUND', 'Campaign not found.');
+      return HttpResponse.json({ ok: true });
+    }),
+
+    // ── Admin: race events ──────────────────────────────────────────────────
+    http.get('*/api/admin/races', ({ request }) => {
+      const auth = requireAdmin(db(), request, 'engagement.view');
+      if (!auth.ok) return auth.response;
+      const events = [...db().raceEvents]
+        .sort((a, b) => msOf(a.startsAt) - msOf(b.startsAt))
+        .map((e) => ({
+          ...e,
+          participants: db().userRaces.filter((r) => r.raceEventId === e.id).length,
+        }));
+      return HttpResponse.json(events);
+    }),
+
+    http.post('*/api/admin/races', async ({ request }) => {
+      const auth = requireAdmin(db(), request, 'campaigns.manage');
+      if (!auth.ok) return auth.response;
+      const body = await parseBody(request, UpsertRaceEventSchema);
+      if (!body.ok) return body.response;
+      const { endsAt, ...rest } = body.data;
+      const event = {
+        id: deps().ids.next('rce'),
+        ...rest,
+        endsAt: endsAt ?? new Date(msOf(body.data.startsAt) + 24 * 3600_000).toISOString(),
+      };
+      db().raceEvents.push(event);
+      return HttpResponse.json({ ...event, participants: 0 }, { status: 201 });
+    }),
+
+    http.patch('*/api/admin/races/:id', async ({ request, params }) => {
+      const auth = requireAdmin(db(), request, 'campaigns.manage');
+      if (!auth.ok) return auth.response;
+      const body = await parsePatch(request, UpsertRaceEventSchema);
+      if (!body.ok) return body.response;
+      const event = db().raceEvents.find((e) => e.id === param(params, 'id'));
+      if (!event) return jsonError(404, 'NOT_FOUND', 'Race event not found.');
+      const { endsAt, ...rest } = body.data;
+      Object.assign(event, rest);
+      if (endsAt !== undefined && endsAt !== null) event.endsAt = endsAt;
+      else if (rest.startsAt && msOf(event.endsAt) < msOf(event.startsAt))
+        event.endsAt = new Date(msOf(event.startsAt) + 24 * 3600_000).toISOString();
+      return HttpResponse.json({
+        ...event,
+        participants: db().userRaces.filter((r) => r.raceEventId === event.id).length,
+      });
+    }),
+
+    http.delete('*/api/admin/races/:id', ({ request, params }) => {
+      const auth = requireAdmin(db(), request, 'campaigns.manage');
+      if (!auth.ok) return auth.response;
+      const id = param(params, 'id');
+      if (db().userRaces.some((r) => r.raceEventId === id))
+        return jsonError(409, 'IN_USE', 'Members have this race on their calendar. Cancel it instead.');
+      if (!removeById(db().raceEvents, id))
+        return jsonError(404, 'NOT_FOUND', 'Race event not found.');
+      return HttpResponse.json({ ok: true });
+    }),
+
+    // ── Admin: create + delete completions for the config/catalog menus ─────
+    http.post('*/api/admin/members', async ({ request }) => {
+      const auth = requireAdmin(db(), request, 'members.manage');
+      if (!auth.ok) return auth.response;
+      const body = await parseBody(request, CreateMemberAdminSchema);
+      if (!body.ok) return body.response;
+      if (deps().members.byIdentifier(body.data.email))
+        return jsonError(409, 'DUPLICATE', 'A member with this email already exists.');
+      const now = deps().clock.now();
+      const member = {
+        id: deps().ids.next('mem'),
+        fullName: body.data.fullName,
+        email: body.data.email,
+        phone: body.data.phone,
+        dateOfBirth: null,
+        gender: null,
+        emergencyContact: null,
+        preferredBranchId: body.data.preferredBranchId,
+        avatarUrl: null,
+        status: 'ACTIVE' as const,
+        waiverVersion: null,
+        waiverAcceptedAt: null,
+        notes: body.data.notes,
+        createdAt: now,
+        updatedAt: now,
+      };
+      deps().members.save(member);
+      return HttpResponse.json(memberDetailView(db(), deps(), member), { status: 201 });
+    }),
+
+    http.delete('*/api/admin/class-types/:id', ({ request, params }) => {
+      const auth = requireAdmin(db(), request, 'class_types.manage');
+      if (!auth.ok) return auth.response;
+      const id = param(params, 'id');
+      if (db().sessions.some((s) => s.classTypeId === id))
+        return jsonError(409, 'IN_USE', 'Sessions use this class type. Cancel or delete them first.');
+      if (!removeById(db().classTypes, id))
+        return jsonError(404, 'NOT_FOUND', 'Class type not found.');
+      return HttpResponse.json({ ok: true });
+    }),
+
+    http.delete('*/api/admin/coaches/:id', ({ request, params }) => {
+      const auth = requireAdmin(db(), request, 'coaches.manage');
+      if (!auth.ok) return auth.response;
+      const id = param(params, 'id');
+      const now = deps().clock.now();
+      if (
+        db().sessions.some(
+          (s) =>
+            s.coachId === id &&
+            ['DRAFT', 'PUBLISHED', 'FULL'].includes(s.status) &&
+            msOf(s.startsAt) > msOf(now),
+        )
+      )
+        return jsonError(409, 'IN_USE', 'This coach has upcoming sessions. Reassign them first.');
+      if (!removeById(db().coaches, id)) return jsonError(404, 'NOT_FOUND', 'Coach not found.');
+      return HttpResponse.json({ ok: true });
+    }),
+
+    http.delete('*/api/admin/sessions/:id', ({ request, params }) => {
+      const auth = requireAdmin(db(), request, 'sessions.manage');
+      if (!auth.ok) return auth.response;
+      const id = param(params, 'id');
+      const session = deps().sessions.byId(id);
+      if (!session) return jsonError(404, 'NOT_FOUND', 'Session not found.');
+      if (db().bookings.some((b) => b.sessionId === id && b.status !== 'CANCELLED'))
+        return jsonError(409, 'IN_USE', 'This session has bookings. Cancel the session instead.');
+      removeById(db().sessions, id);
+      return HttpResponse.json({ ok: true });
+    }),
+
+    http.delete('*/api/admin/packages/:id', ({ request, params }) => {
+      const auth = requireAdmin(db(), request, 'packages.manage');
+      if (!auth.ok) return auth.response;
+      const id = param(params, 'id');
+      if (db().payments.some((p) => p.packageId === id))
+        return jsonError(409, 'IN_USE', 'Payments reference this package. Archive it instead.');
+      if (!removeById(db().packages, id))
+        return jsonError(404, 'NOT_FOUND', 'Package not found.');
+      return HttpResponse.json({ ok: true });
+    }),
+
+    http.delete('*/api/admin/vouchers/:id', ({ request, params }) => {
+      const auth = requireAdmin(db(), request, 'vouchers.manage');
+      if (!auth.ok) return auth.response;
+      const id = param(params, 'id');
+      if (db().redemptions.some((r) => r.voucherId === id))
+        return jsonError(409, 'IN_USE', 'This voucher has redemptions. Disable it instead.');
+      if (!removeById(db().vouchers, id))
+        return jsonError(404, 'NOT_FOUND', 'Voucher not found.');
+      return HttpResponse.json({ ok: true });
+    }),
+
+    http.delete('*/api/admin/branches/:id', ({ request, params }) => {
+      const auth = requireAdmin(db(), request, 'branches.manage');
+      if (!auth.ok) return auth.response;
+      const id = param(params, 'id');
+      if (db().gates.some((g) => g.branchId === id) || db().sessions.some((s) => s.branchId === id))
+        return jsonError(409, 'IN_USE', 'Gates or sessions belong to this branch. Move them first.');
+      if (!removeById(db().branches, id))
+        return jsonError(404, 'NOT_FOUND', 'Branch not found.');
+      return HttpResponse.json({ ok: true });
+    }),
+
+    http.delete('*/api/admin/gates/:id', ({ request, params }) => {
+      const auth = requireAdmin(db(), request, 'gates.manage');
+      if (!auth.ok) return auth.response;
+      if (!removeById(db().gates, param(params, 'id')))
+        return jsonError(404, 'NOT_FOUND', 'Gate not found.');
+      return HttpResponse.json({ ok: true });
+    }),
+
+    http.delete('*/api/admin/users/:id', ({ request, params }) => {
+      const auth = requireAdmin(db(), request, 'users.manage');
+      if (!auth.ok) return auth.response;
+      const id = param(params, 'id');
+      if (id === auth.value.id)
+        return jsonError(409, 'IN_USE', 'You cannot delete the account you are signed in with.');
+      const target = deps().adminUsers.byId(id);
+      if (!target) return jsonError(404, 'NOT_FOUND', 'User not found.');
+      if (
+        target.role === 'SUPER_ADMIN' &&
+        db().adminUsers.filter((u) => u.role === 'SUPER_ADMIN').length <= 1
+      )
+        return jsonError(409, 'IN_USE', 'At least one Super Admin must remain.');
+      removeById(db().adminUsers, id);
+      return HttpResponse.json({ ok: true });
     }),
 
     // ── Admin: dashboard & reports ──────────────────────────────────────────

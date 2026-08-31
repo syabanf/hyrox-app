@@ -33,6 +33,15 @@ export default function VouchersPage() {
     onError: (e) => setError(e instanceof ApiError ? e.message : 'Status change failed.'),
   });
 
+  const remove = useMutation({
+    mutationFn: (id: string) => api.admin.vouchers.remove(id),
+    onSuccess: () => {
+      setError(null);
+      void qc.invalidateQueries();
+    },
+    onError: (e) => setError(e instanceof ApiError ? e.message : 'Delete failed.'),
+  });
+
   return (
     <div>
       <PageTitle
@@ -99,6 +108,15 @@ export default function VouchersPage() {
                             → {s}
                           </button>
                         ))}
+                        <button
+                          className="text-xs font-bold text-muted hover:text-danger"
+                          onClick={() => {
+                            if (confirm(`Delete voucher ${v.code}? Only possible while unredeemed.`))
+                              remove.mutate(v.id);
+                          }}
+                        >
+                          Delete
+                        </button>
                       </div>
                     ) : null}
                   </td>

@@ -1,6 +1,6 @@
 'use client';
 
-import type { MemberSegment, SegmentFilter } from '@hyrox/domain';
+import type { Campaign, MemberSegment, SegmentFilter } from '@hyrox/domain';
 import { Spinner, StatusBadge, formatDayTime } from '@hyrox/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -20,7 +20,7 @@ const SEGMENT_LABEL: Record<MemberSegment, string> = {
 export default function EngagementPage() {
   const qc = useQueryClient();
   const { can } = usePermissions();
-  const [createOpen, setCreateOpen] = useState(false);
+  const [editing, setEditing] = useState<Campaign | 'new' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { data, isLoading } = useQuery({ queryKey: ['campaigns'], queryFn: api.admin.campaigns.list });
 
@@ -33,6 +33,15 @@ export default function EngagementPage() {
     onError: (e) => setError(e instanceof ApiError ? e.message : 'Send failed.'),
   });
 
+  const remove = useMutation({
+    mutationFn: (id: string) => api.admin.campaigns.remove(id),
+    onSuccess: () => {
+      setError(null);
+      void qc.invalidateQueries();
+    },
+    onError: (e) => setError(e instanceof ApiError ? e.message : 'Delete failed.'),
+  });
+
   return (
     <div>
       <PageTitle
@@ -40,7 +49,7 @@ export default function EngagementPage() {
         subtitle="Segmented campaigns — sending creates in-app notifications for every member in the segment"
         actions={
           can('campaigns.manage') ? (
-            <button className="a-btn" onClick={() => setCreateOpen(true)}>
+            <button className="a-btn" onClick={() => setEditing('new')}>
               + New campaign
             </button>
           ) : undefined
@@ -79,10 +88,25 @@ export default function EngagementPage() {
                     <StatusBadge status={c.status} />
                   </td>
                   <td className="text-right">
-                    {can('campaigns.manage') && ['DRAFT', 'SCHEDULED'].includes(c.status) ? (
-                      <button className="a-btn !px-2.5 !py-1 text-xs" onClick={() => send.mutate(c.id)}>
-                        Send now
-                      </button>
+                    {can('campaigns.manage') ? (
+                      <div className="flex justify-end gap-1.5">
+                        {['DRAFT', 'SCHEDULED'].includes(c.status) ? (
+                          <button className="a-btn !px-2.5 !py-1 text-xs" onClick={() => send.mutate(c.id)}>
+                            Send now
+                          </button>
+                        ) : null}
+                        <button className="a-btn-ghost !px-2.5 !py-1 text-xs" onClick={() => setEditing(c)}>
+                          Edit
+                        </button>
+                        <button
+                          className="a-btn-danger !px-2.5 !py-1 text-xs"
+                          onClick={() => {
+                            if (confirm(`Delete campaign "${c.name}"?`)) remove.mutate(c.id);
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     ) : null}
                   </td>
                 </tr>
@@ -91,11 +115,12 @@ export default function EngagementPage() {
           </table>
         </div>
       )}
-      {createOpen ? (
+      {editing ? (
         <CampaignModal
-          onClose={() => setCreateOpen(false)}
+          campaign={editing === 'new' ? null : editing}
+          onClose={() => setEditing(null)}
           onDone={() => {
-            setCreateOpen(false);
+            setEditing(null);
             void qc.invalidateQueries();
           }}
         />
@@ -104,14 +129,32 @@ export default function EngagementPage() {
   );
 }
 
-function CampaignModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
-  const [name, setName] = useState('');
-  const [segment, setSegment] = useState<MemberSegment>('ALL_ACTIVE');
-  const [message, setMessage] = useState('');
-  const [branchId, setBranchId] = useState('');
-  const [maxBalance, setMaxBalance] = useState('');
-  const [minDaysSinceVisit, setMinDaysSinceVisit] = useState('');
-  const [joinedWithinDays, setJoinedWithinDays] = useState('');
+function CampaignModal({
+  campaign,
+  onClose,
+  onDone,
+}: {
+  campaign: Campaign | null;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [name, setName] = useState(campaign?.name ?? '');
+  const [segment, setSegment] = useState<MemberSegment>(campaign?.segment ?? 'ALL_ACTIVE');
+  const [message, setMessage] = useState(campaign?.message ?? '');
+  const [branchId, setBranchId] = useState(campaign?.customFilter?.branchId ?? '');
+  const [maxBalance, setMaxBalance] = useState(
+    campaign?.customFilter?.maxBalance != null ? String(campaign.customFilter.maxBalance) : '',
+  );
+  const [minDaysSinceVisit, setMinDaysSinceVisit] = useState(
+    campaign?.customFilter?.minDaysSinceLastVisit != null
+      ? String(campaign.customFilter.minDaysSinceLastVisit)
+      : '',
+  );
+  const [joinedWithinDays, setJoinedWithinDays] = useState(
+    campaign?.customFilter?.joinedWithinDays != null
+      ? String(campaign.customFilter.joinedWithinDays)
+      : '',
+  );
   const [error, setError] = useState<string | null>(null);
 
   const { data: branches } = useQuery({ queryKey: ['branches'], queryFn: api.catalog.branches });
@@ -133,21 +176,18 @@ function CampaignModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
   });
 
   const mutation = useMutation({
-    mutationFn: () =>
-      api.admin.campaigns.create({
-        name,
-        segment,
-        customFilter,
-        message,
-        deepLink: null,
-        scheduledAt: null,
-      }),
+    mutationFn: () => {
+      const body = { name, segment, customFilter, message };
+      return campaign
+        ? api.admin.campaigns.update(campaign.id, body)
+        : api.admin.campaigns.create({ ...body, deepLink: null, scheduledAt: null });
+    },
     onSuccess: onDone,
-    onError: (e) => setError(e instanceof ApiError ? e.message : 'Create failed.'),
+    onError: (e) => setError(e instanceof ApiError ? e.message : 'Save failed.'),
   });
 
   return (
-    <Modal title="New campaign" onClose={onClose}>
+    <Modal title={campaign ? `Edit ${campaign.name}` : 'New campaign'} onClose={onClose}>
       <div className="flex flex-col gap-3">
         <div>
           <label className="a-label">Name</label>
@@ -213,7 +253,7 @@ function CampaignModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
           disabled={mutation.isPending || name.length < 2 || message.length < 3}
           onClick={() => mutation.mutate()}
         >
-          Create draft
+          {campaign ? 'Save changes' : 'Create draft'}
         </button>
       </div>
     </Modal>

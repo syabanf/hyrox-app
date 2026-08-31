@@ -29,6 +29,7 @@ import type {
 import type {
   AdjustCreditsInput,
   AdminBookInput,
+  CreateMemberAdminInput,
   CreateSessionInput,
   GateScanInput,
   RegisterMemberInput,
@@ -72,6 +73,7 @@ import type {
   UpdateUserRaceInput,
   UpsertAdminUserInput,
   UpsertGateInput,
+  UpsertRaceEventInput,
   UpsertGearInput,
   WorkoutHistoryItemView,
   WorkoutSessionView,
@@ -95,6 +97,7 @@ import type {
   Member,
   MemberNotification,
   Payment,
+  RaceEvent,
   Route,
   SubstitutionRule,
   UserRace,
@@ -157,6 +160,7 @@ export function createApiClient(options: ApiClientOptions) {
   const post = <T>(path: string, body?: unknown) => request<T>('POST', path, body ?? {});
   const patch = <T>(path: string, body: unknown) => request<T>('PATCH', path, body);
   const put = <T>(path: string, body: unknown) => request<T>('PUT', path, body);
+  const del = (path: string) => request<{ ok: boolean }>('DELETE', path);
 
   return {
     auth: {
@@ -208,6 +212,8 @@ export function createApiClient(options: ApiClientOptions) {
         list: (query?: { query?: string; status?: string }) =>
           get<MemberSummaryView[]>('/api/admin/members', query),
         get: (id: string) => get<MemberDetailView>(`/api/admin/members/${id}`),
+        create: (input: CreateMemberAdminInput) =>
+          post<MemberDetailView>('/api/admin/members', input),
         update: (id: string, input: UpdateMemberAdminInput) =>
           patch<MemberDetailView>(`/api/admin/members/${id}`, input),
         adjust: (id: string, input: AdjustCreditsInput) =>
@@ -222,6 +228,7 @@ export function createApiClient(options: ApiClientOptions) {
         create: (input: UpsertClassTypeInput) => post<ClassType>('/api/admin/class-types', input),
         update: (id: string, input: Partial<UpsertClassTypeInput>) =>
           patch<ClassType>(`/api/admin/class-types/${id}`, input),
+        remove: (id: string) => del(`/api/admin/class-types/${id}`),
       },
       sessions: {
         list: (query?: { branchId?: string; from?: string; to?: string }) =>
@@ -232,6 +239,7 @@ export function createApiClient(options: ApiClientOptions) {
           patch<SessionView>(`/api/admin/sessions/${id}`, input),
         action: (id: string, action: 'publish' | 'cancel' | 'complete') =>
           post<SessionView>(`/api/admin/sessions/${id}/${action}`),
+        remove: (id: string) => del(`/api/admin/sessions/${id}`),
       },
       bookings: {
         book: (input: AdminBookInput) => post<BookResultView>('/api/admin/bookings', input),
@@ -243,17 +251,20 @@ export function createApiClient(options: ApiClientOptions) {
         create: (input: UpsertCoachInput) => post<Coach>('/api/admin/coaches', input),
         update: (id: string, input: Partial<UpsertCoachInput>) =>
           patch<Coach>(`/api/admin/coaches/${id}`, input),
+        remove: (id: string) => del(`/api/admin/coaches/${id}`),
       },
       gates: {
         list: () => get<Gate[]>('/api/admin/gates'),
         create: (input: UpsertGateInput) => post<Gate>('/api/admin/gates', input),
         update: (id: string, input: Partial<UpsertGateInput>) =>
           patch<Gate>(`/api/admin/gates/${id}`, input),
+        remove: (id: string) => del(`/api/admin/gates/${id}`),
       },
       users: {
         create: (input: UpsertAdminUserInput) => post<AdminUser>('/api/admin/users', input),
         update: (id: string, input: Partial<UpsertAdminUserInput>) =>
           patch<AdminUser>(`/api/admin/users/${id}`, input),
+        remove: (id: string) => del(`/api/admin/users/${id}`),
       },
       segments: {
         preview: (input: SegmentPreviewInput) =>
@@ -275,6 +286,7 @@ export function createApiClient(options: ApiClientOptions) {
         create: (input: UpsertPackageInput) => post<CreditPackage>('/api/admin/packages', input),
         update: (id: string, input: Partial<UpsertPackageInput>) =>
           patch<CreditPackage>(`/api/admin/packages/${id}`, input),
+        remove: (id: string) => del(`/api/admin/packages/${id}`),
       },
       payments: {
         list: () => get<PaymentView[]>('/api/admin/payments'),
@@ -290,11 +302,23 @@ export function createApiClient(options: ApiClientOptions) {
           patch<VoucherView>(`/api/admin/vouchers/${id}`, input),
         setStatus: (id: string, status: VoucherStatus) =>
           post<VoucherView>(`/api/admin/vouchers/${id}/status`, { status }),
+        remove: (id: string) => del(`/api/admin/vouchers/${id}`),
       },
       campaigns: {
         list: () => get<Campaign[]>('/api/admin/campaigns'),
         create: (input: UpsertCampaignInput) => post<Campaign>('/api/admin/campaigns', input),
+        update: (id: string, input: Partial<UpsertCampaignInput>) =>
+          patch<Campaign>(`/api/admin/campaigns/${id}`, input),
         send: (id: string) => post<Campaign>(`/api/admin/campaigns/${id}/send`),
+        remove: (id: string) => del(`/api/admin/campaigns/${id}`),
+      },
+      races: {
+        list: () => get<(RaceEvent & { participants: number })[]>('/api/admin/races'),
+        create: (input: UpsertRaceEventInput) =>
+          post<RaceEvent & { participants: number }>('/api/admin/races', input),
+        update: (id: string, input: Partial<UpsertRaceEventInput>) =>
+          patch<RaceEvent & { participants: number }>(`/api/admin/races/${id}`, input),
+        remove: (id: string) => del(`/api/admin/races/${id}`),
       },
       reports: {
         dashboard: () => get<DashboardStatsView>('/api/admin/reports/dashboard'),
@@ -309,6 +333,7 @@ export function createApiClient(options: ApiClientOptions) {
         create: (input: CreateBranchInput) => post<Branch>('/api/admin/branches', input),
         update: (id: string, input: UpdateBranchInput) =>
           patch<Branch>(`/api/admin/branches/${id}`, input),
+        remove: (id: string) => del(`/api/admin/branches/${id}`),
       },
       rules: {
         get: () => get<RulesView>('/api/admin/rules'),

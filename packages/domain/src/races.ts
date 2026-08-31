@@ -28,6 +28,8 @@ export interface RaceEvent {
   startsAt: IsoDate;
   endsAt: IsoDate;
   registrationUrl: string;
+  /** Free stock photo (Unsplash) shown on race cards. */
+  imageUrl: string | null;
   status: RaceStatus;
 }
 

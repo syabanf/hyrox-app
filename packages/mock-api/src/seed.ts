@@ -1129,6 +1129,8 @@ function seedRaceModule(
   helpers: { nowIso: string; addDays: (iso: string, days: number) => string; daysAgo: (days: number, hour?: number) => string },
 ): void {
   const { nowIso, addDays, daysAgo } = helpers;
+  // Free-to-use Unsplash photos (Unsplash License), loaded straight from the CDN.
+  const unsplash = (photoId: string) => `https://images.unsplash.com/${photoId}?w=900&q=60&fit=crop`;
   const race = (
     id: string,
     name: string,
@@ -1138,6 +1140,7 @@ function seedRaceModule(
     venue: string,
     inDays: number,
     status: RaceEvent['status'],
+    photoId: string,
   ): RaceEvent => ({
     id,
     name,
@@ -1148,18 +1151,19 @@ function seedRaceModule(
     startsAt: inDays >= 0 ? addDays(nowIso, inDays) : daysAgo(-inDays, 8),
     endsAt: inDays >= 0 ? addDays(nowIso, inDays + 1) : daysAgo(-inDays - 1, 20),
     registrationUrl: 'https://hyrox.com/find-my-race',
+    imageUrl: unsplash(photoId),
     status,
   });
 
   db.raceEvents = [
-    race('race_jkt', 'HYROX Jakarta', 'Indonesia', 'ASIA', 'Jakarta', 'JIExpo Kemayoran', 41, 'REGISTRATION_OPEN'),
-    race('race_sgp', 'HYROX Singapore', 'Singapore', 'ASIA', 'Singapore', 'Expo Hall 5', 20, 'SOLD_OUT'),
-    race('race_bkk', 'HYROX Bangkok', 'Thailand', 'ASIA', 'Bangkok', 'IMPACT Arena', 69, 'REGISTRATION_OPEN'),
-    race('race_hkg', 'HYROX Hong Kong', 'China', 'ASIA', 'Hong Kong', 'AsiaWorld-Expo', 97, 'ANNOUNCED'),
-    race('race_syd', 'HYROX Sydney', 'Australia', 'OCEANIA', 'Sydney', 'ICC Sydney', 55, 'REGISTRATION_OPEN'),
-    race('race_ber', 'HYROX Berlin', 'Germany', 'EUROPE', 'Berlin', 'Messe Berlin', 76, 'REGISTRATION_OPEN'),
-    race('race_nyc', 'HYROX New York', 'USA', 'AMERICAS', 'New York', 'Pier 76', 112, 'ANNOUNCED'),
-    race('race_kul', 'HYROX Kuala Lumpur', 'Malaysia', 'ASIA', 'Kuala Lumpur', 'MITEC', -35, 'COMPLETED'),
+    race('race_jkt', 'HYROX Jakarta', 'Indonesia', 'ASIA', 'Jakarta', 'JIExpo Kemayoran', 41, 'REGISTRATION_OPEN', 'photo-1555899434-94d1368aa7af'),
+    race('race_sgp', 'HYROX Singapore', 'Singapore', 'ASIA', 'Singapore', 'Expo Hall 5', 20, 'SOLD_OUT', 'photo-1525625293386-3f8f99389edd'),
+    race('race_bkk', 'HYROX Bangkok', 'Thailand', 'ASIA', 'Bangkok', 'IMPACT Arena', 69, 'REGISTRATION_OPEN', 'photo-1508009603885-50cf7c579365'),
+    race('race_hkg', 'HYROX Hong Kong', 'China', 'ASIA', 'Hong Kong', 'AsiaWorld-Expo', 97, 'ANNOUNCED', 'photo-1536599018102-9f803c140fc1'),
+    race('race_syd', 'HYROX Sydney', 'Australia', 'OCEANIA', 'Sydney', 'ICC Sydney', 55, 'REGISTRATION_OPEN', 'photo-1506973035872-a4ec16b8e8d9'),
+    race('race_ber', 'HYROX Berlin', 'Germany', 'EUROPE', 'Berlin', 'Messe Berlin', 76, 'REGISTRATION_OPEN', 'photo-1560969184-10fe8719e047'),
+    race('race_nyc', 'HYROX New York', 'USA', 'AMERICAS', 'New York', 'Pier 76', 112, 'ANNOUNCED', 'photo-1496442226666-8d4d0e62e6e9'),
+    race('race_kul', 'HYROX Kuala Lumpur', 'Malaysia', 'ASIA', 'Kuala Lumpur', 'MITEC', -35, 'COMPLETED', 'photo-1596422846543-75c6fc197f07'),
   ];
 
   db.userRaces = [

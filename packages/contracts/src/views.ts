@@ -244,6 +244,18 @@ export interface PromoView {
   newMembersOnly: boolean;
 }
 
+export interface HomeSpotlightRace {
+  raceEventId: string;
+  name: string;
+  city: string;
+  imageUrl: string | null;
+  startsAt: string;
+  daysToRace: number;
+  /** True when this is the member's own upcoming race (training for it). */
+  joined: boolean;
+  goalSec: number | null;
+}
+
 export interface HomeView {
   announcements: AnnouncementView[];
   promos: PromoView[];
@@ -251,6 +263,7 @@ export interface HomeView {
   railDay: 'TODAY' | 'TOMORROW';
   todaySessions: SessionView[];
   challenge: { id: string; name: string; progressKm: number; targetKm: number } | null;
+  spotlightRace: HomeSpotlightRace | null;
 }
 
 // ── Config ──────────────────────────────────────────────────────────────────

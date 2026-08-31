@@ -38,6 +38,10 @@ const ID: Record<string, string> = {
   Until: 'Sampai',
   'new members': 'member baru',
   'Use it': 'Pakai',
+  'Race day': 'Hari race',
+  'Next race near you': 'Race terdekat untukmu',
+  'days away': 'hari lagi',
+  'Add to my races': 'Tambah ke race saya',
   // Classes & bookings
   'My bookings': 'Pesanan saya',
   upcoming: 'mendatang',

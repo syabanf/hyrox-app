@@ -51,6 +51,15 @@ export default defineConfig({
               expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
             },
           },
+          // Stock photos keep working offline after first view.
+          {
+            urlPattern: /^https:\/\/images\.unsplash\.com\/.*/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'stock-photos',
+              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 90 },
+            },
+          },
         ],
       },
     }),

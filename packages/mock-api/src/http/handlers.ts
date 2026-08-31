@@ -255,12 +255,41 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
         }))
         .sort((a, b) => b.progressKm / b.targetKm - a.progressKm / a.targetKm);
 
+      // Spotlight: the member's own next race, else the next joinable event.
+      const myNextRace = deps()
+        .races.userRaces.forMember(me)
+        .filter((r) => r.status === 'TRAINING')
+        .map((r) => ({ userRace: r, event: deps().races.events.byId(r.raceEventId)! }))
+        .filter((x) => msOf(x.event.startsAt) > msOf(now))
+        .sort((a, b) => msOf(a.event.startsAt) - msOf(b.event.startsAt))[0];
+      const nextOpenEvent = db()
+        .raceEvents.filter(
+          (e) =>
+            (e.status === 'REGISTRATION_OPEN' || e.status === 'ANNOUNCED') &&
+            msOf(e.startsAt) > msOf(now),
+        )
+        .sort((a, b) => msOf(a.startsAt) - msOf(b.startsAt))[0];
+      const spotlightEvent = myNextRace?.event ?? nextOpenEvent ?? null;
+      const spotlightRace = spotlightEvent
+        ? {
+            raceEventId: spotlightEvent.id,
+            name: spotlightEvent.name,
+            city: spotlightEvent.city,
+            imageUrl: spotlightEvent.imageUrl,
+            startsAt: spotlightEvent.startsAt,
+            daysToRace: Math.ceil((msOf(spotlightEvent.startsAt) - msOf(now)) / (24 * 3600_000)),
+            joined: myNextRace !== undefined,
+            goalSec: myNextRace?.userRace.goalSec ?? null,
+          }
+        : null;
+
       return HttpResponse.json({
         announcements,
         promos,
         railDay,
         todaySessions,
         challenge: joined[0] ?? null,
+        spotlightRace,
       });
     }),
 

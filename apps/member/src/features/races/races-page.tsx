@@ -76,29 +76,42 @@ function DiscoveryTab({ scope, region }: { scope: 'upcoming' | 'results'; region
   return (
     <div className="flex flex-col gap-3">
       {(data ?? []).map((v) => (
-        <div key={v.event.id} className="card">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="font-black">{v.event.name}</p>
-              <p className="flex items-center gap-1 text-sm text-muted">
-                <MapPin size={13} />
+        <div key={v.event.id} className="card overflow-hidden !p-0">
+          <div className="relative h-40 w-full">
+            {v.event.imageUrl ? (
+              <img src={v.event.imageUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
+            ) : (
+              <div className="surface-brand h-full w-full" />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+            <div className="absolute right-3 top-3">
+              <StatusBadge status={v.event.status} />
+            </div>
+            <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] opacity-90">
+                {formatDay(v.event.startsAt)}
+              </p>
+              <p className="display text-2xl leading-tight">{v.event.name}</p>
+              <p className="flex items-center gap-1 text-xs font-bold opacity-90">
+                <MapPin size={12} />
                 {v.event.venue}, {v.event.city}
               </p>
-              <p className="text-sm text-muted">
-                {formatDay(v.event.startsAt)} · {v.participantCount} from this studio
-              </p>
             </div>
-            <StatusBadge status={v.event.status} />
           </div>
-          {scope === 'upcoming' ? (
-            v.joined ? (
-              <p className="mt-2 text-sm font-black text-ok">On your race list</p>
-            ) : v.event.status === 'REGISTRATION_OPEN' || v.event.status === 'ANNOUNCED' ? (
-              <button className="btn-brand mt-3 !py-2 text-sm" onClick={() => setRegisterTarget(v)}>
-                Add to my races
-              </button>
-            ) : null
-          ) : null}
+          <div className="flex items-center justify-between gap-3 p-3.5">
+            <p className="text-xs font-bold text-muted">
+              {v.participantCount} from this studio
+            </p>
+            {scope === 'upcoming' ? (
+              v.joined ? (
+                <p className="text-sm font-extrabold text-ok">On your race list</p>
+              ) : v.event.status === 'REGISTRATION_OPEN' || v.event.status === 'ANNOUNCED' ? (
+                <button className="btn-brand !px-4 !py-2 text-sm" onClick={() => setRegisterTarget(v)}>
+                  Add to my races
+                </button>
+              ) : null
+            ) : null}
+          </div>
         </div>
       ))}
       {(data ?? []).length === 0 ? <p className="card text-sm text-muted">No races here yet.</p> : null}
@@ -218,17 +231,26 @@ function MyRacesTab() {
   return (
     <div className="flex flex-col gap-3">
       {data.map((race) => (
-        <div key={race.userRace.id} className="card">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="font-black">{race.event.name}</p>
-              <p className="text-sm text-muted">
+        <div key={race.userRace.id} className="card overflow-hidden !p-0">
+          <div className="relative h-28 w-full">
+            {race.event.imageUrl ? (
+              <img src={race.event.imageUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
+            ) : (
+              <div className="surface-brand h-full w-full" />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
+            <div className="absolute right-3 top-3">
+              <StatusBadge status={race.userRace.status} />
+            </div>
+            <div className="absolute inset-x-0 bottom-0 px-4 pb-2.5 text-white">
+              <p className="display text-2xl leading-tight">{race.event.name}</p>
+              <p className="text-xs font-bold opacity-90">
                 {formatDay(race.event.startsAt)} ·{' '}
                 {race.userRace.division.replaceAll('_', ' ').toLowerCase()}
               </p>
             </div>
-            <StatusBadge status={race.userRace.status} />
           </div>
+          <div className="p-4 pt-1">
 
           {race.userRace.status === 'TRAINING' ? (
             <>
@@ -293,6 +315,7 @@ function MyRacesTab() {
               ) : null}
             </div>
           ) : null}
+          </div>
         </div>
       ))}
 

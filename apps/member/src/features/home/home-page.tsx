@@ -1,9 +1,10 @@
-import { Spinner, formatDay, formatDayTime, formatTime } from '@hyrox/ui';
+import { Spinner, formatDay, formatDayTime, formatDuration, formatTime } from '@hyrox/ui';
 import { useQuery } from '@tanstack/react-query';
 import { CalendarDays, Dumbbell, Flag, Megaphone, QrCode, TicketPercent, Trophy } from 'lucide-react';
 import { Link } from 'react-router';
 import { api } from '../../lib/api';
 import { useT } from '../../lib/i18n';
+import { classImage } from '../../lib/images';
 import { useMe, useMyBookings } from '../../lib/queries';
 
 const useHome = () => useQuery({ queryKey: ['home'], queryFn: api.me.home });
@@ -26,10 +27,11 @@ export function HomePage() {
     .slice(0, 3);
 
   return (
-    <div className="flex flex-col gap-5">
-      <p className="text-lg text-muted">
-        Hey, <span className="font-black text-ink">{me.member.fullName.split(' ')[0]}</span>
-      </p>
+    <div className="flex flex-col gap-8 pt-2">
+      <div>
+        <p className="text-sm font-semibold text-muted">Hey,</p>
+        <p className="display text-3xl leading-tight">{me.member.fullName.split(' ')[0]}</p>
+      </div>
 
       {/* Credit balance card */}
       <Link to="/wallet" className="card surface-brand relative block overflow-hidden !border-0">
@@ -72,6 +74,47 @@ export function HomePage() {
           </Link>
         ))}
       </div>
+
+      {/* Race spotlight — photo card */}
+      {home?.spotlightRace ? (
+        <Link
+          to="/races"
+          className="card relative block overflow-hidden !border-0 !p-0 text-white"
+        >
+          {home.spotlightRace.imageUrl ? (
+            <img
+              src={home.spotlightRace.imageUrl}
+              alt=""
+              className="h-52 w-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className="surface-brand h-52 w-full" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/10" />
+          <div className="absolute inset-x-0 bottom-0 p-5">
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-brand" style={{ color: '#ff5a5f' }}>
+              {home.spotlightRace.joined ? t('Race day') : t('Next race near you')} ·{' '}
+              {formatDay(home.spotlightRace.startsAt)}
+            </p>
+            <p className="display text-3xl leading-tight">{home.spotlightRace.name}</p>
+            <div className="mt-2 flex items-center gap-2">
+              <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-extrabold backdrop-blur">
+                {home.spotlightRace.daysToRace} {t('days away')}
+              </span>
+              {home.spotlightRace.joined && home.spotlightRace.goalSec ? (
+                <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-extrabold backdrop-blur">
+                  {t('Goal')} {formatDuration(home.spotlightRace.goalSec)}
+                </span>
+              ) : !home.spotlightRace.joined ? (
+                <span className="rounded-full bg-brand px-3 py-1 text-xs font-extrabold">
+                  {t('Add to my races')}
+                </span>
+              ) : null}
+            </div>
+          </div>
+        </Link>
+      ) : null}
 
       {/* Promos */}
       {home && home.promos.length > 0 ? (
@@ -149,26 +192,40 @@ export function HomePage() {
             </Link>
           </div>
           <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1">
-            {home.todaySessions.map((v) => (
-              <Link
-                key={v.session.id}
-                to={`/classes/${v.session.id}`}
-                className="card min-w-44 shrink-0 snap-start !py-3"
-              >
-                <p className="display text-xl">{formatTime(v.session.startsAt)}</p>
-                <p className="truncate text-sm font-black">{v.classTypeName}</p>
-                <p className="truncate text-xs text-muted">
-                  {v.branchName} · {v.coachName}
-                </p>
-                <p
-                  className={`mt-1.5 text-xs font-black uppercase ${
-                    v.myBooking ? 'text-ok' : v.spotsLeft > 0 ? 'text-brand' : 'text-warn'
-                  }`}
+            {home.todaySessions.map((v) => {
+              const image = classImage(v.session.classTypeId);
+              return (
+                <Link
+                  key={v.session.id}
+                  to={`/classes/${v.session.id}`}
+                  className="card min-w-48 shrink-0 snap-start overflow-hidden !p-0"
                 >
-                  {v.myBooking ? t('Booked') : v.spotsLeft > 0 ? `${v.spotsLeft} ${t('left')}` : t('Full · WL')}
-                </p>
-              </Link>
-            ))}
+                  {image ? (
+                    <div className="relative h-24 w-full">
+                      <img src={image} alt="" className="h-full w-full object-cover" loading="lazy" />
+                      <span className="display absolute bottom-2 left-3 text-xl text-white drop-shadow-[0_1px_4px_rgb(0_0_0/0.6)]">
+                        {formatTime(v.session.startsAt)}
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="display px-3.5 pt-3 text-xl">{formatTime(v.session.startsAt)}</p>
+                  )}
+                  <div className="p-3.5 pt-2.5">
+                    <p className="truncate text-sm font-extrabold">{v.classTypeName}</p>
+                    <p className="truncate text-xs text-muted">
+                      {v.branchName} · {v.coachName}
+                    </p>
+                    <p
+                      className={`mt-1.5 text-xs font-extrabold ${
+                        v.myBooking ? 'text-ok' : v.spotsLeft > 0 ? 'text-brand' : 'text-warn'
+                      }`}
+                    >
+                      {v.myBooking ? t('Booked') : v.spotsLeft > 0 ? `${v.spotsLeft} ${t('left')}` : t('Full · WL')}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </section>
       ) : null}

@@ -1,6 +1,7 @@
 import { Spinner, formatDay, formatDayTime, formatDuration, formatTime } from '@hyrox/ui';
 import { useQuery } from '@tanstack/react-query';
-import { CalendarDays, Dumbbell, Flag, Megaphone, QrCode, TicketPercent, Trophy } from 'lucide-react';
+import { CalendarDays, Dumbbell, Flag, QrCode, Trophy } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { api } from '../../lib/api';
 import { useT } from '../../lib/i18n';
@@ -8,6 +9,16 @@ import { classImage } from '../../lib/images';
 import { useMe, useMyBookings } from '../../lib/queries';
 
 const useHome = () => useQuery({ queryKey: ['home'], queryFn: api.me.home });
+
+/** Quiet, uniform section header: tiny caps label + optional trailing link. */
+function SectionHeader({ label, action }: { label: string; action?: ReactNode }) {
+  return (
+    <div className="mb-3 flex items-baseline justify-between px-1">
+      <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-muted">{label}</p>
+      {action}
+    </div>
+  );
+}
 
 export function HomePage() {
   const t = useT();
@@ -119,9 +130,7 @@ export function HomePage() {
       {/* Promos */}
       {home && home.promos.length > 0 ? (
         <section>
-          <h2 className="display mb-2 flex items-center gap-2 text-xl font-black">
-            <TicketPercent size={20} className="text-brand" /> {t('Promos')}
-          </h2>
+          <SectionHeader label={t('Promos')} />
           <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1">
             {home.promos.map((p) => (
               <Link
@@ -151,27 +160,27 @@ export function HomePage() {
         </section>
       ) : null}
 
-      {/* Announcements */}
+      {/* Announcements — one calm card, hairline-divided rows */}
       {home && home.announcements.length > 0 ? (
         <section>
-          <h2 className="display mb-2 flex items-center gap-2 text-xl font-black">
-            <Megaphone size={20} className="text-brand" /> {t('Announcements')}
-          </h2>
-          <div className="flex flex-col gap-2">
-            {home.announcements.map((a) => {
+          <SectionHeader label={t('Announcements')} />
+          <div className="card divide-y divide-line !py-1">
+            {home.announcements.slice(0, 3).map((a) => {
               const inner = (
                 <>
-                  <p className="text-sm font-black">{a.title}</p>
-                  <p className="text-sm text-muted">{a.message}</p>
-                  <p className="mt-1 text-xs text-muted/60">{formatDay(a.createdAt)}</p>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="text-sm font-extrabold">{a.title}</p>
+                    <p className="shrink-0 text-xs text-muted/70">{formatDay(a.createdAt)}</p>
+                  </div>
+                  <p className="mt-0.5 text-sm text-muted">{a.message}</p>
                 </>
               );
               return a.deepLink ? (
-                <Link key={a.id} to={a.deepLink} className="card block !py-3 active:bg-surface-raised">
+                <Link key={a.id} to={a.deepLink} className="block py-3.5">
                   {inner}
                 </Link>
               ) : (
-                <div key={a.id} className="card !py-3">
+                <div key={a.id} className="py-3.5">
                   {inner}
                 </div>
               );
@@ -183,14 +192,14 @@ export function HomePage() {
       {/* Today's classes rail */}
       {home && home.todaySessions.length > 0 ? (
         <section>
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="display text-xl font-black">
-              {home.railDay === 'TODAY' ? t('Today at the studio') : t('Tomorrow at the studio')}
-            </h2>
-            <Link to="/classes" className="text-sm font-bold text-brand">
-              {t('Schedule')}
-            </Link>
-          </div>
+          <SectionHeader
+            label={home.railDay === 'TODAY' ? t('Today at the studio') : t('Tomorrow at the studio')}
+            action={
+              <Link to="/classes" className="text-xs font-extrabold text-brand">
+                {t('Schedule')}
+              </Link>
+            }
+          />
           <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1">
             {home.todaySessions.map((v) => {
               const image = classImage(v.session.classTypeId);
@@ -252,14 +261,16 @@ export function HomePage() {
         </Link>
       ) : null}
 
-      {/* Upcoming bookings */}
+      {/* Upcoming bookings — one calm card, hairline-divided rows */}
       <section>
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="display text-xl font-black">{t('Upcoming')}</h2>
-          <Link to="/bookings" className="text-sm font-bold text-brand">
-            {t('All bookings')}
-          </Link>
-        </div>
+        <SectionHeader
+          label={t('Upcoming')}
+          action={
+            <Link to="/bookings" className="text-xs font-extrabold text-brand">
+              {t('All bookings')}
+            </Link>
+          }
+        />
         {upcoming.length === 0 ? (
           <div className="card text-sm text-muted">
             {t('Nothing booked yet.')}{' '}
@@ -268,17 +279,21 @@ export function HomePage() {
             </Link>
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="card divide-y divide-line !py-1">
             {upcoming.map((b) => (
-              <Link key={b.booking.id} to={`/classes/${b.session.id}`} className="card flex items-center justify-between">
-                <div>
-                  <p className="font-black">{b.classTypeName}</p>
-                  <p className="text-sm text-muted">
-                    {formatDayTime(b.session.startsAt)} · {b.branchName} · {b.coachName}
+              <Link
+                key={b.booking.id}
+                to={`/classes/${b.session.id}`}
+                className="flex items-center justify-between gap-3 py-3.5"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-extrabold">{b.classTypeName}</p>
+                  <p className="truncate text-sm text-muted">
+                    {formatDayTime(b.session.startsAt)} · {b.branchName}
                   </p>
                 </div>
                 <span
-                  className={`text-xs font-black uppercase ${
+                  className={`shrink-0 text-xs font-extrabold ${
                     b.booking.status === 'CONFIRMED' ? 'text-ok' : 'text-warn'
                   }`}
                 >

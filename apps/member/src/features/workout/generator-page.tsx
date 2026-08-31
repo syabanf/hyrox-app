@@ -1,9 +1,9 @@
 import { ApiError } from '@hyrox/api-client';
 import type { Division, WorkoutType } from '@hyrox/domain';
 import { Spinner, StatusBadge, formatDayTime, formatDuration } from '@hyrox/ui';
-import { Dumbbell } from 'lucide-react';
+import { CirclePlay, Dumbbell } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { api } from '../../lib/api';
 import { useExerciseLibrary, useWorkoutSessions } from '../../lib/athlete-queries';
 import { useT } from '../../lib/i18n';
@@ -57,9 +57,22 @@ export function WorkoutGeneratorPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center gap-2">
-        <Dumbbell size={22} className="text-brand" />
-        <h1 className="display text-3xl">{t('Workout generator')}</h1>
+      <h1 className="display text-3xl">{t('Workout generator')}</h1>
+
+      <div className="card surface-ink relative overflow-hidden !border-0 !p-6 text-white">
+        <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
+        <div className="relative flex items-center gap-4">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10">
+            <Dumbbell size={22} className="text-[#ff4348]" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="display text-xl leading-tight">Build your HYROX day.</p>
+            <p className="mt-0.5 text-sm text-white/60">Race order, division loads, smart substitutes.</p>
+          </div>
+        </div>
+        <Link to="/train/tutorials" className="chip relative mt-4 bg-white/10 text-white">
+          <CirclePlay size={13} /> Technique videos →
+        </Link>
       </div>
 
       <div>

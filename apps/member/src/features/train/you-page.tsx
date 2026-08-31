@@ -122,18 +122,21 @@ export function YouPage() {
         </div>
       </div>
 
-      <div className="card grid grid-cols-3 gap-3 text-center text-sm">
-        <div>
-          <p className="label !mb-0">Activities</p>
-          <p className="display text-2xl">{stats.totals.activities}</p>
-        </div>
-        <div>
-          <p className="label !mb-0">Distance</p>
-          <p className="display text-2xl">{stats.totals.distanceKm.toFixed(0)} km</p>
-        </div>
-        <div>
-          <p className="label !mb-0">Time</p>
-          <p className="display text-2xl">{formatDuration(stats.totals.movingSec)}</p>
+      <div className="card surface-ink relative overflow-hidden !border-0 !p-6 text-white">
+        <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
+        <div className="relative grid grid-cols-3 gap-3 text-center text-sm">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/50">Activities</p>
+            <p className="display mt-1 text-3xl">{stats.totals.activities}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/50">Distance</p>
+            <p className="display mt-1 text-3xl">{stats.totals.distanceKm.toFixed(0)} km</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/50">Time</p>
+            <p className="display mt-1 text-3xl">{formatDuration(stats.totals.movingSec)}</p>
+          </div>
         </div>
       </div>
 

@@ -9,6 +9,7 @@ import { HomePage } from '../features/home/home-page';
 import { NotificationsPage } from '../features/notifications/notifications-page';
 import { EmergencyContactPage } from '../features/profile/emergency-page';
 import { GearPage } from '../features/profile/gear-page';
+import { TutorialsPage } from '../features/train/tutorials-page';
 import { ProfilePage } from '../features/profile/profile-page';
 import { SettingsPage } from '../features/profile/settings-page';
 import { QrPage } from '../features/qr/qr-page';
@@ -56,6 +57,7 @@ export const router = createBrowserRouter([
       { path: '/train/record', element: <RecordPage /> },
       { path: '/train/you', element: <YouPage /> },
       { path: '/train/explore', element: <ExplorePage /> },
+      { path: '/train/tutorials', element: <TutorialsPage /> },
       { path: '/train/activities/:activityId', element: <ActivityDetailPage /> },
       { path: '/train/segments/:segmentId', element: <SegmentPage /> },
       { path: '/train/heatmap', element: <HeatmapPage /> },

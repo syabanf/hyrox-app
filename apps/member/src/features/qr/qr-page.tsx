@@ -54,41 +54,44 @@ export function QrPage() {
         <QRCodeSVG value={qr.data.token} size={240} level="M" marginSize={0} />
       </div>
 
-      <div className="flex items-center gap-3">
-        <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden>
-          <circle cx="32" cy="32" r={R} fill="none" stroke="var(--color-line)" strokeWidth="5" />
-          <circle
-            cx="32"
-            cy="32"
-            r={R}
-            fill="none"
-            stroke="var(--color-brand)"
-            strokeWidth="5"
-            strokeLinecap="round"
-            strokeDasharray={CIRC}
-            strokeDashoffset={CIRC * (1 - fraction)}
-            transform="rotate(-90 32 32)"
-            style={{ transition: 'stroke-dashoffset 0.25s linear' }}
-          />
-          <text
-            x="32"
-            y="37"
-            textAnchor="middle"
-            fill="#191919"
-            fontSize="16"
-            fontWeight="800"
-            fontFamily="inherit"
-          >
-            {secondsLeft}
-          </text>
-        </svg>
-        <div className="text-sm text-muted">
-          <p className="font-bold text-ink">{member?.fullName}</p>
-          <p>
-            Balance:{' '}
-            <span className="font-black text-brand">{me?.balance ?? '…'} credits</span>
-          </p>
-          <p className="text-xs">Code refreshes automatically.</p>
+      <div className="card surface-ink relative w-full overflow-hidden !border-0 !p-5 text-white">
+        <div className="pointer-events-none absolute -right-14 -top-20 h-44 w-44 rounded-full bg-brand/25 blur-3xl" />
+        <div className="relative flex items-center gap-4">
+          <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden>
+            <circle cx="32" cy="32" r={R} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="5" />
+            <circle
+              cx="32"
+              cy="32"
+              r={R}
+              fill="none"
+              stroke="#f5333a"
+              strokeWidth="5"
+              strokeLinecap="round"
+              strokeDasharray={CIRC}
+              strokeDashoffset={CIRC * (1 - fraction)}
+              transform="rotate(-90 32 32)"
+              style={{ transition: 'stroke-dashoffset 0.25s linear' }}
+            />
+            <text
+              x="32"
+              y="37"
+              textAnchor="middle"
+              fill="#ffffff"
+              fontSize="16"
+              fontWeight="800"
+              fontFamily="inherit"
+            >
+              {secondsLeft}
+            </text>
+          </svg>
+          <div className="text-sm text-white/60">
+            <p className="font-bold text-white">{member?.fullName}</p>
+            <p>
+              Balance:{' '}
+              <span className="font-black text-[#ff4348]">{me?.balance ?? '…'} credits</span>
+            </p>
+            <p className="text-xs">Code refreshes automatically.</p>
+          </div>
         </div>
       </div>
 

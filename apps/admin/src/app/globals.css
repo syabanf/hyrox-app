@@ -88,3 +88,39 @@ body {
 .a-table tbody tr:hover {
   background: rgb(17 17 20 / 0.02);
 }
+
+/* ── Motion ─────────────────────────────────────────────────────────────────
+   Gentle pops for modals and menus; Reduce Motion collapses everything. */
+@keyframes fade-in {
+  from { opacity: 0; }
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(0.97) translateY(8px); }
+}
+
+.a-btn, .a-btn-ghost, .a-btn-danger, .a-input, .chip {
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  transition-duration: 180ms;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .modal-backdrop {
+    animation: fade-in 0.18s ease-out both;
+  }
+  .modal-panel, .menu-pop {
+    animation: pop-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-spin {
+    animation-duration: 1.2s !important;
+    animation-iteration-count: infinite !important;
+  }
+}

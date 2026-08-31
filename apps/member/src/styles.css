@@ -67,3 +67,57 @@ body {
 .surface-brand {
   background: linear-gradient(140deg, #f5333a 0%, #d5121a 55%, #8f0a10 100%);
 }
+
+/* ── Motion ──────────────────────────────────────────────────────────────────
+   One easing curve everywhere (an ease-out "spring"), gentle durations, and
+   full respect for the OS Reduce Motion setting. */
+@keyframes fade-in {
+  from { opacity: 0; }
+}
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(10px); }
+}
+@keyframes sheet-up {
+  from { opacity: 0; transform: translateY(48px); }
+}
+
+button, a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Consistent feel for every interactive primitive. */
+.btn-brand, .btn-ghost, .chip, .input, .card {
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  transition-duration: 220ms;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+  /* Each navigation fades the new page up into place. */
+  .page-enter {
+    animation: page-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .sheet-backdrop {
+    animation: fade-in 0.22s ease-out both;
+  }
+  .sheet-panel {
+    animation: sheet-up 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+/* Reduce Motion: collapse every animation and transition to an instant swap.
+   Loading spinners keep turning (essential feedback, WCAG motion exception). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-spin {
+    animation-duration: 1.2s !important;
+    animation-iteration-count: infinite !important;
+  }
+}

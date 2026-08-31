@@ -70,7 +70,7 @@ export function SearchSelect({
         <ChevronsUpDown size={14} className="shrink-0 text-muted" />
       </button>
       {open ? (
-        <div className="absolute inset-x-0 z-30 mt-1 overflow-hidden rounded-xl border border-line bg-surface shadow-[0_16px_40px_rgb(13_13_16/0.18)]">
+        <div className="menu-pop absolute inset-x-0 z-30 mt-1 overflow-hidden rounded-xl border border-line bg-surface shadow-[0_16px_40px_rgb(13_13_16/0.18)]">
           <input
             autoFocus
             className="w-full border-b border-line bg-surface px-3.5 py-2.5 text-sm focus:outline-none"
@@ -177,9 +177,9 @@ export function StatCard({ label, value, hint, tone }: { label: string; value: R
 
 export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-3xl bg-surface p-6 shadow-[0_24px_60px_rgb(13_13_16/0.3)]"
+        className="modal-panel max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-3xl bg-surface p-6 shadow-[0_24px_60px_rgb(13_13_16/0.3)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">

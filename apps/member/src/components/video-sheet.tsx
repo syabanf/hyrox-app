@@ -12,9 +12,9 @@ export function VideoSheet({
 }) {
   const embedUrl = videoUrl.replace('watch?v=', 'embed/');
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/60" onClick={onClose}>
+    <div className="sheet-backdrop fixed inset-0 z-40 flex items-end justify-center bg-black/60" onClick={onClose}>
       <div
-        className="w-full max-w-md rounded-t-3xl bg-surface p-5 pb-8"
+        className="sheet-panel w-full max-w-md rounded-t-3xl bg-surface p-5 pb-8"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between gap-3">

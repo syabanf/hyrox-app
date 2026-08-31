@@ -122,8 +122,8 @@ export function WorkoutPreviewPage() {
         <VideoSheet title={videoTarget.title} videoUrl={videoTarget.url} onClose={() => setVideoTarget(null)} />
       ) : null}
       {swapTarget ? (
-        <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/50" onClick={() => setSwapTarget(null)}>
-          <div className="w-full max-w-md rounded-t-3xl bg-surface p-5" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-backdrop fixed inset-0 z-40 flex items-end justify-center bg-black/50" onClick={() => setSwapTarget(null)}>
+          <div className="sheet-panel w-full max-w-md rounded-t-3xl bg-surface p-5" onClick={(e) => e.stopPropagation()}>
             <h2 className="display mb-1 text-xl">Replace {swapTarget.exerciseName}</h2>
             <p className="mb-3 text-sm text-muted">Substitutes ranked by similarity.</p>
             <div className="flex flex-col gap-2">

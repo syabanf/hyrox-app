@@ -25,6 +25,7 @@ const NAV = [
 export function AppLayout() {
   const { data: me } = useMe();
   const t = useT();
+  const location = useLocation();
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col">
       <OfflineBanner />
@@ -69,7 +70,9 @@ export function AppLayout() {
         </Link>
       </header>
       <main className="flex-1 px-5 pb-28 pt-[4.75rem]">
-        <Outlet />
+        <div key={location.pathname} className="page-enter">
+          <Outlet />
+        </div>
       </main>
       <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-md px-5 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
         <div className="surface-ink flex items-center justify-between rounded-full px-3 py-2.5 shadow-[0_18px_40px_rgb(13_13_16/0.35)]">

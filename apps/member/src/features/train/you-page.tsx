@@ -237,8 +237,8 @@ function AddGearSheet({ onClose, onDone }: { onClose: () => void; onDone: () => 
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/50" onClick={onClose}>
-      <div className="w-full max-w-md rounded-t-3xl bg-surface p-5" onClick={(e) => e.stopPropagation()}>
+    <div className="sheet-backdrop fixed inset-0 z-40 flex items-end justify-center bg-black/50" onClick={onClose}>
+      <div className="sheet-panel w-full max-w-md rounded-t-3xl bg-surface p-5" onClick={(e) => e.stopPropagation()}>
         <h2 className="display mb-4 text-xl">Add gear</h2>
         <div className="flex flex-col gap-3">
           <div>

@@ -41,7 +41,7 @@ PWA check: `pnpm --filter @hyrox/member build && pnpm --filter @hyrox/member pre
 
 ## Demo accounts
 
-- **Member app**: `demo@hyrox.id` (Fahmi Syaban) - any 6-digit OTP works (`123456`). Or register a fresh member.
+- **Member app**: opens straight on Home as `demo@hyrox.id` (Fahmi Syaban) with no OTP step. The login screen (any 6-digit OTP works, e.g. `123456`) only appears after **Sign out**; from there you can sign in as another member or register a fresh one.
 - **Admin**: one-click login cards, one per role (Super Admin, HQ Admin, Branch Manager, Front Desk, Coach, Finance). RBAC is enforced by the mock server - a Front Desk token gets a real `403` on finance endpoints, not just hidden buttons.
 - **Voucher codes**: `WELCOME10` (10%, new members), `HYROX100` (Rp100k, 10/20-packs).
 

@@ -1,17 +1,52 @@
 import { Activity, Bell, CalendarDays, Home, QrCode, Search, User } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { Spinner } from '@hyrox/ui';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation, Navigate } from 'react-router';
-import { useAuthStore } from '../lib/auth';
+import { api } from '../lib/api';
+import { DEMO_IDENTIFIER, useAuthStore } from '../lib/auth';
 import { useT } from '../lib/i18n';
 import { useMe } from '../lib/queries';
 import { DevDrawer } from './dev-drawer';
 import { OfflineBanner } from './offline-banner';
 
+/**
+ * Opens the app straight on the main page: with no session (and no explicit
+ * sign-out before), a demo session is established silently through the same
+ * OTP endpoints the login screen uses. The login screen is only shown after
+ * Sign out, or if the silent sign-in fails.
+ */
 export function RequireAuth({ children }: { children: ReactNode }) {
   const token = useAuthStore((s) => s.token);
+  const signedOut = useAuthStore((s) => s.signedOut);
+  const setSession = useAuthStore((s) => s.setSession);
   const location = useLocation();
-  if (!token) return <Navigate to="/auth/login" replace state={{ from: location.pathname }} />;
-  return <>{children}</>;
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    if (token || signedOut) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const challenge = await api.auth.requestOtp(DEMO_IDENTIFIER);
+        const session = await api.auth.verifyOtp(challenge.challengeId, '123456');
+        if (!cancelled) setSession(session.token, session.member);
+      } catch {
+        if (!cancelled) setFailed(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, signedOut, setSession]);
+
+  if (token) return <>{children}</>;
+  if (signedOut || failed)
+    return <Navigate to="/auth/login" replace state={{ from: location.pathname }} />;
+  return (
+    <div className="flex min-h-dvh items-center justify-center">
+      <Spinner label="Opening NüHabit…" />
+    </div>
+  );
 }
 
 const NAV = [

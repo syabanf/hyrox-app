@@ -10,3 +10,7 @@ coverage/
 dev-dist/
 
 *.tsbuildinfo
+.vercel
+
+.vercel
+.env*

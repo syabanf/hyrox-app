@@ -80,14 +80,17 @@ describe('evaluateGateScan', () => {
     expect(res).toMatchObject({ decision: 'DENIED', reason: 'MEMBER_NOT_ACTIVE' });
   });
 
-  it('open-gym entry deducts the configured cost', () => {
+  it('denies a scan with no booked class - there is no open gym', () => {
     const res = evaluateGateScan(baseArgs);
-    expect(res.decision).toBe('ALLOWED');
-    expect(res.entryKind).toBe('OPEN_GYM');
-    expect(res.effects).toContainEqual({
-      kind: 'DEDUCT_CREDITS',
-      amount: 1,
-      description: 'Studio entry',
+    expect(res).toMatchObject({ decision: 'DENIED', reason: 'NO_BOOKING', entryKind: null });
+    expect(res.effects.some((e) => e.kind === 'DEDUCT_CREDITS')).toBe(false);
+    expect(res.effects.some((e) => e.kind === 'CHECK_IN_BOOKING')).toBe(false);
+  });
+
+  it('checks the booking before credits: no booking wins even with a zero balance', () => {
+    expect(evaluateGateScan({ ...baseArgs, balance: 0 })).toMatchObject({
+      decision: 'DENIED',
+      reason: 'NO_BOOKING',
     });
   });
 
@@ -105,14 +108,14 @@ describe('evaluateGateScan', () => {
     });
   });
 
-  it('denies on insufficient credits (booking and open gym)', () => {
-    expect(
-      evaluateGateScan({ ...baseArgs, balance: 1, candidateBooking: { id: 'b', creditCost: 2 } }),
-    ).toMatchObject({ decision: 'DENIED', reason: 'INSUFFICIENT_CREDITS' });
-    expect(evaluateGateScan({ ...baseArgs, balance: 0 })).toMatchObject({
-      decision: 'DENIED',
-      reason: 'INSUFFICIENT_CREDITS',
+  it('denies a booked entry on insufficient credits', () => {
+    const res = evaluateGateScan({
+      ...baseArgs,
+      balance: 1,
+      candidateBooking: { id: 'b', creditCost: 2 },
     });
+    expect(res).toMatchObject({ decision: 'DENIED', reason: 'INSUFFICIENT_CREDITS' });
+    expect(res.effects.some((e) => e.kind === 'CHECK_IN_BOOKING')).toBe(false);
   });
 
   it('allows free re-entry within the grace period', () => {
@@ -132,12 +135,13 @@ describe('evaluateGateScan', () => {
     expect(res).toMatchObject({ decision: 'DENIED', reason: 'ANTI_PASSBACK' });
   });
 
-  it('allows a fresh entry after the anti-passback window', () => {
+  it('allows a fresh booked entry after the anti-passback window', () => {
     const res = evaluateGateScan({
       ...baseArgs,
+      candidateBooking: { id: 'bok_2', creditCost: 1 },
       lastAllowedEntryAt: '2026-01-10T15:30:00.000Z', // 90 min ago > 60 passback
     });
-    expect(res).toMatchObject({ decision: 'ALLOWED', entryKind: 'OPEN_GYM' });
+    expect(res).toMatchObject({ decision: 'ALLOWED', entryKind: 'BOOKING' });
   });
 
   it('honors configured windows (rules are data, not code)', () => {
@@ -149,8 +153,8 @@ describe('evaluateGateScan', () => {
     expect(res).toMatchObject({ decision: 'ALLOWED', entryKind: 'RE_ENTRY' });
   });
 
-  it('every evaluation with a readable token consumes it — even denials', () => {
-    const res = evaluateGateScan({ ...baseArgs, balance: 0 });
+  it('every evaluation with a readable token consumes it - even denials', () => {
+    const res = evaluateGateScan({ ...baseArgs, candidateBooking: null });
     expect(res.effects).toContainEqual({ kind: 'CONSUME_TOKEN', token: 'qr_abc' });
   });
 });

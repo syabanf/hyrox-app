@@ -30,10 +30,10 @@ export function ChallengeDetailPage() {
       </button>
 
       <div className="card surface-ink relative overflow-hidden !border-0 !p-6 text-white">
-        <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
+        <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-lime/20 blur-3xl" />
         <div className="relative">
           <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.22em] text-white/50">
-            <Trophy size={13} className="text-[#ff4348]" /> Challenge ·{' '}
+            <Trophy size={13} className="text-lime" /> Challenge ·{' '}
             {formatDay(c.startsAt)} – {formatDay(c.endsAt)}
           </p>
           <p className="display mt-1 text-3xl leading-tight">{c.name}</p>
@@ -61,7 +61,7 @@ export function ChallengeDetailPage() {
           Join challenge
         </button>
       ) : (
-        <p className="chip self-start bg-ok/10 text-ok">You're in — {view.participantCount} athletes joined</p>
+        <p className="chip self-start bg-ok/10 text-ok">You're in - {view.participantCount} athletes joined</p>
       )}
 
       <section>

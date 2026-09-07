@@ -31,7 +31,9 @@ import {
   AdminLoginSchema,
   CreateBranchSchema,
   CreateMemberAdminSchema,
+  CreatePayoutSchema,
   CreateSessionSchema,
+  PayoutActionSchema,
   GateScanSchema,
   OtpRequestSchema,
   OtpVerifySchema,
@@ -53,6 +55,7 @@ import {
   UpsertClassTypeSchema,
   UpsertCoachSchema,
   UpsertGateSchema,
+  UpsertIncentiveSchemeSchema,
   UpsertPackageSchema,
   UpsertRaceEventSchema,
   UpsertVoucherSchema,
@@ -60,8 +63,9 @@ import {
   VoucherStatusActionSchema,
 } from '@hyrox/contracts';
 import type { QrView, ScanResultView } from '@hyrox/contracts';
-import type { Payment, SessionStatus, VoucherStatus } from '@hyrox/domain';
+import type { Payment, PayoutAction, SessionStatus, VoucherStatus } from '@hyrox/domain';
 import {
+  PAYOUT_ACTIONS,
   ROLE_PERMISSIONS,
   SESSION_TRANSITIONS,
   VOUCHER_TRANSITIONS,
@@ -72,10 +76,15 @@ import {
 } from '@hyrox/domain';
 import { HttpResponse, http, type HttpHandler } from 'msw';
 import {
+  buildStatements,
   confirmPromotion,
+  createPayout,
   generateBookingReminders,
+  getSchemes,
   resolveOfflineConflict,
   segmentMembers,
+  transitionPayout,
+  upsertScheme,
 } from '@hyrox/application';
 import type { MockDb } from '../db';
 import { createAthleteHandlers } from './athlete';
@@ -91,7 +100,10 @@ import {
 import {
   accessLogView,
   bookingView,
+  coachStatementView,
   dashboardView,
+  incentivePayoutView,
+  incentiveSchemeView,
   memberDetailView,
   memberSummaryView,
   meView,
@@ -147,7 +159,7 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
       if (!identifier) return jsonError(400, 'CHALLENGE_NOT_FOUND', 'Request a new code.');
       const member = deps().members.byIdentifier(identifier);
       if (!member)
-        return jsonError(404, 'MEMBER_NOT_FOUND', 'No member with that email or phone — register first.');
+        return jsonError(404, 'MEMBER_NOT_FOUND', 'No member with that email or phone - register first.');
       delete db().otpChallenges[body.data.challengeId];
       return HttpResponse.json({ token: `member:${member.id}`, member });
     }),
@@ -386,7 +398,7 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
       return HttpResponse.json({ payment, packageName: pkg?.name ?? 'Credit package' });
     }),
 
-    // Mock Xendit webhook — the paying member (from their payment page) or an
+    // Mock Xendit webhook - the paying member (from their payment page) or an
     // admin with payments.simulate can flip PENDING → PAID.
     http.post('*/api/payments/:id/simulate', ({ request, params }) => {
       const paymentId = param(params, 'id');
@@ -1314,6 +1326,102 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
         return jsonError(409, 'IN_USE', 'At least one Super Admin must remain.');
       removeById(db().adminUsers, id);
       return HttpResponse.json({ ok: true });
+    }),
+
+    // ── Admin: coach incentives (IDR payroll - independent of member credits) ──
+    http.get('*/api/admin/incentives/schemes', ({ request }) => {
+      const auth = requireAdmin(db(), request, 'incentives.view');
+      if (!auth.ok) return auth.response;
+      return HttpResponse.json(getSchemes(deps()).map((s) => incentiveSchemeView(db(), s)));
+    }),
+
+    http.post('*/api/admin/incentives/schemes', async ({ request }) => {
+      const auth = requireAdmin(db(), request, 'incentives.manage');
+      if (!auth.ok) return auth.response;
+      const body = await parseBody(request, UpsertIncentiveSchemeSchema);
+      if (!body.ok) return body.response;
+      const res = upsertScheme(deps(), {
+        input: body.data,
+        actor: { id: auth.value.id, name: auth.value.name },
+      });
+      if (!res.ok) return fromAppError(res.error);
+      return HttpResponse.json(incentiveSchemeView(db(), res.value), { status: 201 });
+    }),
+
+    http.put('*/api/admin/incentives/schemes/:id', async ({ request, params }) => {
+      const auth = requireAdmin(db(), request, 'incentives.manage');
+      if (!auth.ok) return auth.response;
+      const body = await parseBody(request, UpsertIncentiveSchemeSchema);
+      if (!body.ok) return body.response;
+      const res = upsertScheme(deps(), {
+        id: param(params, 'id'),
+        input: body.data,
+        actor: { id: auth.value.id, name: auth.value.name },
+      });
+      if (!res.ok) return fromAppError(res.error);
+      return HttpResponse.json(incentiveSchemeView(db(), res.value));
+    }),
+
+    http.get('*/api/admin/incentives/statements', ({ request }) => {
+      const auth = requireAdmin(db(), request, 'incentives.view');
+      if (!auth.ok) return auth.response;
+      const url = new URL(request.url);
+      const period = url.searchParams.get('period');
+      if (!period) return jsonError(400, 'VALIDATION_ERROR', 'period (YYYY-MM) is required.');
+      const res = buildStatements(deps(), {
+        periodMonth: period,
+        branchId: url.searchParams.get('branchId') || null,
+      });
+      if (!res.ok) return fromAppError(res.error);
+      return HttpResponse.json(res.value.map((r) => coachStatementView(db(), r)));
+    }),
+
+    http.get('*/api/admin/incentives/payouts', ({ request }) => {
+      const auth = requireAdmin(db(), request, 'incentives.view');
+      if (!auth.ok) return auth.response;
+      const url = new URL(request.url);
+      const period = url.searchParams.get('period');
+      const coachId = url.searchParams.get('coachId');
+      const status = url.searchParams.get('status');
+      const views = [...db().incentivePayouts]
+        .sort((a, b) => msOf(b.createdAt) - msOf(a.createdAt))
+        .map((p) => incentivePayoutView(db(), p))
+        .filter((v) => !period || v.periodMonth === period)
+        .filter((v) => !coachId || v.payout.coachId === coachId)
+        .filter((v) => !status || v.payout.status === status);
+      return HttpResponse.json(views);
+    }),
+
+    http.post('*/api/admin/incentives/payouts', async ({ request }) => {
+      const auth = requireAdmin(db(), request, 'incentives.manage');
+      if (!auth.ok) return auth.response;
+      const body = await parseBody(request, CreatePayoutSchema);
+      if (!body.ok) return body.response;
+      const res = createPayout(deps(), {
+        ...body.data,
+        actor: { id: auth.value.id, name: auth.value.name },
+      });
+      if (!res.ok) return fromAppError(res.error);
+      return HttpResponse.json(incentivePayoutView(db(), res.value), { status: 201 });
+    }),
+
+    http.post('*/api/admin/incentives/payouts/:id/:action', async ({ request, params }) => {
+      const auth = requireAdmin(db(), request, 'incentives.manage');
+      if (!auth.ok) return auth.response;
+      const action = param(params, 'action');
+      if (!PAYOUT_ACTIONS.includes(action as PayoutAction))
+        return jsonError(404, 'NOT_FOUND', `Unknown payout action "${action}".`);
+      const body = await parseBody(request, PayoutActionSchema);
+      if (!body.ok) return body.response;
+      const res = transitionPayout(deps(), {
+        id: param(params, 'id'),
+        action: action as PayoutAction,
+        actor: { id: auth.value.id, name: auth.value.name },
+        paymentReference: body.data.paymentReference,
+        note: body.data.note,
+      });
+      if (!res.ok) return fromAppError(res.error);
+      return HttpResponse.json(incentivePayoutView(db(), res.value));
     }),
 
     // ── Admin: dashboard & reports ──────────────────────────────────────────

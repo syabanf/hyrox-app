@@ -46,12 +46,12 @@ export function HomePage() {
         <p className="display text-3xl leading-tight">{me.member.fullName.split(' ')[0]}</p>
       </div>
 
-      {/* Credit balance — premium "black card"; tap opens the digital member card */}
+      {/* Credit balance - premium "black card"; tap opens the digital member card */}
       <button
         onClick={() => setCardOpen(true)}
         className="card surface-ink relative block w-full overflow-hidden !border-0 !p-6 text-left text-white"
       >
-        <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
+        <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-lime/20 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-28 -left-10 h-48 w-48 rounded-full bg-white/[0.04] blur-2xl" />
         <div className="relative flex items-start justify-between">
           <div>
@@ -69,7 +69,7 @@ export function HomePage() {
           <Link
             to={me.lowBalance ? '/wallet/topup' : '/wallet'}
             onClick={(e) => e.stopPropagation()}
-            className={`chip ${me.lowBalance ? 'bg-brand text-white' : 'bg-white/10 text-white/80'}`}
+            className={`chip ${me.lowBalance ? 'bg-lime text-ink' : 'bg-white/10 text-white/80'}`}
           >
             {me.lowBalance
               ? t('Top up')
@@ -80,15 +80,15 @@ export function HomePage() {
         </div>
       </button>
 
-      {/* Quick actions — each with its own soft accent tint */}
+      {/* Quick actions - each with its own soft accent tint */}
       <div className="grid grid-cols-2 gap-3">
         {[
-          { to: '/qr', icon: QrCode, label: t('Check in'), tint: 'surface-brand text-white' },
-          { to: '/classes', icon: CalendarDays, label: t('Book a class'), tint: 'bg-[#1b1b1f] text-white' },
-          { to: '/my-classes', icon: BookMarked, label: t('My classes'), tint: 'bg-[#1b1b1f] text-white' },
-          { to: '/workout', icon: Dumbbell, label: t('Generate workout'), tint: 'bg-[#1b1b1f] text-white' },
-          { to: '/races', icon: Flag, label: t('Races'), tint: 'bg-[#1b1b1f] text-white' },
-          { to: '/train/tutorials', icon: CirclePlay, label: t('Guides'), tint: 'bg-[#1b1b1f] text-white' },
+          { to: '/qr', icon: QrCode, label: t('Check in'), tint: 'surface-brand text-ink' },
+          { to: '/classes', icon: CalendarDays, label: t('Book a class'), tint: 'bg-ink-soft text-white' },
+          { to: '/my-classes', icon: BookMarked, label: t('My classes'), tint: 'bg-ink-soft text-white' },
+          { to: '/workout', icon: Dumbbell, label: t('Generate workout'), tint: 'bg-ink-soft text-white' },
+          { to: '/races', icon: Flag, label: t('Races'), tint: 'bg-ink-soft text-white' },
+          { to: '/train/tutorials', icon: CirclePlay, label: t('Guides'), tint: 'bg-ink-soft text-white' },
         ].map(({ to, icon: Icon, label, tint }) => (
           <Link key={to} to={to} className="card flex items-center gap-3 !p-4 active:scale-[0.98]">
             <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tint}`}>
@@ -99,7 +99,7 @@ export function HomePage() {
         ))}
       </div>
 
-      {/* Race spotlight — photo card */}
+      {/* Race spotlight - photo card */}
       {home?.spotlightRace ? (
         <Link
           to={`/races/${home.spotlightRace.raceEventId}`}
@@ -131,7 +131,7 @@ export function HomePage() {
                   {t('Goal')} {formatDuration(home.spotlightRace.goalSec)}
                 </span>
               ) : !home.spotlightRace.joined ? (
-                <span className="chip bg-brand text-white">{t('Add to my races')}</span>
+                <span className="chip bg-lime text-ink">{t('Add to my races')}</span>
               ) : null}
             </div>
           </div>
@@ -149,7 +149,7 @@ export function HomePage() {
                 to={`/promos/${encodeURIComponent(p.code)}`}
                 className="card surface-ink relative min-w-64 shrink-0 snap-start overflow-hidden !border-0 text-white"
               >
-                <div className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full bg-brand/20 blur-3xl" />
+                <div className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full bg-lime/15 blur-3xl" />
                 <div className="relative flex items-start justify-between gap-2">
                   <p className="display text-3xl leading-none">{p.label}</p>
                   <span className="rounded-full bg-white/10 px-2.5 py-1 font-mono text-[11px] font-bold tracking-wider text-white/80">
@@ -162,7 +162,7 @@ export function HomePage() {
                     {t('Until')} {formatDay(p.endsAt)}
                     {p.newMembersOnly ? ` · ${t('new members')}` : ''}
                   </span>
-                  <span className="chip bg-brand text-white">{t('Use it')}</span>
+                  <span className="chip bg-lime text-ink">{t('Use it')}</span>
                 </div>
               </Link>
             ))}
@@ -170,7 +170,7 @@ export function HomePage() {
         </section>
       ) : null}
 
-      {/* Announcements — one calm card, hairline-divided rows */}
+      {/* Announcements - one calm card, hairline-divided rows */}
       {home && home.announcements.length > 0 ? (
         <section>
           <SectionHeader label={t('Announcements')} />
@@ -260,7 +260,7 @@ export function HomePage() {
       {/* Challenge progress */}
       {home?.challenge ? (
         <Link to={`/train/challenges/${home.challenge.id}`} className="card flex items-center gap-4 !py-4">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1b1b1f] text-white">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-ink-soft text-white">
             <Trophy size={19} strokeWidth={2.2} />
           </span>
           <div className="min-w-0 flex-1">
@@ -281,7 +281,7 @@ export function HomePage() {
         </Link>
       ) : null}
 
-      {/* Upcoming bookings — one calm card, hairline-divided rows */}
+      {/* Upcoming bookings - one calm card, hairline-divided rows */}
       <section>
         <SectionHeader
           label={t('Upcoming')}
@@ -336,20 +336,25 @@ export function HomePage() {
         )}
       </section>
 
-      {/* Community finisher — a splash of brand at the end of the page */}
+      {/* Community finisher - a splash of brand at the end of the page */}
       <Link
         to="/train"
-        className="card surface-brand relative block overflow-hidden !border-0 !p-6 text-white"
+        className="card surface-brand relative block overflow-hidden !border-0 !p-6 text-ink"
       >
-        <div className="pointer-events-none absolute -right-14 -top-20 h-48 w-48 rounded-full bg-white/15 blur-3xl" />
-        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/60">
+        <div className="pointer-events-none absolute -right-14 -top-20 h-48 w-48 rounded-full bg-white/40 blur-3xl" />
+        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-ink/60">
           {t('Community')}
         </p>
         <p className="display mt-1 text-2xl leading-tight">{t('See what your crew is training')}</p>
-        <span className="chip mt-4 bg-white/15 text-white backdrop-blur">{t('Open Train')} →</span>
+        <span className="chip mt-4 bg-ink/10 text-ink backdrop-blur">{t('Open Train')} →</span>
       </Link>
 
-      <p className="display pb-2 text-center text-4xl text-ink/[0.06]">HYROXSTUDIO</p>
+      <img
+        src="/brand/nuhabit-logo-black.png"
+        alt=""
+        aria-hidden
+        className="mx-auto mb-2 h-7 w-auto opacity-[0.08]"
+      />
 
       {cardOpen ? <MemberCardSheet onClose={() => setCardOpen(false)} /> : null}
     </div>

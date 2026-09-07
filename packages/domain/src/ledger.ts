@@ -19,7 +19,7 @@ export type LedgerSourceType = 'PAYMENT' | 'BOOKING' | 'ACCESS' | 'ADMIN' | 'SYS
 
 /**
  * A finalized ledger entry is immutable. Corrections are REVERSAL entries
- * referencing the original — never edits, never deletes.
+ * referencing the original - never edits, never deletes.
  */
 export interface CreditLedgerEntry {
   id: string;

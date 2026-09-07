@@ -47,7 +47,7 @@ export default function SessionDetailPage() {
       refresh();
       setNotice(
         res.promotedMemberName
-          ? `Cancelled — ${res.promotedMemberName} was auto-promoted from the waitlist.`
+          ? `Cancelled - ${res.promotedMemberName} was auto-promoted from the waitlist.`
           : 'Booking cancelled.',
       );
     },
@@ -122,7 +122,7 @@ export default function SessionDetailPage() {
                   <StatusBadge status={r.booking.status} />
                 </td>
                 <td className="text-muted">
-                  {r.booking.waitlistPosition ? `#${r.booking.waitlistPosition}` : '—'}
+                  {r.booking.waitlistPosition ? `#${r.booking.waitlistPosition}` : '-'}
                 </td>
                 <td className="text-right">
                   <div className="flex justify-end gap-2">

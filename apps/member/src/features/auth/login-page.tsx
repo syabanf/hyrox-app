@@ -56,7 +56,7 @@ export function LoginPage() {
     try {
       const res = await api.auth.requestOtp(identifier);
       if (!res.memberExists) {
-        setError('No account found — create your membership below.');
+        setError('No account found - create your membership below.');
         return;
       }
       setChallengeId(res.challengeId);
@@ -89,11 +89,12 @@ export function LoginPage() {
       {/* Photo hero, fading into the page background */}
       <div className="relative h-[46dvh] min-h-80 w-full overflow-hidden">
         <img src={HERO_PHOTO} alt="" className="h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/25 to-[#f6f6f2]" />
+        {/* Brand pattern as a quiet texture over the photo, under the fade. */}
+        <div className="pattern-brand pointer-events-none absolute inset-0" aria-hidden />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/25 to-[#f3ece2]" />
         <div className="absolute inset-x-0 top-0 p-6 pt-[max(env(safe-area-inset-top),1.5rem)]">
-          <p className="display text-lg text-white">
-            HYROX<span className="text-[#ff4348]">STUDIO</span>
-          </p>
+          {/* Lime wordmark on the dark hero (white PNG used as a mask). */}
+          <div className="logo-lime h-7 w-[204px]" role="img" aria-label="NüHabit" />
         </div>
         <div className="absolute inset-x-0 bottom-14 px-6">
           <h1 className="display text-4xl leading-[1.05] text-white drop-shadow-[0_2px_12px_rgb(0_0_0/0.4)]">
@@ -104,7 +105,7 @@ export function LoginPage() {
         </div>
       </div>
 
-      {/* Floating form card — relative so it paints above the hero's absolute overlay */}
+      {/* Floating form card - relative so it paints above the hero's absolute overlay */}
       <div className="relative -mt-10 px-4 pb-10">
         <div className="card !p-6">
           {!challengeId ? (

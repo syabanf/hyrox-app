@@ -11,7 +11,7 @@ const TABS = [
 
 export function TrainTabs() {
   return (
-    <div className="mb-4 flex gap-1 rounded-2xl bg-surface p-1.5 shadow-[0_1px_2px_rgb(17_17_20/0.04),0_8px_24px_rgb(17_17_20/0.04)]">
+    <div className="mb-4 flex gap-1 rounded-2xl bg-surface p-1.5 shadow-[0_1px_2px_rgb(0_40_26/0.04),0_8px_24px_rgb(0_40_26/0.04)]">
       {TABS.map(({ to, label, end, icon: Icon }) => (
         <NavLink
           key={to}
@@ -19,13 +19,13 @@ export function TrainTabs() {
           end={end}
           className={({ isActive }) =>
             `flex flex-1 flex-col items-center gap-1 rounded-xl py-2 transition-colors duration-200 ${
-              isActive ? 'surface-ink text-white shadow-[0_6px_16px_rgb(13_13_16/0.25)]' : 'text-muted'
+              isActive ? 'surface-ink text-white shadow-[0_6px_16px_rgb(0_40_26/0.25)]' : 'text-muted'
             }`
           }
         >
           {({ isActive }) => (
             <>
-              <Icon size={15} strokeWidth={2.4} className={isActive ? 'text-[#ff4348]' : undefined} />
+              <Icon size={15} strokeWidth={2.4} className={isActive ? 'text-lime' : undefined} />
               <span className="text-[10px] font-black uppercase tracking-wide">{label}</span>
             </>
           )}

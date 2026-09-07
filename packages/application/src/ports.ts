@@ -21,6 +21,8 @@ import type {
   Gate,
   Gear,
   GeneratedWorkout,
+  IncentivePayout,
+  IncentiveScheme,
   IsoDate,
   Kudos,
   Member,
@@ -42,7 +44,7 @@ import type {
 /**
  * Repository ports. The mock infrastructure implements them over an in-memory
  * store today; a real backend implements them over a database tomorrow.
- * Everything is synchronous because use cases run in-process against the mock —
+ * Everything is synchronous because use cases run in-process against the mock -
  * the HTTP boundary (MSW today, a server later) is where async lives.
  */
 export interface MemberRepository {
@@ -166,6 +168,20 @@ export interface AdminUserRepository {
   save(user: AdminUser): void;
 }
 
+/** Coach incentive schemes (org default + per-coach overrides). */
+export interface IncentiveSchemeRepository {
+  byId(id: string): IncentiveScheme | null;
+  all(): IncentiveScheme[];
+  save(scheme: IncentiveScheme): void;
+}
+
+/** Frozen monthly coach payouts (IDR payroll, ledger-independent). */
+export interface IncentivePayoutRepository {
+  byId(id: string): IncentivePayout | null;
+  all(): IncentivePayout[];
+  save(payout: IncentivePayout): void;
+}
+
 /** Strava-style athlete module: activities, social graph, segments, gear. */
 export interface AthleteStore {
   activities: {
@@ -285,6 +301,8 @@ export interface UseCaseDeps {
   gates: GateRepository;
   coaches: CoachRepository;
   adminUsers: AdminUserRepository;
+  incentiveSchemes: IncentiveSchemeRepository;
+  incentivePayouts: IncentivePayoutRepository;
   athlete: AthleteStore;
   workout: WorkoutStore;
   races: RaceStore;

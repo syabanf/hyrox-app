@@ -48,7 +48,7 @@ export default function PaymentsPage() {
     <div>
       <PageTitle
         title="Payments"
-        subtitle="Top-ups via mock Xendit — PAYMENT ≠ CREDIT LEDGER; a paid payment produces the TOP_UP entry"
+        subtitle="Top-ups via mock Xendit - PAYMENT ≠ CREDIT LEDGER; a paid payment produces the TOP_UP entry"
       />
       <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Collected" value={formatIdr(paidTotal)} hint="Paid payments" />

@@ -35,7 +35,7 @@ export function RegisterPage() {
     try {
       const res = await api.auth.requestOtp(email || phone);
       if (res.memberExists) {
-        setError('That email or phone is already registered — sign in instead.');
+        setError('That email or phone is already registered - sign in instead.');
         return;
       }
       setOtpHint(res.hint);
@@ -75,6 +75,7 @@ export function RegisterPage() {
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 px-6 py-8">
       <div>
+        <img src="/brand/nuhabit-logo-black.png" alt="NüHabit" className="mb-5 h-6 w-auto" />
         <h1 className="display text-3xl font-black">Join the studio</h1>
         <div className="mt-4 flex gap-1.5">
           {STEPS.map((s, i) => (
@@ -85,7 +86,7 @@ export function RegisterPage() {
           ))}
         </div>
         <p className="mt-2 text-xs font-bold uppercase tracking-wider text-muted">
-          Step {step + 1} of {STEPS.length} — {STEPS[step]}
+          Step {step + 1} of {STEPS.length} - {STEPS[step]}
         </p>
       </div>
 
@@ -187,7 +188,7 @@ export function RegisterPage() {
             <p className="mb-2 font-black uppercase text-ink">Digital waiver (v1.0)</p>
             <p>
               I acknowledge that HYROX-style functional training involves inherent physical risks. I
-              confirm I am medically fit to participate, and I release HYROX Studio, its staff and
+              confirm I am medically fit to participate, and I release NüHabit, its staff and
               coaches from liability for injuries sustained during training, except in cases of
               gross negligence. I consent to the studio storing my membership and attendance data
               for operating the facility.

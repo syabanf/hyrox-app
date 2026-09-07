@@ -22,7 +22,7 @@ export function WalletPage() {
       <h1 className="display text-3xl font-black">Wallet</h1>
 
       <div className="card surface-ink relative overflow-hidden !border-0 !p-6 text-white">
-        <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
+        <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-lime/20 blur-3xl" />
         <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/50">Credit balance</p>
         <p className="display mt-1 text-7xl leading-none">{wallet.balance}</p>
         {wallet.expiringCredits > 0 ? (

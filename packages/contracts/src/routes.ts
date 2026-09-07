@@ -1,4 +1,4 @@
-/** Single source of truth for API paths — used by the client and the MSW handlers. */
+/** Single source of truth for API paths - used by the client and the MSW handlers. */
 export const API_BASE = '/api';
 
 export const ROUTES = {
@@ -62,6 +62,14 @@ export const ROUTES = {
   adminBranches: `${API_BASE}/admin/branches`,
   adminBranch: (id: string) => `${API_BASE}/admin/branches/${id}`,
   adminRules: `${API_BASE}/admin/rules`,
+  // coach incentives
+  adminIncentiveSchemes: `${API_BASE}/admin/incentives/schemes`,
+  adminIncentiveScheme: (id: string) => `${API_BASE}/admin/incentives/schemes/${id}`,
+  /** query: period=YYYY-MM&branchId= */
+  adminIncentiveStatements: `${API_BASE}/admin/incentives/statements`,
+  adminIncentivePayouts: `${API_BASE}/admin/incentives/payouts`,
+  adminIncentivePayoutAction: (id: string, action: 'approve' | 'pay' | 'void') =>
+    `${API_BASE}/admin/incentives/payouts/${id}/${action}`,
   // devtools
   devReset: `${API_BASE}/dev/reset`,
   devExpirySweep: `${API_BASE}/dev/expiry-sweep`,

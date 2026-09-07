@@ -1,7 +1,7 @@
 'use client';
 
 import type { MemberStatus } from '@hyrox/domain';
-import { Spinner, StatusBadge, formatDay, formatDayTime, formatIdr } from '@hyrox/ui';
+import { Spinner, StatusBadge, formatDay, formatDayTime, formatIdr, gateReasonLabel } from '@hyrox/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
@@ -72,7 +72,7 @@ export default function MemberDetailPage() {
         <StatCard label="Credit balance" value={m.balance} tone="brand" />
         <StatCard label="Expiring soon" value={m.expiringCredits} tone={m.expiringCredits > 0 ? 'danger' : undefined} />
         <StatCard label="Total visits" value={m.totalVisits} />
-        <StatCard label="Last visit" value={m.lastVisitAt ? formatDay(m.lastVisitAt) : '—'} />
+        <StatCard label="Last visit" value={m.lastVisitAt ? formatDay(m.lastVisitAt) : '-'} />
       </div>
 
       <div className="mb-4 flex flex-wrap gap-1 rounded-xl bg-surface p-1">
@@ -97,16 +97,16 @@ export default function MemberDetailPage() {
               <dt className="text-muted">Member ID</dt>
               <dd className="font-mono text-xs">{m.member.id}</dd>
               <dt className="text-muted">Gender</dt>
-              <dd>{m.member.gender ?? '—'}</dd>
+              <dd>{m.member.gender ?? '-'}</dd>
               <dt className="text-muted">Date of birth</dt>
-              <dd>{m.member.dateOfBirth ? formatDay(m.member.dateOfBirth) : '—'}</dd>
+              <dd>{m.member.dateOfBirth ? formatDay(m.member.dateOfBirth) : '-'}</dd>
               <dt className="text-muted">Joined</dt>
               <dd>{formatDay(m.member.createdAt)}</dd>
               <dt className="text-muted">Emergency contact</dt>
               <dd>
                 {m.member.emergencyContact
                   ? `${m.member.emergencyContact.name} · ${m.member.emergencyContact.phone}`
-                  : '—'}
+                  : '-'}
               </dd>
             </dl>
           </div>
@@ -255,10 +255,12 @@ export default function MemberDetailPage() {
                   <td>
                     <StatusBadge status={v.log.result} />
                     {v.log.reasonCode ? (
-                      <span className="ml-1 text-xs text-danger">{v.log.reasonCode}</span>
+                      <span className="ml-1 text-xs text-danger" title={gateReasonLabel(v.log.reasonCode)}>
+                        {v.log.reasonCode.replaceAll('_', ' ')}
+                      </span>
                     ) : null}
                   </td>
-                  <td className="text-right font-bold">{v.log.creditDelta || '—'}</td>
+                  <td className="text-right font-bold">{v.log.creditDelta || '-'}</td>
                   <td className="text-muted">{v.log.mode}</td>
                 </tr>
               ))}
@@ -330,10 +332,10 @@ export default function MemberDetailPage() {
                     {a.entityType} · {a.action}
                   </td>
                   <td className="text-muted">
-                    {a.previousValue ?? '—'} → {a.newValue ?? '—'}
+                    {a.previousValue ?? '-'} → {a.newValue ?? '-'}
                   </td>
                   <td>{a.actorName}</td>
-                  <td className="text-muted">{a.reason ?? '—'}</td>
+                  <td className="text-muted">{a.reason ?? '-'}</td>
                 </tr>
               ))}
               {m.audit.length === 0 ? (
@@ -420,7 +422,7 @@ function ReverseModal({ entryId, onClose, onDone }: { entryId: string; onClose: 
     <Modal title="Reverse ledger entry" onClose={onClose}>
       <div className="flex flex-col gap-3">
         <p className="text-sm text-muted">
-          Financial entries are immutable — this posts a compensating REVERSAL entry referencing{' '}
+          Financial entries are immutable - this posts a compensating REVERSAL entry referencing{' '}
           <span className="font-mono text-xs">{entryId}</span>.
         </p>
         <div>

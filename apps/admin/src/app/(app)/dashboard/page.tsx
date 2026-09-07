@@ -7,11 +7,13 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { api } from '../../../lib/api';
+import { usePermissions } from '../../../lib/auth';
 import { PageTitle, Pager, SearchSelect, StatCard } from '../../../components/ui';
 
 const PAGE_SIZE = 8;
 
 export default function DashboardPage() {
+  const { can } = usePermissions();
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard'],
     queryFn: api.admin.reports.dashboard,
@@ -56,9 +58,9 @@ export default function DashboardPage() {
   return (
     <div>
       <PageTitle title="Dashboard" subtitle="Today at a glance" />
-      {/* Hero — the day's headline numbers on a premium black card */}
-      <div className="surface-ink relative mb-4 overflow-hidden rounded-3xl p-6 text-white shadow-[0_18px_40px_rgb(13_13_16/0.25)]">
-        <div className="pointer-events-none absolute -right-20 -top-28 h-64 w-64 rounded-full bg-brand/25 blur-3xl" />
+      {/* Hero - the day's headline numbers on a premium black card */}
+      <div className="surface-ink relative mb-4 overflow-hidden rounded-3xl p-6 text-white shadow-[0_18px_40px_rgb(0_40_26/0.25)]">
+        <div className="pointer-events-none absolute -right-20 -top-28 h-64 w-64 rounded-full bg-lime/20 blur-3xl" />
         <div className="relative grid grid-cols-2 gap-6 sm:grid-cols-3">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/50">
@@ -82,7 +84,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className={`grid gap-3 sm:grid-cols-2 ${can('incentives.view') ? 'xl:grid-cols-5' : 'xl:grid-cols-4'}`}>
         <StatCard label="Active members" value={data.activeMembers} />
         <StatCard label="Top-ups today" value={formatIdr(data.topUpsTodayIdr)} />
         <StatCard label="Outstanding credits" value={data.outstandingCredits} hint="Total liability" />
@@ -92,9 +94,18 @@ export default function DashboardPage() {
           tone={data.expiringCredits > 0 ? 'danger' : undefined}
           hint="Within reminder window"
         />
+        {can('incentives.view') ? (
+          <Link href="/operations/incentives" className="contents">
+            <StatCard
+              label="Coach incentives payable"
+              value={formatIdr(data.coachIncentivesPayableIdr)}
+              hint="This month, all active coaches"
+            />
+          </Link>
+        ) : null}
       </div>
 
-      {/* Trends — 14 days */}
+      {/* Trends - 14 days */}
       <div className="mt-4 grid gap-3 lg:grid-cols-2">
         <div className="a-card">
           <div className="mb-3 flex items-baseline justify-between">
@@ -181,7 +192,7 @@ export default function DashboardPage() {
                     </span>
                   </div>
                   <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-raised">
-                    <div className="h-full rounded-full bg-[#c4161c]" style={{ width: `${pct}%` }} />
+                    <div className="h-full rounded-full bg-brand" style={{ width: `${pct}%` }} />
                   </div>
                 </div>
               );
@@ -196,7 +207,7 @@ export default function DashboardPage() {
             {(latestLogs ?? []).slice(0, 5).map((v) => (
               <div key={v.log.id} className="flex items-center gap-3 py-2 text-sm">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-bold">{v.memberName ?? '—'}</p>
+                  <p className="truncate font-bold">{v.memberName ?? '-'}</p>
                   <p className="truncate text-xs text-muted">
                     {v.gateName} · {formatDayTime(v.log.createdAt)}
                   </p>
@@ -307,7 +318,7 @@ function MiniBars({ points, format }: { points: DailyPointView[]; format: (v: nu
               className="w-full rounded-t-[4px] transition-opacity hover:opacity-75"
               style={{
                 height: `${Math.max(p.value > 0 ? 5 : 2, (p.value / max) * 100)}%`,
-                background: p.value > 0 ? '#c4161c' : 'var(--color-line)',
+                background: p.value > 0 ? 'var(--color-brand)' : 'var(--color-line)',
               }}
             />
           </div>

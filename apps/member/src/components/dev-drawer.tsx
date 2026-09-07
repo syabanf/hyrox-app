@@ -1,11 +1,15 @@
 import type { ScanResultView } from '@hyrox/contracts';
+import { gateEntryKindLabel, gateReasonLabel } from '@hyrox/ui';
 import { FlaskConical, X } from 'lucide-react';
 import { useState } from 'react';
 import { api } from '../lib/api';
 import { useAuthStore } from '../lib/auth';
 import { useInvalidateAll } from '../lib/queries';
 
-/** Dev-only tools: simulate the physical gate, reset the demo, run the expiry sweep. */
+/**
+ * Dev-only tools: simulate the physical gate, reset the demo, run the expiry
+ * sweep. A scan is ALLOWED only with a booked class at that branch around now.
+ */
 const DEV_GATES = [
   { id: 'gat_sen_a', label: 'Senopati Gate A' },
   { id: 'gat_pik_a', label: 'PIK Gate A' },
@@ -86,7 +90,10 @@ export function DevDrawer() {
           }`}
         >
           {result.decision}
-          {result.reason ? ` — ${result.reason.replaceAll('_', ' ')}` : ''}
+          {result.entryKind ? ` - ${gateEntryKindLabel(result.entryKind)}` : ''}
+          {result.reason ? (
+            <span className="block text-xs font-medium opacity-80">{gateReasonLabel(result.reason)}</span>
+          ) : null}
           {result.remainingCredits !== null ? (
             <span className="block text-xs font-medium opacity-80">
               {result.remainingCredits} credits left

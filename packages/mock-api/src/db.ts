@@ -19,6 +19,8 @@ import type {
   Follow,
   Gate,
   Gear,
+  IncentivePayout,
+  IncentiveScheme,
   Kudos,
   Member,
   MemberNotification,
@@ -41,7 +43,7 @@ import type {
 import { DEFAULT_BUSINESS_RULES } from '@hyrox/domain';
 
 /** Bump to invalidate persisted localStorage snapshots after seed/schema changes. */
-export const SEED_VERSION = 10;
+export const SEED_VERSION = 11;
 
 export interface MockDb {
   seedVersion: number;
@@ -67,6 +69,9 @@ export interface MockDb {
   campaigns: Campaign[];
   audit: AuditEvent[];
   rules: BusinessRules;
+  // Coach incentives (IDR payroll, ledger-independent)
+  incentiveSchemes: IncentiveScheme[];
+  incentivePayouts: IncentivePayout[];
   otpChallenges: Record<string, string>;
   counters: Record<string, number>;
   // Athlete module (Strava-style)
@@ -118,6 +123,8 @@ export function createEmptyDb(now: string): MockDb {
     campaigns: [],
     audit: [],
     rules: { ...DEFAULT_BUSINESS_RULES },
+    incentiveSchemes: [],
+    incentivePayouts: [],
     otpChallenges: {},
     counters: {},
     activities: [],

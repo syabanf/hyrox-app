@@ -187,7 +187,6 @@ export const SegmentPreviewSchema = z.object({
 
 // ── Config ──────────────────────────────────────────────────────────────────
 export const UpdateRulesSchema = z.object({
-  openGymCreditCost: z.number().int().min(0).optional(),
   defaultCreditExpiryDays: z.number().int().positive().optional(),
   cancellationDeadlineHours: z.number().min(0).optional(),
   lateCancellationPolicy: z.enum(['FORFEIT', 'FREE']).optional(),
@@ -200,6 +199,31 @@ export const UpdateRulesSchema = z.object({
   expiryReminderDays: z.number().int().min(1).optional(),
   bookingOpensDaysBefore: z.number().int().min(0).optional(),
   bookingClosesMinutesBefore: z.number().int().min(0).optional(),
+});
+
+// ── Coach incentives ────────────────────────────────────────────────────────
+export const UpsertIncentiveSchemeSchema = z.object({
+  /** null = organization default. */
+  coachId: z.string().nullable().default(null),
+  sessionFeeIdr: z.number().int().min(0),
+  perAttendeeIdr: z.number().int().min(0),
+  fullClassBonusIdr: z.number().int().min(0),
+  fullClassThresholdPercent: z.number().int().min(0).max(100),
+  noShowPenaltyIdr: z.number().int().min(0),
+  active: z.boolean().default(true),
+});
+
+export const CreatePayoutSchema = z.object({
+  coachId: z.string(),
+  /** Calendar month, YYYY-MM. */
+  periodMonth: z.string().regex(/^\d{4}-\d{2}$/, 'periodMonth must be YYYY-MM'),
+});
+
+export const PayoutActionSchema = z.object({
+  /** Required when marking paid. */
+  paymentReference: z.string().nullable().default(null),
+  /** Required when voiding. */
+  note: z.string().nullable().default(null),
 });
 
 export const UpdateBranchSchema = z.object({
@@ -305,6 +329,9 @@ export const UpdateExerciseSchema = z.object({
 });
 
 export type ResolveConflictInput = z.infer<typeof ResolveConflictSchema>;
+export type UpsertIncentiveSchemeInput = z.infer<typeof UpsertIncentiveSchemeSchema>;
+export type CreatePayoutInput = z.infer<typeof CreatePayoutSchema>;
+export type PayoutActionInput = z.infer<typeof PayoutActionSchema>;
 export type UpsertChallengeInput = z.infer<typeof UpsertChallengeSchema>;
 export type UpdateExerciseInput = z.infer<typeof UpdateExerciseSchema>;
 export type CreateMemberAdminInput = z.infer<typeof CreateMemberAdminSchema>;

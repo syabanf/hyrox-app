@@ -55,7 +55,7 @@ export function GeoMap({
       line.setStyle(
         new Style({
           stroke: new Stroke({
-            color: track.color ?? `rgba(237, 28, 36, ${track.opacity ?? 1})`,
+            color: track.color ?? `rgba(0, 40, 26, ${track.opacity ?? 1})`,
             width: track.width ?? 4,
             lineCap: 'round',
             lineJoin: 'round',
@@ -69,7 +69,7 @@ export function GeoMap({
           new Style({
             image: new CircleStyle({
               radius: 6,
-              fill: new Fill({ color: '#34d27b' }),
+              fill: new Fill({ color: '#abde67' }),
               stroke: new Stroke({ color: '#fff', width: 2 }),
             }),
           }),
@@ -79,7 +79,7 @@ export function GeoMap({
           new Style({
             image: new CircleStyle({
               radius: 6,
-              fill: new Fill({ color: '#191919' }),
+              fill: new Fill({ color: '#131a1c' }),
               stroke: new Stroke({ color: '#fff', width: 2 }),
             }),
           }),

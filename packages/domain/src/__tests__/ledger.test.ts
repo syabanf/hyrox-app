@@ -35,7 +35,7 @@ const lot = (partial: Partial<TopUpLot>): TopUpLot => ({
 });
 
 describe('computeBalance', () => {
-  it('is the sum of all entries — the blueprint example', () => {
+  it('is the sum of all entries - the blueprint example', () => {
     const entries = [
       entry({ type: 'TOP_UP', amount: 20 }),
       entry({ type: 'VISIT_DEDUCTION', amount: -1 }),

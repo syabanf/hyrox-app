@@ -25,7 +25,7 @@ const ID: Record<string, string> = {
   'All bookings': 'Semua pesanan',
   'Nothing booked yet.': 'Belum ada pesanan.',
   'Browse the schedule →': 'Lihat jadwal →',
-  'Low balance — top up now': 'Saldo rendah — isi ulang sekarang',
+  'Low balance - top up now': 'Saldo rendah - isi ulang sekarang',
   'expiring soon': 'segera hangus',
   Promos: 'Promo',
   Announcements: 'Pengumuman',
@@ -53,8 +53,8 @@ const ID: Record<string, string> = {
   'Cancel booking': 'Batalkan pesanan',
   'Leave waitlist': 'Keluar daftar tunggu',
   'Confirm spot': 'Konfirmasi slot',
-  'A spot opened up — confirm it before someone else takes it.':
-    'Ada slot kosong — konfirmasi sebelum diambil orang lain.',
+  'A spot opened up - confirm it before someone else takes it.':
+    'Ada slot kosong - konfirmasi sebelum diambil orang lain.',
   // Wallet
   Wallet: 'Dompet',
   'Top up credits': 'Isi ulang kredit',
@@ -78,7 +78,7 @@ const ID: Record<string, string> = {
   'Wallet & credits': 'Dompet & kredit',
   'Balance, top up, history': 'Saldo, isi ulang, riwayat',
   'Units, reminders': 'Satuan, pengingat',
-  'Not set — add one': 'Belum diatur — tambahkan',
+  'Not set - add one': 'Belum diatur - tambahkan',
   'Personal information': 'Informasi pribadi',
   'Digital waiver': 'Waiver digital',
   'Member since': 'Member sejak',

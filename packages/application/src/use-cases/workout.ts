@@ -46,7 +46,7 @@ export function createWorkout(
     pick,
   });
   if (blocks.length === 0)
-    return err(appError('EMPTY_WORKOUT', 'No blocks could be generated — check the exercise library.'));
+    return err(appError('EMPTY_WORKOUT', 'No blocks could be generated - check the exercise library.'));
   const workout: GeneratedWorkout = {
     id: deps.ids.next('wko'),
     memberId: args.memberId,

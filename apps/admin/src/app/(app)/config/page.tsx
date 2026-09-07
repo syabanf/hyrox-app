@@ -17,7 +17,7 @@ export default function ConfigPage() {
   const [tab, setTab] = useState<Tab>('Business Rules');
   return (
     <div>
-      <PageTitle title="Configuration" subtitle="Policies live here as data — never hard-coded" />
+      <PageTitle title="Configuration" subtitle="Policies live here as data - never hard-coded" />
       <div className="mb-4 flex flex-wrap gap-1 rounded-xl bg-surface p-1">
         {TABS.map((t) => (
           <button
@@ -41,7 +41,6 @@ export default function ConfigPage() {
 }
 
 const RULE_FIELDS: { key: keyof BusinessRules; label: string; kind: 'number' | 'select'; options?: string[] }[] = [
-  { key: 'openGymCreditCost', label: 'Open gym credit cost', kind: 'number' },
   { key: 'defaultCreditExpiryDays', label: 'Default credit expiry (days)', kind: 'number' },
   { key: 'cancellationDeadlineHours', label: 'Cancellation deadline (hours before)', kind: 'number' },
   { key: 'lateCancellationPolicy', label: 'Late cancellation policy', kind: 'select', options: ['FORFEIT', 'FREE'] },
@@ -92,7 +91,7 @@ function RulesTab() {
     <div className="flex max-w-3xl flex-col gap-4">
       {!canEdit ? (
         <p className="rounded-lg bg-warn/10 px-3 py-2 text-sm font-bold text-warn">
-          Read-only — only Super Admin can change business rules (and the server enforces it).
+          Read-only - only Super Admin can change business rules (and the server enforces it).
         </p>
       ) : null}
       <div className="a-card grid gap-4 sm:grid-cols-2">
@@ -141,7 +140,7 @@ function RulesTab() {
         </div>
       ) : null}
       <ErrorNote message={error} />
-      {saved ? <p className="text-sm font-bold text-ok">Rules saved — changes apply immediately (audited).</p> : null}
+      {saved ? <p className="text-sm font-bold text-ok">Rules saved - changes apply immediately (audited).</p> : null}
       {canEdit ? (
         <button
           className="a-btn self-start"
@@ -225,7 +224,7 @@ function BranchesTab() {
             </div>
             <p className="text-sm text-muted">{b.address}</p>
             <p className="text-sm text-muted">
-              {b.operatingHours} · {b.timezone} · Manager: {b.managerName ?? '—'}
+              {b.operatingHours} · {b.timezone} · Manager: {b.managerName ?? '-'}
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               {(gates ?? [])
@@ -416,7 +415,7 @@ function UsersTab() {
         </button>
       ) : (
         <p className="rounded-lg bg-warn/10 px-3 py-2 text-sm font-bold text-warn">
-          Read-only — only Super Admin can manage staff accounts.
+          Read-only - only Super Admin can manage staff accounts.
         </p>
       )}
       <input
@@ -590,7 +589,7 @@ function RolesTab() {
                   {ROLE_PERMISSIONS[r].includes(p) ? (
                     <span className="font-black text-ok">✓</span>
                   ) : (
-                    <span className="text-muted/40">—</span>
+                    <span className="text-muted/40">-</span>
                   )}
                 </td>
               ))}
@@ -627,10 +626,10 @@ function AuditTab() {
               </td>
               <td className="font-bold">{a.action}</td>
               <td className="max-w-xs truncate text-muted">
-                {a.previousValue ?? '—'} → {a.newValue ?? '—'}
+                {a.previousValue ?? '-'} → {a.newValue ?? '-'}
               </td>
               <td>{a.actorName}</td>
-              <td className="text-muted">{a.reason ?? '—'}</td>
+              <td className="text-muted">{a.reason ?? '-'}</td>
             </tr>
           ))}
         </tbody>

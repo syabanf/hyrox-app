@@ -23,7 +23,7 @@ export function PromoDetailPage() {
       </button>
 
       <div className="card surface-ink relative overflow-hidden !border-0 !p-7 text-white">
-        <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-brand/25 blur-3xl" />
+        <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-lime/20 blur-3xl" />
         <div className="relative">
           <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/50">
             {p.live ? 'Live promo' : 'Promo'}
@@ -61,7 +61,7 @@ export function PromoDetailPage() {
         </div>
         {p.newMembersOnly ? (
           <p className="rounded-xl bg-brand/10 px-3 py-2 text-xs font-bold text-brand">
-            New members only — valid within your first 14 days.
+            New members only - valid within your first 14 days.
           </p>
         ) : null}
       </div>

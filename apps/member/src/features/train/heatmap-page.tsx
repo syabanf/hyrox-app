@@ -18,7 +18,7 @@ export function HeatmapPage() {
   const { data, isLoading } = useHeatmap();
   const { data: mine } = useMyActivities();
 
-  // Only GPS activities paint the map — the same set feeds the stats below.
+  // Only GPS activities paint the map - the same set feeds the stats below.
   const gps = (mine ?? []).filter((a) => a.thumbnail.length > 1);
   const totalM = gps.reduce((sum, a) => sum + a.distanceM, 0);
   const totalSec = gps.reduce((sum, a) => sum + a.movingSec, 0);
@@ -61,7 +61,7 @@ export function HeatmapPage() {
 
       {/* Coverage totals on the shared black card */}
       <div className="card surface-ink relative overflow-hidden !border-0 !p-6 text-white">
-        <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
+        <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-lime/20 blur-3xl" />
         <div className="relative grid grid-cols-3 gap-3 text-center text-sm">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/50">Tracks</p>
@@ -87,7 +87,7 @@ export function HeatmapPage() {
           <div className="card flex flex-col gap-3">
             {bySport.map(({ type, label, icon: Icon, count, distanceM }) => (
               <div key={type} className="flex items-center gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1b1b1f] text-white">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink-soft text-white">
                   <Icon size={16} />
                 </span>
                 <div className="min-w-0 flex-1">

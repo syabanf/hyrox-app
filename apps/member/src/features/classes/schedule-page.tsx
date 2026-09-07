@@ -51,7 +51,7 @@ export function SchedulePage() {
             onClick={() => setSelectedDay(d.key)}
             className={`flex min-w-14 flex-col items-center rounded-2xl border px-3 py-2 transition ${
               selectedDay === d.key
-                ? 'surface-ink border-transparent text-white shadow-[0_8px_20px_rgb(13_13_16/0.25)]'
+                ? 'surface-ink border-transparent text-white shadow-[0_8px_20px_rgb(0_40_26/0.25)]'
                 : 'border-line bg-surface text-muted'
             }`}
           >

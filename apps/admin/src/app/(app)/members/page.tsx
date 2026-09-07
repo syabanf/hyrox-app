@@ -115,7 +115,7 @@ export default function MembersPage() {
                   </td>
                   <td className="text-right font-black text-brand">{m.balance}</td>
                   <td className="text-right">{m.totalVisits}</td>
-                  <td className="text-muted">{m.lastVisitAt ? formatDay(m.lastVisitAt) : '—'}</td>
+                  <td className="text-muted">{m.lastVisitAt ? formatDay(m.lastVisitAt) : '-'}</td>
                   <td className="text-right">
                     <RowActions
                       items={[
@@ -211,7 +211,7 @@ function CreateMemberModal({ onClose }: { onClose: () => void }) {
           Create member
         </button>
         <p className="text-xs text-muted">
-          The member signs in with this email via OTP. The wallet starts at zero — record a top-up or
+          The member signs in with this email via OTP. The wallet starts at zero - record a top-up or
           adjustment from their profile.
         </p>
       </div>

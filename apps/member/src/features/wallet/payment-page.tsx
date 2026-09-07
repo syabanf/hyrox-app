@@ -12,7 +12,7 @@ import { useInvalidateAll } from '../../lib/queries';
 const CHANNEL_TITLE: Record<PaymentChannel, string> = {
   QRIS: 'Scan to pay with QRIS',
   EWALLET: 'Pay with your e-wallet',
-  VIRTUAL_ACCOUNT: 'Bank transfer — Virtual Account',
+  VIRTUAL_ACCOUNT: 'Bank transfer - Virtual Account',
   CARD: 'Pay with card',
 };
 
@@ -26,7 +26,7 @@ const vaNumber = (paymentId: string): string => {
 const WALLETS = ['GoPay', 'OVO', 'DANA', 'ShopeePay'];
 
 /**
- * Mock checkout standing in for the Xendit-hosted payment page — looks and
+ * Mock checkout standing in for the Xendit-hosted payment page - looks and
  * flows like the real thing per channel, but "paying" just fires the fake
  * webhook. No gateway integration yet by design.
  */
@@ -182,13 +182,13 @@ export function PaymentPage() {
 
       {payment.channel === 'CARD' ? (
         <div className="surface-ink card relative overflow-hidden !border-0 !p-5 text-white">
-          <div className="pointer-events-none absolute -right-14 -top-20 h-44 w-44 rounded-full bg-brand/25 blur-3xl" />
+          <div className="pointer-events-none absolute -right-14 -top-20 h-44 w-44 rounded-full bg-lime/20 blur-3xl" />
           <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/50">
             Demo card on file
           </p>
           <p className="font-mono mt-3 text-xl tracking-[0.18em]">4242 4242 4242 4242</p>
           <div className="mt-3 flex justify-between text-xs text-white/60">
-            <span>HYROX STUDIO MEMBER</span>
+            <span>NÜHABIT MEMBER</span>
             <span>12/29 · CVV ···</span>
           </div>
         </div>
@@ -197,15 +197,15 @@ export function PaymentPage() {
       {error ? <p className="text-sm font-bold text-danger">{error}</p> : null}
       <button className="btn-brand" disabled={busy || secondsLeft === 0} onClick={() => void pay()}>
         {payment.channel === 'QRIS'
-          ? "I've paid — check status"
+          ? "I've paid - check status"
           : payment.channel === 'VIRTUAL_ACCOUNT'
-            ? "I've transferred — check status"
+            ? "I've transferred - check status"
             : payment.channel === 'EWALLET'
               ? `Approve in ${wallet}`
               : `Pay ${formatIdr(payment.totalIdr)}`}
       </button>
       <p className="text-center text-xs text-muted">
-        Demo checkout — no real money moves. Xendit replaces this screen in production.
+        Demo checkout - no real money moves. Xendit replaces this screen in production.
       </p>
       <Link to="/wallet" className="text-center text-sm font-bold text-muted">
         Cancel and go back

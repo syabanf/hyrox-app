@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 
 /**
  * The app keeps working offline (the mock API lives in the browser and state is
- * snapshotted to localStorage) — this banner just makes the mode visible.
+ * snapshotted to localStorage) - this banner just makes the mode visible.
  */
 export function OfflineBanner() {
   const [online, setOnline] = useState(() =>
@@ -24,7 +24,7 @@ export function OfflineBanner() {
   return (
     <div className="sticky top-0 z-30 flex items-center justify-center gap-2 bg-ink px-4 py-2 text-xs font-bold uppercase tracking-wider text-white">
       <WifiOff size={14} className="text-brand" />
-      Offline — changes are saved on this device
+      Offline - changes are saved on this device
     </div>
   );
 }

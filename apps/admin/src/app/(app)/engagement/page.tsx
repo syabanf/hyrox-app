@@ -50,7 +50,7 @@ export default function EngagementPage() {
     <div>
       <PageTitle
         title="Push Broadcast"
-        subtitle="Segmented campaigns — sending creates in-app notifications for every member in the segment"
+        subtitle="Segmented campaigns - sending creates in-app notifications for every member in the segment"
         actions={
           can('campaigns.manage') ? (
             <button className="a-btn" onClick={() => setEditing('new')}>
@@ -127,7 +127,7 @@ export default function EngagementPage() {
                   </td>
                   <td className="max-w-xs truncate text-muted">{c.message}</td>
                   <td className="text-muted">{formatDayTime(c.createdAt)}</td>
-                  <td className="text-right font-bold">{c.sentCount ?? '—'}</td>
+                  <td className="text-right font-bold">{c.sentCount ?? '-'}</td>
                   <td>
                     <StatusBadge status={c.status} />
                   </td>
@@ -297,7 +297,7 @@ function CampaignModal({
         {preview ? (
           <p className="rounded-lg bg-info/10 px-3 py-2 text-sm font-bold text-info">
             Audience: {preview.count} member{preview.count === 1 ? '' : 's'}
-            {preview.sample.length > 0 ? ` — ${preview.sample.join(', ')}${preview.count > preview.sample.length ? '…' : ''}` : ''}
+            {preview.sample.length > 0 ? ` - ${preview.sample.join(', ')}${preview.count > preview.sample.length ? '…' : ''}` : ''}
           </p>
         ) : null}
         <div>

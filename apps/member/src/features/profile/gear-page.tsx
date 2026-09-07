@@ -45,7 +45,7 @@ export function GearPage() {
 
   const GearRow = ({ g }: { g: (typeof gear)[number] }) => (
     <div className={`card flex items-center gap-3 !py-4 ${g.retired ? 'opacity-60' : ''}`}>
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1b1b1f] text-white">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-ink-soft text-white">
         {g.kind === 'SHOES' ? <Footprints size={19} /> : <Bike size={19} />}
       </span>
       <div className="min-w-0 flex-1">
@@ -127,7 +127,7 @@ export function GearPage() {
 
       {gear.length === 0 ? (
         <div className="card text-sm text-muted">
-          Nothing here yet — add your shoes or bike and every run and ride keeps its mileage up to
+          Nothing here yet - add your shoes or bike and every run and ride keeps its mileage up to
           date.
         </div>
       ) : (

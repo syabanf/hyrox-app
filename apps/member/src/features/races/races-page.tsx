@@ -35,7 +35,7 @@ export function RacesPage() {
             key={t}
             onClick={() => setTab(t)}
             className={`flex-1 rounded-lg py-2 text-sm font-black uppercase tracking-wide ${
-              tab === t ? 'bg-[#1b1b1f] text-white' : 'text-muted'
+              tab === t ? 'bg-ink-soft text-white' : 'text-muted'
             }`}
           >
             {t}
@@ -212,7 +212,7 @@ function MyRacesTab() {
 
   if (isLoading) return <Spinner label="Loading your races…" />;
   if (!data || data.length === 0) {
-    return <p className="card text-sm text-muted">Nothing yet — add a race from the Upcoming tab.</p>;
+    return <p className="card text-sm text-muted">Nothing yet - add a race from the Upcoming tab.</p>;
   }
 
   const runSimulation = async (race: MyRaceView) => {
@@ -264,13 +264,13 @@ function MyRacesTab() {
                 <div className="rounded-xl bg-surface-raised p-2">
                   <p className="label !mb-0">Goal</p>
                   <p className="display text-xl">
-                    {race.userRace.goalSec ? formatDuration(race.userRace.goalSec) : '—'}
+                    {race.userRace.goalSec ? formatDuration(race.userRace.goalSec) : '-'}
                   </p>
                 </div>
                 <div className="rounded-xl bg-surface-raised p-2">
                   <p className="label !mb-0">Prediction</p>
                   <p className="display text-xl">
-                    {race.predictionSec ? formatDuration(race.predictionSec) : '—'}
+                    {race.predictionSec ? formatDuration(race.predictionSec) : '-'}
                   </p>
                 </div>
               </div>

@@ -8,13 +8,22 @@ import type {
   CreditLedgerEntry,
   Exercise,
   GeneratedWorkout,
+  IncentivePayout,
   Member,
   Payment,
   RaceEvent,
   TopUpLot,
   TrackPoint,
 } from '@hyrox/domain';
-import { computeActivityStats, generateWorkout, matchSegments } from '@hyrox/domain';
+import {
+  computeActivityStats,
+  computeCoachStatement,
+  generateWorkout,
+  matchSegments,
+  monthPeriod,
+  periodMonthOf,
+  resolveScheme,
+} from '@hyrox/domain';
 import type { MockDb } from './db';
 import { createEmptyDb } from './db';
 
@@ -94,7 +103,6 @@ export function createSeedDb(nowIso: string): MockDb {
     ['cls_sim', 'HYROX Full Simulation', 90, 2, 12],
     ['cls_str', 'HYROX Strength', 60, 1, 14],
     ['cls_eng', 'HYROX Engine', 60, 1, 16],
-    ['cls_open', 'Open Gym', 120, 1, 20],
     ['cls_mob', 'Mobility & Recovery', 45, 1, 12],
     ['cls_wod', 'Team WOD', 60, 1, 16],
     ['cls_test', 'Fitness Test', 75, 1, 10],
@@ -141,6 +149,28 @@ export function createSeedDb(nowIso: string): MockDb {
   // One cancelled past session for realism.
   const cancelled = db.sessions.find((s) => s.branchId === 'brn_pik' && s.status === 'COMPLETED');
   if (cancelled) cancelled.status = 'CANCELLED';
+
+  // The "live" class: starts 20 minutes from boot at Senopati, so the demo
+  // member's confirmed booking is inside the 60-minute check-in window and a
+  // gate scan is ALLOWED right away (there is no open gym - every entry needs
+  // a booked class). The browser bootstrap re-anchors this session to load time.
+  const fundamentals = db.classTypes.find((t) => t.id === 'cls_fund')!;
+  const liveStart = new Date(now.getTime() + 20 * 60_000).toISOString();
+  const liveSession: ClassSession = {
+    id: 'ses_live',
+    classTypeId: fundamentals.id,
+    branchId: 'brn_senopati',
+    coachId: 'coa_1',
+    startsAt: liveStart,
+    endsAt: new Date(now.getTime() + 80 * 60_000).toISOString(),
+    capacity: fundamentals.defaultCapacity,
+    creditCost: fundamentals.defaultCreditCost,
+    bookingOpensAt: addDays(liveStart, -db.rules.bookingOpensDaysBefore),
+    bookingClosesAt: liveStart,
+    status: 'PUBLISHED',
+    area: 'Main Floor',
+  };
+  db.sessions.push(liveSession);
 
   // ── Packages & vouchers ──────────────────────────────────────────────────
   db.packages = [
@@ -193,14 +223,14 @@ export function createSeedDb(nowIso: string): MockDb {
       createdAt: daysAgo(90),
     },
     {
-      id: 'pkg_gym',
-      name: 'Open Gym Focus',
+      id: 'pkg_fund',
+      name: 'Fundamentals Focus',
       credits: 8,
       priceIdr: 900_000,
       validityDays: 45,
       branchId: null,
       purchaseLimitPerMember: null,
-      applicableClassTypeIds: ['cls_open', 'cls_fund'],
+      applicableClassTypeIds: ['cls_fund', 'cls_eng'],
       status: 'ACTIVE',
       createdAt: daysAgo(60),
     },
@@ -408,7 +438,7 @@ export function createSeedDb(nowIso: string): MockDb {
       memberId: payment.memberId,
       type: 'TOP_UP',
       amount: payment.credits,
-      description: `Top up — ${pkg.name}`,
+      description: `Top up - ${pkg.name}`,
       sourceType: 'PAYMENT',
       sourceId: payment.id,
       reversesEntryId: null,
@@ -474,7 +504,7 @@ export function createSeedDb(nowIso: string): MockDb {
         memberId,
         type: 'VISIT_DEDUCTION',
         amount: creditDelta,
-        description: `Studio entry — ${gate.name}`,
+        description: `Class check-in - ${gate.name}`,
         sourceType: 'ACCESS',
         sourceId: log.id,
         createdAt,
@@ -586,9 +616,17 @@ export function createSeedDb(nowIso: string): MockDb {
   const demoNoShow = pastSessions.filter((s) => s.branchId === 'brn_senopati')[7];
   if (demoNoShow) addBooking('mem_demo', demoNoShow, 'NO_SHOW');
 
+  // Demo live: confirmed on the class starting in 20 minutes (gate scan → ALLOWED),
+  // with a few classmates so the roster looks real.
+  addBooking('mem_demo', liveSession, 'CONFIRMED');
+  ['mem_s6', 'mem_s7', 'mem_s8'].forEach((m) => addBooking(m, liveSession, 'CONFIRMED'));
+
   // Demo upcoming: a confirmed booking on the next evening session.
   const demoUpcoming = futureSessions.find(
-    (s) => s.branchId === 'brn_senopati' && new Date(s.startsAt).getHours() >= 17,
+    (s) =>
+      s.id !== liveSession.id &&
+      s.branchId === 'brn_senopati' &&
+      new Date(s.startsAt).getHours() >= 17,
   );
   if (demoUpcoming) addBooking('mem_demo', demoUpcoming, 'CONFIRMED');
 
@@ -646,10 +684,21 @@ export function createSeedDb(nowIso: string): MockDb {
     });
   }
 
-  // A stale OFFLINE CONFLICT row for the sync monitor.
+  // A stale OFFLINE CONFLICT row for the sync monitor: the member had a
+  // confirmed booking on that evening's PIK class (still CONFIRMED because the
+  // offline gate never synced), so approving the row reconciles that class.
   const conflictMember = activeSeeded[9];
-  if (conflictMember) {
-    addAccess(conflictMember.id, 'gat_pik_b', 'CONFLICT', daysAgo(2, 18), 0, null, 'OFFLINE');
+  const conflictSession = pastSessions.find(
+    (s) =>
+      s.branchId === 'brn_pik' &&
+      new Date(s.startsAt).getHours() === 18 &&
+      new Date(s.startsAt).getTime() < now.getTime() - 36 * 3600_000 &&
+      !db.bookings.some((b) => b.memberId === conflictMember?.id && b.sessionId === s.id),
+  );
+  if (conflictMember && conflictSession) {
+    addBooking(conflictMember.id, conflictSession, 'CONFIRMED');
+    const scannedAt = new Date(new Date(conflictSession.startsAt).getTime() + 5 * 60_000).toISOString();
+    addAccess(conflictMember.id, 'gat_pik_b', 'CONFLICT', scannedAt, 0, null, 'OFFLINE');
   }
 
   // A BONUS entry for someone (all 8 ledger types now appear in the dataset).
@@ -685,7 +734,7 @@ export function createSeedDb(nowIso: string): MockDb {
       memberId: expiredMember.id,
       type: 'VISIT_DEDUCTION',
       amount: -2,
-      description: 'Studio entry — PIK Gate A',
+      description: 'Class check-in - PIK Gate A',
       sourceType: 'ACCESS',
       createdAt: daysAgo(30),
     });
@@ -729,7 +778,7 @@ export function createSeedDb(nowIso: string): MockDb {
       name: 'Race season is here',
       segment: 'ALL_ACTIVE',
       customFilter: null,
-      message: 'Book your HYROX Full Simulation this weekend — limited slots!',
+      message: 'Book your HYROX Full Simulation this weekend - limited slots!',
       deepLink: '/classes',
       imageUrl: null,
       scheduledAt: null,
@@ -756,7 +805,7 @@ export function createSeedDb(nowIso: string): MockDb {
       segment: 'ALL_ACTIVE',
       customFilter: null,
       message:
-        'Every Wednesday 12:00 at Senopati — undo your sled-push sins. First session is on us.',
+        'Every Wednesday 12:00 at Senopati - undo your sled-push sins. First session is on us.',
       deepLink: '/classes',
       imageUrl: null,
       scheduledAt: null,
@@ -790,13 +839,13 @@ export function createSeedDb(nowIso: string): MockDb {
       sentCount: 26,
       createdAt: daysAgo(9),
     },
-    // Photo announcements — these are the ones the Home card leads with.
+    // Photo announcements - these are the ones the Home card leads with.
     {
       id: 'cmp_6',
       name: 'New assault bikes have landed',
       segment: 'ALL_ACTIVE',
       customFilter: null,
-      message: 'Twelve brand-new bikes on the Senopati floor — come break them in this week.',
+      message: 'Twelve brand-new bikes on the Senopati floor - come break them in this week.',
       deepLink: '/classes',
       imageUrl: '/img/ann-equipment.jpg',
       scheduledAt: null,
@@ -822,7 +871,7 @@ export function createSeedDb(nowIso: string): MockDb {
       name: 'Recovery corner now open',
       segment: 'ALL_ACTIVE',
       customFilter: null,
-      message: 'Foam rollers, massage guns, and a stretch zone next to the turf — free for members.',
+      message: 'Foam rollers, massage guns, and a stretch zone next to the turf - free for members.',
       deepLink: null,
       imageUrl: '/img/ann-recovery.jpg',
       scheduledAt: null,
@@ -844,6 +893,173 @@ export function createSeedDb(nowIso: string): MockDb {
     reason: 'Initial configuration',
     createdAt: daysAgo(30),
   });
+
+  // ── Coach incentives: schemes, last-month class history, payouts ─────────
+  // IDR payroll for coaches - independent of the member credit ledger.
+  db.incentiveSchemes = [
+    {
+      id: 'inc_default',
+      coachId: null,
+      sessionFeeIdr: 150_000,
+      perAttendeeIdr: 10_000,
+      fullClassBonusIdr: 100_000,
+      fullClassThresholdPercent: 80,
+      noShowPenaltyIdr: 0,
+      active: true,
+      updatedAt: daysAgo(45),
+    },
+    {
+      // Senior coach: higher base + attendee rate.
+      id: 'inc_coa_1',
+      coachId: 'coa_1',
+      sessionFeeIdr: 200_000,
+      perAttendeeIdr: 12_500,
+      fullClassBonusIdr: 150_000,
+      fullClassThresholdPercent: 80,
+      noShowPenaltyIdr: 0,
+      active: true,
+      updatedAt: daysAgo(30),
+    },
+    {
+      // Race coach: easier bonus threshold, but no-shows cost.
+      id: 'inc_coa_3',
+      coachId: 'coa_3',
+      sessionFeeIdr: 175_000,
+      perAttendeeIdr: 10_000,
+      fullClassBonusIdr: 100_000,
+      fullClassThresholdPercent: 75,
+      noShowPenaltyIdr: 25_000,
+      active: true,
+      updatedAt: daysAgo(20),
+    },
+  ];
+
+  // Completed classes from day −8 back to the 1st of last month (one per
+  // branch per day, mornings and evenings alternating, coaches rotating) with
+  // attendance, so last month's statements have real numbers. History only:
+  // no gate logs or ledger entries are replayed for these, and the block is
+  // kept lean because the snapshot ships inside the member bundle.
+  const historyStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const attendeePool = activeSeeded.map((m) => m.id);
+  for (let day = -8; ; day--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + day);
+    if (d.getTime() < historyStart.getTime()) break;
+    db.branches.forEach((branch, bi) => {
+      const branchCoaches = db.coaches.filter((c) => c.branchId === branch.id);
+      {
+        const hour = (Math.abs(day) + bi) % 2 === 0 ? 18 : 7;
+        const type = faker.helpers.arrayElement(db.classTypes);
+        const startsAt = at(day, hour);
+        const session: ClassSession = {
+          id: `ses_${++sessionIdx}`,
+          classTypeId: type.id,
+          branchId: branch.id,
+          coachId: branchCoaches[(Math.abs(day) + bi) % branchCoaches.length]!.id,
+          startsAt,
+          endsAt: at(day, hour, type.defaultDurationMin),
+          capacity: type.defaultCapacity,
+          creditCost: type.defaultCreditCost,
+          bookingOpensAt: addDays(startsAt, -db.rules.bookingOpensDaysBefore),
+          bookingClosesAt: startsAt,
+          status: 'COMPLETED',
+          area: 'Main Floor',
+        };
+        db.sessions.push(session);
+        const attended = faker.number.int({
+          min: Math.ceil(session.capacity * 0.4),
+          max: session.capacity,
+        });
+        const noShows = faker.number.int({ min: 0, max: 2 });
+        const picked = faker.helpers.arrayElements(attendeePool, attended + noShows);
+        picked.forEach((memberId, i) =>
+          addBooking(memberId, session, i < attended ? 'COMPLETED' : 'NO_SHOW'),
+        );
+      }
+    });
+  }
+
+  // Last month's payouts in mixed states, each a frozen statement computed
+  // from the sessions above with the coach's resolved scheme.
+  const lastMonth = periodMonthOf(historyStart.toISOString());
+  const payoutPeriod = monthPeriod(lastMonth);
+  const bookingsBySession: Record<string, Booking[]> = {};
+  for (const b of db.bookings) (bookingsBySession[b.sessionId] ??= []).push(b);
+  const classTypesById = Object.fromEntries(db.classTypes.map((t) => [t.id, { name: t.name }]));
+  const defaultScheme = db.incentiveSchemes.find((x) => x.coachId === null)!;
+  const statementFor = (coachId: string) =>
+    computeCoachStatement({
+      coach: { id: coachId },
+      sessions: db.sessions,
+      bookingsBySession,
+      classTypesById,
+      scheme: resolveScheme(
+        defaultScheme,
+        db.incentiveSchemes.find((x) => x.coachId === coachId) ?? null,
+      ),
+      period: payoutPeriod,
+    });
+  const mkPayout = (
+    id: string,
+    coachId: string,
+    status: IncentivePayout['status'],
+    createdDaysAgo: number,
+  ): IncentivePayout | null => {
+    const statement = statementFor(coachId);
+    if (statement.totals.sessions === 0) return null;
+    const coach = db.coaches.find((c) => c.id === coachId)!;
+    const approved = status === 'APPROVED' || status === 'PAID';
+    const payout: IncentivePayout = {
+      id,
+      coachId,
+      branchId: coach.branchId,
+      periodStart: payoutPeriod.start,
+      periodEnd: payoutPeriod.end,
+      statement,
+      status,
+      createdBy: 'adm_hq',
+      approvedBy: approved ? 'adm_fin' : null,
+      approvedAt: approved ? daysAgo(createdDaysAgo - 1, 14) : null,
+      paidAt: status === 'PAID' ? daysAgo(createdDaysAgo - 2, 16) : null,
+      paymentReference: status === 'PAID' ? `TRF-${lastMonth.replace('-', '')}-0001` : null,
+      note: null,
+      createdAt: daysAgo(createdDaysAgo, 9),
+      updatedAt: daysAgo(status === 'PAID' ? createdDaysAgo - 2 : approved ? createdDaysAgo - 1 : createdDaysAgo, 16),
+    };
+    db.incentivePayouts.push(payout);
+    return payout;
+  };
+  const paidPayout = mkPayout('pyo_1', 'coa_1', 'PAID', 5);
+  mkPayout('pyo_2', 'coa_2', 'APPROVED', 4);
+  mkPayout('pyo_3', 'coa_3', 'DRAFT', 3);
+  if (paidPayout) {
+    db.audit.push(
+      {
+        id: 'aud_seed_pyo_1a',
+        entityType: 'INCENTIVE_PAYOUT',
+        entityId: paidPayout.id,
+        action: 'APPROVE',
+        previousValue: 'DRAFT',
+        newValue: 'APPROVED',
+        actorId: 'adm_fin',
+        actorName: 'Sinta Halim',
+        reason: null,
+        createdAt: paidPayout.approvedAt!,
+      },
+      {
+        id: 'aud_seed_pyo_1b',
+        entityType: 'INCENTIVE_PAYOUT',
+        entityId: paidPayout.id,
+        action: 'PAY',
+        previousValue: 'APPROVED',
+        newValue: 'PAID',
+        actorId: 'adm_fin',
+        actorName: 'Sinta Halim',
+        reason: `ref ${paidPayout.paymentReference}`,
+        createdAt: paidPayout.paidAt!,
+      },
+    );
+  }
 
   seedAthleteModule(db, { nowIso, daysAgo, addDays });
 

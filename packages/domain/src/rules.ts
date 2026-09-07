@@ -3,7 +3,6 @@
  * never hard-coded; branches may override org defaults.
  */
 export interface BusinessRules {
-  openGymCreditCost: number;
   defaultCreditExpiryDays: number;
   cancellationDeadlineHours: number;
   lateCancellationPolicy: 'FORFEIT' | 'FREE';
@@ -19,7 +18,6 @@ export interface BusinessRules {
 }
 
 export const DEFAULT_BUSINESS_RULES: BusinessRules = {
-  openGymCreditCost: 1,
   defaultCreditExpiryDays: 60,
   cancellationDeadlineHours: 4,
   lateCancellationPolicy: 'FORFEIT',

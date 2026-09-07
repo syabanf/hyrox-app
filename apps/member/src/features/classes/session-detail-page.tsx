@@ -23,7 +23,7 @@ export function SessionDetailPage() {
     setMessage(null);
     try {
       await api.bookings.confirmSpot(bookingId);
-      setMessage({ kind: 'ok', text: "You're in — spot confirmed!" });
+      setMessage({ kind: 'ok', text: "You're in - spot confirmed!" });
       invalidate();
     } catch (e) {
       setMessage({ kind: 'err', text: e instanceof ApiError ? e.message : 'Could not confirm.' });
@@ -55,7 +55,7 @@ export function SessionDetailPage() {
         text:
           res.decision === 'CONFIRMED'
             ? "You're in! See you at the studio."
-            : `Class is full — you're #${res.booking.waitlistPosition} on the waitlist.`,
+            : `Class is full - you're #${res.booking.waitlistPosition} on the waitlist.`,
       });
     } catch (e) {
       setMessage({ kind: 'err', text: e instanceof ApiError ? e.message : 'Booking failed.' });
@@ -71,7 +71,7 @@ export function SessionDetailPage() {
         kind: 'ok',
         text:
           res.outcome === 'LATE' && res.penaltyCredits > 0
-            ? `Cancelled after the deadline — ${res.penaltyCredits} credit forfeited.`
+            ? `Cancelled after the deadline - ${res.penaltyCredits} credit forfeited.`
             : 'Booking cancelled.',
       });
     } catch (e) {
@@ -92,7 +92,7 @@ export function SessionDetailPage() {
 
       {covered === false ? (
         <div className="rounded-xl bg-warn/15 p-3 text-sm font-bold text-warn">
-          None of your packages cover this class — top up with a package that includes it.
+          None of your packages cover this class - top up with a package that includes it.
         </div>
       ) : covered === true ? (
         <p className="chip self-start bg-ok/10 text-ok">Covered by your package</p>
@@ -159,10 +159,10 @@ export function SessionDetailPage() {
             {mine.status === 'CONFIRMED' ? (
               <p className="font-bold text-ok">You're booked. Scan your QR at the gate to check in.</p>
             ) : mine.status === 'CHECKED_IN' ? (
-              <p className="font-bold text-ok">Checked in — enjoy the session!</p>
+              <p className="font-bold text-ok">Checked in - enjoy the session!</p>
             ) : mine.promotionOfferedAt ? (
               <p className="font-bold text-brand">
-                A spot opened up — confirm it before someone else takes it.
+                A spot opened up - confirm it before someone else takes it.
               </p>
             ) : (
               <p className="font-bold text-warn">Waitlist position #{mine.waitlistPosition}.</p>

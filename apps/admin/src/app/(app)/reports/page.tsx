@@ -22,9 +22,9 @@ type Tab = (typeof TABS)[number];
 
 const chartStyle = {
   grid: 'rgb(0 0 0 / 0.08)',
-  axis: '#6f6f76',
-  bar: '#ed1c24',
-  tooltip: { background: '#ffffff', border: '1px solid #e4e4de', borderRadius: 8, color: '#191919' },
+  axis: '#5f6b62',
+  bar: '#00281a',
+  tooltip: { background: '#ffffff', border: '1px solid #e3dbcc', borderRadius: 8, color: '#131a1c' },
 };
 
 export default function ReportsPage() {
@@ -83,7 +83,7 @@ function ClassesReport() {
                 <td className={`text-right ${row.noShows > 0 ? 'font-bold text-danger' : 'text-muted'}`}>
                   {row.noShows}
                 </td>
-                <td className="text-right font-black">{row.booked > 0 ? `${row.attendanceRate}%` : '—'}</td>
+                <td className="text-right font-black">{row.booked > 0 ? `${row.attendanceRate}%` : '-'}</td>
               </tr>
             ))}
           </tbody>
@@ -202,7 +202,7 @@ function CreditsReport() {
           label="Outstanding credits"
           value={data.outstandingTotal}
           tone="brand"
-          hint="Σ of every member's ledger — the studio's credit liability"
+          hint="Σ of every member's ledger - the studio's credit liability"
         />
         <StatCard
           label="Expiring credits"
@@ -233,7 +233,7 @@ function CreditsReport() {
                   </td>
                   <td className="text-right font-black text-brand">{m.balance}</td>
                   <td className={`text-right font-bold ${m.expiring > 0 ? 'text-warn' : 'text-muted'}`}>
-                    {m.expiring || '—'}
+                    {m.expiring || '-'}
                   </td>
                 </tr>
               ))}
@@ -241,7 +241,7 @@ function CreditsReport() {
         </table>
       </div>
       <p className="text-xs text-muted">
-        Snapshot generated {formatDay(new Date().toISOString())} — derived live from the credit ledger.
+        Snapshot generated {formatDay(new Date().toISOString())} - derived live from the credit ledger.
       </p>
     </div>
   );

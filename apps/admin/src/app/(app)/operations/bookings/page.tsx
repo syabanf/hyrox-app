@@ -53,7 +53,7 @@ export default function BookingsPage() {
       setError(null);
       setNotice(
         res.promotedMemberName
-          ? `Cancelled — ${res.promotedMemberName} auto-promoted from the waitlist.`
+          ? `Cancelled - ${res.promotedMemberName} auto-promoted from the waitlist.`
           : 'Booking cancelled.',
       );
       void qc.invalidateQueries();
@@ -203,7 +203,7 @@ function BookModal({ onClose, onDone }: { onClose: () => void; onDone: (msg: str
       onDone(
         res.decision === 'CONFIRMED'
           ? 'Booking confirmed.'
-          : `Session full — member waitlisted at #${res.booking.waitlistPosition}.`,
+          : `Session full - member waitlisted at #${res.booking.waitlistPosition}.`,
       ),
     onError: (e) => setError(e instanceof ApiError ? e.message : 'Booking failed.'),
   });

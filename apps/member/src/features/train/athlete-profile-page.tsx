@@ -33,7 +33,7 @@ export function AthleteProfilePage() {
         {p.member.avatarUrl ? (
           <img src={p.member.avatarUrl} alt="" className="h-16 w-16 rounded-full object-cover" />
         ) : (
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#1b1b1f] text-xl font-black text-white">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-ink-soft text-xl font-black text-white">
             {p.member.fullName
               .split(' ')
               .slice(0, 2)
@@ -59,7 +59,7 @@ export function AthleteProfilePage() {
       </div>
 
       <div className="card surface-ink relative overflow-hidden !border-0 !p-6 text-white">
-        <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
+        <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-lime/20 blur-3xl" />
         <div className="relative grid grid-cols-3 gap-3 text-center text-sm">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/50">Activities</p>

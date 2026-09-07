@@ -34,14 +34,18 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-3xl flex-col justify-center gap-8 px-6 py-10">
-      <div>
-        <h1 className="display text-4xl font-black">
-          HYROX<span className="text-brand">STUDIO</span> <span className="text-muted">Admin</span>
-        </h1>
-        <p className="mt-2 text-muted">
-          Demo mode — pick a role to sign in. RBAC is enforced by the (mock) server, not just the UI.
-        </p>
+    <div className="mx-auto flex min-h-dvh max-w-3xl flex-col justify-center gap-6 px-6 py-10">
+      {/* Card header: dark green ground, brand pattern texture, white wordmark. */}
+      <div className="surface-ink relative overflow-hidden rounded-3xl p-8 text-white shadow-[0_18px_40px_rgb(0_40_26/0.25)]">
+        <div className="pattern-brand pointer-events-none absolute inset-0" aria-hidden />
+        <div className="relative">
+          <img src="/admin/brand/nuhabit-logo-white.png" alt="NüHabit" className="h-8 w-auto" />
+          <h1 className="display mt-4 text-3xl uppercase">Admin Panel</h1>
+          <p className="mt-2 max-w-xl text-sm text-white/60">
+            Demo mode - pick a role to sign in. RBAC is enforced by the (mock) server, not just the
+            UI.
+          </p>
+        </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         {(users ?? []).map((u) => (

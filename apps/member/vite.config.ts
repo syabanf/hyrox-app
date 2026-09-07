@@ -11,13 +11,13 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       devOptions: { enabled: false },
-      includeAssets: ['icons/icon-192.png', 'icons/icon-512.png'],
+      includeAssets: ['icons/icon-192.png', 'icons/icon-512.png', 'brand/*.png'],
       manifest: {
-        name: 'HYROX Studio',
-        short_name: 'HYROX',
-        description: 'Member app — credits, classes, bookings and QR gate access.',
-        theme_color: '#f6f6f2',
-        background_color: '#f6f6f2',
+        name: 'NüHabit',
+        short_name: 'NüHabit',
+        description: 'NüHabit member app — credits, classes, bookings and QR gate access.',
+        theme_color: '#f3ece2',
+        background_color: '#f3ece2',
         display: 'standalone',
         start_url: '/',
         icons: [
@@ -33,6 +33,10 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg,ico,jpg}'],
+        // The demo bundles the whole seed snapshot into the app shell, which
+        // puts the main chunk above Workbox's 2 MiB precache default. Keep it
+        // precached so the app (and its in-browser backend) works offline.
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         navigateFallback: '/index.html',
         // The mock API worker must keep intercepting /api — never let Workbox touch it.
         navigateFallbackDenylist: [/^\/api\//],

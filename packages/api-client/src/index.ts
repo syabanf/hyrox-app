@@ -5,8 +5,11 @@ import type {
   BookResultView,
   BookingView,
   CancelResultView,
+  CoachStatementView,
   CreditsReportView,
   DashboardStatsView,
+  IncentivePayoutView,
+  IncentiveSchemeView,
   MeView,
   MemberDetailView,
   MemberSessionView,
@@ -30,8 +33,10 @@ import type {
   AdjustCreditsInput,
   AdminBookInput,
   CreateMemberAdminInput,
+  CreatePayoutInput,
   CreateSessionInput,
   GateScanInput,
+  PayoutActionInput,
   RegisterMemberInput,
   TopUpRequest,
   UpdateBranchInput,
@@ -44,6 +49,7 @@ import type {
   UpsertChallengeInput,
   UpsertClassTypeInput,
   UpsertCoachInput,
+  UpsertIncentiveSchemeInput,
   UpsertPackageInput,
   UpsertVoucherInput,
 } from '@hyrox/contracts';
@@ -122,7 +128,7 @@ export interface ApiClientOptions {
   baseUrl?: string;
   getToken: () => string | null;
   /**
-   * How requests reach the backend — defaults to the network (global fetch).
+   * How requests reach the backend - defaults to the network (global fetch).
    * The demo passes the in-process mock transport here; a real deployment
    * simply leaves it unset.
    */
@@ -388,6 +394,29 @@ export function createApiClient(options: ApiClientOptions) {
       rules: {
         get: () => get<RulesView>('/api/admin/rules'),
         update: (input: UpdateRulesInput) => put<BusinessRules>('/api/admin/rules', input),
+      },
+      incentives: {
+        schemes: {
+          list: () => get<IncentiveSchemeView[]>('/api/admin/incentives/schemes'),
+          create: (input: UpsertIncentiveSchemeInput) =>
+            post<IncentiveSchemeView>('/api/admin/incentives/schemes', input),
+          update: (id: string, input: UpsertIncentiveSchemeInput) =>
+            put<IncentiveSchemeView>(`/api/admin/incentives/schemes/${id}`, input),
+        },
+        statements: (query: { period: string; branchId?: string }) =>
+          get<CoachStatementView[]>('/api/admin/incentives/statements', query),
+        payouts: {
+          list: (query?: { period?: string; coachId?: string; status?: string }) =>
+            get<IncentivePayoutView[]>('/api/admin/incentives/payouts', query),
+          create: (input: CreatePayoutInput) =>
+            post<IncentivePayoutView>('/api/admin/incentives/payouts', input),
+          action: (
+            id: string,
+            action: 'approve' | 'pay' | 'void',
+            input: Partial<PayoutActionInput> = {},
+          ) =>
+            post<IncentivePayoutView>(`/api/admin/incentives/payouts/${id}/${action}`, input),
+        },
       },
     },
     athlete: {

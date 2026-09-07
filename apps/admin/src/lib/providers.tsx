@@ -11,7 +11,7 @@ const queryClient = new QueryClient({
 
 /**
  * The demo backend is plain in-process code wired into the API client (see
- * lib/api.ts) — nothing to boot. The one-tick mount gate keeps the app
+ * lib/api.ts) - nothing to boot. The one-tick mount gate keeps the app
  * client-only: it skips the hydration render, where persisted stores still
  * report their empty server snapshot and auth guards would misfire.
  */

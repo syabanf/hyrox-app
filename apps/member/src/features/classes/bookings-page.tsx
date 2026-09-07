@@ -27,7 +27,7 @@ export function BookingsPage() {
             key={t}
             onClick={() => setTab(t)}
             className={`flex-1 rounded-lg py-2 text-sm font-black uppercase tracking-wide ${
-              tab === t ? 'bg-[#1b1b1f] text-white' : 'text-muted'
+              tab === t ? 'bg-ink-soft text-white' : 'text-muted'
             }`}
           >
             {t}
@@ -61,7 +61,7 @@ export function BookingsPage() {
               </div>
               {b.booking.status === 'WAITLIST' && b.booking.promotionOfferedAt ? (
                 <p className="rounded-lg bg-brand/10 px-3 py-1.5 text-xs font-black text-brand">
-                  A spot opened up — tap to confirm it.
+                  A spot opened up - tap to confirm it.
                 </p>
               ) : null}
             </Link>

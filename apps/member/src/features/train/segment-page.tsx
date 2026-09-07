@@ -46,7 +46,7 @@ export function SegmentPage() {
             </div>
           ))}
           {v.leaderboard.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-muted">No efforts yet — be the first!</p>
+            <p className="px-4 py-6 text-center text-sm text-muted">No efforts yet - be the first!</p>
           ) : null}
         </div>
       </div>

@@ -10,7 +10,7 @@ export interface SearchSelectOption {
   hint?: string;
 }
 
-/** Searchable dropdown — the admin default wherever a native select would list entities. */
+/** Searchable dropdown - the admin default wherever a native select would list entities. */
 export function SearchSelect({
   value,
   onChange,
@@ -70,7 +70,7 @@ export function SearchSelect({
         <ChevronsUpDown size={14} className="shrink-0 text-muted" />
       </button>
       {open ? (
-        <div className="menu-pop absolute inset-x-0 z-30 mt-1 overflow-hidden rounded-xl border border-line bg-surface shadow-[0_16px_40px_rgb(13_13_16/0.18)]">
+        <div className="menu-pop absolute inset-x-0 z-30 mt-1 overflow-hidden rounded-xl border border-line bg-surface shadow-[0_16px_40px_rgb(0_40_26/0.18)]">
           <input
             autoFocus
             className="w-full border-b border-line bg-surface px-3.5 py-2.5 text-sm focus:outline-none"
@@ -121,6 +121,8 @@ export interface RowAction {
   label: string;
   icon?: ComponentType<{ size?: number | string; className?: string }>;
   tone?: 'danger';
+  /** Rendered but inert - for actions the entity's state machine forbids right now. */
+  disabled?: boolean;
   onClick: () => void;
 }
 
@@ -137,8 +139,9 @@ export function RowActions({ items }: { items: RowAction[] }) {
           type="button"
           title={item.label}
           aria-label={item.label}
+          disabled={item.disabled}
           onClick={item.onClick}
-          className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition ${
+          className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition disabled:pointer-events-none disabled:opacity-30 ${
             item.tone === 'danger'
               ? 'text-muted hover:bg-danger/10 hover:text-danger'
               : 'text-muted hover:bg-surface-raised hover:text-ink'
@@ -213,7 +216,7 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
   return (
     <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="modal-panel max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-3xl bg-surface p-6 shadow-[0_24px_60px_rgb(13_13_16/0.3)]"
+        className="modal-panel max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-3xl bg-surface p-6 shadow-[0_24px_60px_rgb(0_40_26/0.3)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">

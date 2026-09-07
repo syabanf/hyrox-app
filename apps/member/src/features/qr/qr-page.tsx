@@ -1,15 +1,45 @@
-import { Spinner } from '@hyrox/ui';
+import type { BookingView } from '@hyrox/contracts';
+import { Spinner, formatDayTime, formatTime } from '@hyrox/ui';
 import { useQuery } from '@tanstack/react-query';
 import { QRCodeSVG } from 'qrcode.react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { api } from '../../lib/api';
 import { useAuthStore } from '../../lib/auth';
-import { useMe } from '../../lib/queries';
+import { useMe, useMyBookings } from '../../lib/queries';
+
+/** Members may check in up to 60 minutes before their class starts. */
+const CHECK_IN_WINDOW_MS = 60 * 60_000;
+
+/**
+ * The booking that would let the member through the gate right now (its
+ * check-in window contains `now`), else the next confirmed one.
+ */
+function pickGateBooking(
+  bookings: BookingView[],
+  now: number,
+): { booking: BookingView; live: boolean } | null {
+  const confirmed = bookings
+    .filter((b) => b.booking.status === 'CONFIRMED' || b.booking.status === 'CHECKED_IN')
+    .sort(
+      (a, b) => new Date(a.session.startsAt).getTime() - new Date(b.session.startsAt).getTime(),
+    );
+  const live = confirmed.find(
+    (b) =>
+      new Date(b.session.startsAt).getTime() - CHECK_IN_WINDOW_MS <= now &&
+      now <= new Date(b.session.endsAt).getTime(),
+  );
+  if (live) return { booking: live, live: true };
+  const next = confirmed.find(
+    (b) => b.booking.status === 'CONFIRMED' && new Date(b.session.startsAt).getTime() > now,
+  );
+  return next ? { booking: next, live: false } : null;
+}
 
 export function QrPage() {
   const member = useAuthStore((s) => s.member);
   const { data: me } = useMe();
+  const { data: bookings } = useMyBookings();
 
   // A fresh short-lived token, re-issued automatically the moment it expires.
   const qr = useQuery({
@@ -42,16 +72,19 @@ export function QrPage() {
   const fraction = qr.data.ttlSeconds > 0 ? secondsLeft / qr.data.ttlSeconds : 0;
   const R = 26;
   const CIRC = 2 * Math.PI * R;
+  const gate = bookings ? pickGateBooking(bookings, Date.now()) : null;
 
   return (
     <div className="flex flex-col gap-5">
       <div>
         <h1 className="display text-3xl">Gate access</h1>
-        <p className="mt-1 text-sm text-muted">Show this at the scanner to check in.</p>
+        <p className="mt-1 text-sm text-muted">
+          Show this at the scanner to check in to your booked class.
+        </p>
       </div>
 
       <div className="card surface-ink relative overflow-hidden !border-0 !p-6 text-white">
-        <div className="pointer-events-none absolute -right-20 -top-28 h-64 w-64 rounded-full bg-brand/30 blur-3xl" />
+        <div className="pointer-events-none absolute -right-20 -top-28 h-64 w-64 rounded-full bg-lime/25 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-24 -left-16 h-48 w-48 rounded-full bg-white/[0.05] blur-2xl" />
 
         <div className="relative mx-auto w-fit rounded-2xl bg-white p-4">
@@ -60,13 +93,20 @@ export function QrPage() {
 
         <div className="relative mt-6 flex items-center gap-4">
           <svg width="56" height="56" viewBox="0 0 64 64" aria-hidden className="shrink-0">
-            <circle cx="32" cy="32" r={R} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="5" />
             <circle
               cx="32"
               cy="32"
               r={R}
               fill="none"
-              stroke="#f5333a"
+              stroke="rgba(255,255,255,0.15)"
+              strokeWidth="5"
+            />
+            <circle
+              cx="32"
+              cy="32"
+              r={R}
+              fill="none"
+              stroke="#daff59"
               strokeWidth="5"
               strokeLinecap="round"
               strokeDasharray={CIRC}
@@ -91,8 +131,10 @@ export function QrPage() {
             <p className="text-xs">Refreshes automatically every {qr.data.ttlSeconds}s.</p>
           </div>
           <div className="shrink-0 text-right">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">Credits</p>
-            <p className="display text-2xl leading-none text-[#ff4348]">{me?.balance ?? '…'}</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">
+              Credits
+            </p>
+            <p className="display text-2xl leading-none text-lime">{me?.balance ?? '…'}</p>
           </div>
         </div>
 
@@ -105,6 +147,47 @@ export function QrPage() {
           </Link>
         </div>
       </div>
+
+      {/* Entry is always tied to a booked class - there is no open gym. */}
+      {gate ? (
+        <Link to={`/classes/${gate.booking.session.id}`} className="card flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted">
+              {gate.live ? 'Check in now' : 'Next class'}
+            </p>
+            <p className="truncate font-black">{gate.booking.classTypeName}</p>
+            <p className="truncate text-sm text-muted">
+              {formatDayTime(gate.booking.session.startsAt)} –{' '}
+              {formatTime(gate.booking.session.endsAt)} · {gate.booking.branchName}
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              {gate.live
+                ? gate.booking.booking.status === 'CHECKED_IN'
+                  ? 'You are checked in - scan again within the grace window for free re-entry.'
+                  : `Scan at a ${gate.booking.branchName} gate to check in (${gate.booking.session.creditCost} credit${gate.booking.session.creditCost === 1 ? '' : 's'}).`
+                : 'The gate opens from 60 minutes before your class starts.'}
+            </p>
+          </div>
+          <span
+            className={`chip shrink-0 ${gate.live ? 'bg-ok/15 text-ok' : 'bg-surface-raised text-muted'}`}
+          >
+            {gate.live ? 'Live' : 'Booked'}
+          </span>
+        </Link>
+      ) : (
+        <div className="card">
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted">
+            No class booked
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            Entry requires a booked class - the gate denies a scan without one. Book a session
+            first, then scan from 60 minutes before it starts.
+          </p>
+          <Link to="/classes" className="btn-brand mt-3 block text-center !py-2 text-sm">
+            Browse classes
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

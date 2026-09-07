@@ -58,9 +58,9 @@ export function RouteMap({
       role="img"
       aria-label="Route map"
     >
-      <path d={path} fill="none" stroke="#ed1c24" strokeWidth={3.5} strokeLinejoin="round" strokeLinecap="round" />
-      <circle cx={sx} cy={sy} r={5} fill="#34d27b" stroke="#fff" strokeWidth={1.5} />
-      <circle cx={ex} cy={ey} r={5} fill="#191919" stroke="#fff" strokeWidth={1.5} />
+      <path d={path} fill="none" stroke="#00281a" strokeWidth={3.5} strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx={sx} cy={sy} r={5} fill="#abde67" stroke="#fff" strokeWidth={1.5} />
+      <circle cx={ex} cy={ey} r={5} fill="#131a1c" stroke="#fff" strokeWidth={1.5} />
     </svg>
   );
 }

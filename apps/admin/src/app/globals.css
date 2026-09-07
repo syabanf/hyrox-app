@@ -2,46 +2,43 @@
 @import '@hyrox/ui/tokens.css';
 @source '../../../packages/ui/src';
 
-/* Admin panel shares the member app's design language: light surfaces,
-   WIT Red as a restrained accent, Archivo display type, premium dark "ink"
-   surfaces for the sidebar and hero cards. */
+/* Admin panel shares the member app's NüHabit design language: White Beige
+   surfaces, Deep Forest Green ink, Pale Lime as the signature accent, Outfit
+   titles, and dark green "ink" surfaces for the sidebar and hero cards.
+   Surface tokens come from @hyrox/ui. */
 :root {
   color-scheme: light;
-  --color-surface: #ffffff;
-  --color-surface-raised: #f1f1ed;
-  --color-line: #e7e7e1;
-  --color-muted: #6f6f76;
 }
 
 body {
-  background: #f6f6f2;
-  color: #17171a;
+  background: var(--color-beige);
+  color: var(--color-ink);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
 }
 
-/* Modern athletic type: heavy, slightly expanded Archivo with tight tracking. */
+/* Titles: Outfit, geometric and bold. */
 .display {
   font-family: var(--font-display);
-  font-weight: 850;
-  font-stretch: 110%;
-  letter-spacing: -0.02em;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
-/* WIT Red as TEXT on light surfaces uses a slightly darker ink for legibility. */
-.text-brand {
-  color: #c4161c;
-}
-.hover\:text-brand:hover {
-  color: #c4161c;
-}
-
-/* Premium dark surface — the "black card" look shared with the member app. */
+/* Premium dark surface - Dark Jungle into Deep Forest Green, shared with the member app. */
 .surface-ink {
-  background: linear-gradient(150deg, #2a2a30 0%, #17171b 55%, #0d0d10 100%);
+  background: linear-gradient(150deg, #1c261b 0%, #00281a 55%, #001b12 100%);
 }
+/* Signature lime gradient. Pair with dark ink text. */
 .surface-brand {
-  background: linear-gradient(140deg, #f5333a 0%, #d5121a 55%, #8f0a10 100%);
+  background: linear-gradient(140deg, #eeffb1 0%, #daff59 45%, #abde67 100%);
+}
+
+/* Brand pattern tile as a quiet texture on dark surfaces (never behind body text). */
+.pattern-brand {
+  background-image: url('/admin/brand/pattern-a.png');
+  background-size: 420px auto;
+  mix-blend-mode: screen;
+  opacity: 0.16;
 }
 
 /* Small status/info pill. */
@@ -49,12 +46,17 @@ body {
   @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold;
 }
 
-/* Admin primitives — info-dense but soft: hairline borders, quiet shadows. */
+/* Admin primitives - info-dense but soft: hairline borders, quiet shadows. */
 .a-card {
-  @apply rounded-2xl border border-black/[0.03] bg-surface p-5 shadow-[0_1px_2px_rgb(17_17_20/0.03),0_10px_30px_rgb(17_17_20/0.04)];
+  @apply rounded-2xl border border-brand/[0.04] bg-surface p-5 shadow-[0_1px_2px_rgb(0_40_26/0.03),0_10px_30px_rgb(0_40_26/0.05)];
 }
+/* Primary action - Pale Lime with dark ink (matches the member app). */
 .a-btn {
-  @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand px-4 py-2 text-sm font-bold text-white shadow-[0_6px_16px_rgb(237_28_36/0.2)] transition hover:bg-brand-press disabled:pointer-events-none disabled:opacity-40;
+  @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-lime px-4 py-2 text-sm font-bold text-ink shadow-[0_6px_16px_rgb(0_40_26/0.14)] transition hover:bg-lettuce disabled:pointer-events-none disabled:opacity-40;
+}
+/* Secondary action - Deep Forest Green with lime text. */
+.a-btn-forest {
+  @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand px-4 py-2 text-sm font-bold text-lime shadow-[0_6px_16px_rgb(0_40_26/0.18)] transition hover:bg-brand-press disabled:pointer-events-none disabled:opacity-40;
 }
 .a-btn-ghost {
   @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-surface-raised px-4 py-2 text-sm font-bold text-ink transition hover:bg-line disabled:pointer-events-none disabled:opacity-40;
@@ -86,7 +88,14 @@ body {
   border-bottom: none;
 }
 .a-table tbody tr:hover {
-  background: rgb(17 17 20 / 0.02);
+  background: rgb(0 40 26 / 0.025);
+}
+
+/* Keyboard focus: lime ring, only for keyboard users. */
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--color-lettuce);
+  outline-offset: 2px;
 }
 
 /* ── Motion ─────────────────────────────────────────────────────────────────
@@ -98,7 +107,7 @@ body {
   from { opacity: 0; transform: scale(0.97) translateY(8px); }
 }
 
-.a-btn, .a-btn-ghost, .a-btn-danger, .a-input, .chip {
+.a-btn, .a-btn-forest, .a-btn-ghost, .a-btn-danger, .a-input, .chip {
   transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   transition-duration: 180ms;
 }
@@ -123,4 +132,52 @@ body {
     animation-duration: 1.2s !important;
     animation-iteration-count: infinite !important;
   }
+}
+
+/* ── Scrollbars ──────────────────────────────────────────────────────────────
+   Brand scrollbars: thin, rounded, Pale Lime thumb on the dark sidebar and a
+   Deep Forest Green thumb on light content. No default grey tracks anywhere. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #00281a transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: #00281a;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #daff59;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+/* Dark surfaces (sidebar, ink cards): lime thumb so it pops on green. */
+.surface-ink,
+.surface-ink * {
+  scrollbar-color: #daff59 transparent;
+}
+.surface-ink::-webkit-scrollbar-thumb,
+.surface-ink *::-webkit-scrollbar-thumb {
+  background: #daff59;
+  background-clip: padding-box;
+}
+.surface-ink::-webkit-scrollbar-thumb:hover,
+.surface-ink *::-webkit-scrollbar-thumb:hover {
+  background: #abde67;
+  background-clip: padding-box;
 }

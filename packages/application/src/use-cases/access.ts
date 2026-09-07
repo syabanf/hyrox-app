@@ -7,26 +7,53 @@ import type {
   QrToken,
   Result,
 } from '@hyrox/domain';
-import {
-  checkQrToken,
-  err,
-  evaluateGateScan,
-  issueQrToken,
-  msOf,
-  ok,
-} from '@hyrox/domain';
+import { checkQrToken, err, evaluateGateScan, issueQrToken, msOf, ok } from '@hyrox/domain';
 import type { AppError } from '../common';
 import { appError, balanceOf, maybeNotifyLowBalance, notify, rulesFor } from '../common';
 import type { UseCaseDeps } from '../ports';
 import { sweepMemberExpiry } from './wallet';
 
+/** Members may check in up to 60 minutes before a session starts. */
+const CHECK_IN_WINDOW_MS = 60 * 60_000;
+
+/**
+ * The booking an access-log row belongs to: the row's own bookingId when set,
+ * otherwise the member's CONFIRMED / CHECKED_IN booking at that branch whose
+ * session window (start − 60 min … end) contains the scan time.
+ */
+function bookingForLog(deps: UseCaseDeps, log: AccessLog): Booking | null {
+  if (log.bookingId) return deps.bookings.byId(log.bookingId);
+  if (!log.memberId) return null;
+  const at = msOf(log.createdAt);
+  const candidates = deps.bookings
+    .forMember(log.memberId)
+    .filter((b) => b.status === 'CONFIRMED' || b.status === 'CHECKED_IN')
+    .map((b) => ({ booking: b, session: deps.sessions.byId(b.sessionId) }))
+    .filter(
+      (x): x is { booking: Booking; session: NonNullable<typeof x.session> } =>
+        x.session !== null &&
+        x.session.branchId === log.branchId &&
+        msOf(x.session.startsAt) - CHECK_IN_WINDOW_MS <= at &&
+        at <= msOf(x.session.endsAt),
+    )
+    .sort((a, b) => msOf(a.session.startsAt) - msOf(b.session.startsAt));
+  return candidates[0]?.booking ?? null;
+}
+
 /**
  * Manual reconciliation of an OFFLINE CONFLICT row: approve applies the missed
- * deduction and marks the row SYNCED; reject marks it DENIED. Audited.
+ * deduction for the class the entry belongs to (checking the booking in if it
+ * still needs it) and marks the row SYNCED; reject marks it DENIED. Entries
+ * with no booking cannot be approved - open gym is not offered. Audited.
  */
 export function resolveOfflineConflict(
   deps: UseCaseDeps,
-  args: { logId: string; action: 'APPROVE' | 'REJECT'; actor: { id: string; name: string }; reason: string },
+  args: {
+    logId: string;
+    action: 'APPROVE' | 'REJECT';
+    actor: { id: string; name: string };
+    reason: string;
+  },
 ): Result<AccessLog, AppError> {
   const log = deps.accessLogs.all().find((l) => l.id === args.logId);
   if (!log) return err(appError('NOT_FOUND', 'Access log not found.', 404));
@@ -34,23 +61,37 @@ export function resolveOfflineConflict(
     return err(appError('NOT_A_CONFLICT', 'Only CONFLICT rows can be resolved.'));
   const now = deps.clock.now();
   if (args.action === 'APPROVE') {
+    const booking = bookingForLog(deps, log);
+    const session = booking ? deps.sessions.byId(booking.sessionId) : null;
+    if (!log.memberId || !booking || !session)
+      return err(
+        appError(
+          'NO_BOOKING',
+          'No booked class matches this entry. Open gym is not offered, so entries without a booking cannot be reconciled - reject it instead.',
+          409,
+        ),
+      );
     log.result = 'SYNCED';
-    if (log.memberId) {
-      const cost = rulesFor(deps, log.branchId).openGymCreditCost;
-      log.creditDelta = -cost;
-      deps.ledger.append({
-        id: deps.ids.next('led'),
-        memberId: log.memberId,
-        type: 'VISIT_DEDUCTION',
-        amount: -cost,
-        description: 'Offline entry reconciled',
-        sourceType: 'ACCESS',
-        sourceId: log.id,
-        reversesEntryId: null,
-        actorId: args.actor.id,
-        reason: args.reason,
-        createdAt: now,
-      });
+    log.bookingId = booking.id;
+    log.creditDelta = -session.creditCost;
+    deps.ledger.append({
+      id: deps.ids.next('led'),
+      memberId: log.memberId,
+      type: 'VISIT_DEDUCTION',
+      amount: -session.creditCost,
+      description: 'Offline class check-in reconciled',
+      sourceType: 'ACCESS',
+      sourceId: log.id,
+      reversesEntryId: null,
+      actorId: args.actor.id,
+      reason: args.reason,
+      createdAt: now,
+    });
+    if (booking.status === 'CONFIRMED') {
+      booking.status = 'CHECKED_IN';
+      booking.checkedInAt = log.createdAt;
+      booking.updatedAt = now;
+      deps.bookings.save(booking);
     }
   } else {
     log.result = 'DENIED';
@@ -83,14 +124,13 @@ export function issueQr(deps: UseCaseDeps, memberId: string): Result<QrToken, Ap
   return ok(token);
 }
 
-/** The member's CONFIRMED booking happening around now at this branch, if any. */
+/** The member's CONFIRMED booking happening around now at this branch - the only way in. */
 function findCandidateBooking(
   deps: UseCaseDeps,
   memberId: string,
   branchId: string,
 ): (Booking & { creditCost: number }) | null {
   const now = msOf(deps.clock.now());
-  const windowMs = 60 * 60_000; // may check in up to 60 min before start
   const candidates = deps.bookings
     .forMember(memberId)
     .filter((b) => b.status === 'CONFIRMED')
@@ -100,7 +140,7 @@ function findCandidateBooking(
         x.session !== null &&
         x.session.branchId === branchId &&
         (x.session.status === 'PUBLISHED' || x.session.status === 'FULL') &&
-        msOf(x.session.startsAt) - windowMs <= now &&
+        msOf(x.session.startsAt) - CHECK_IN_WINDOW_MS <= now &&
         now <= msOf(x.session.endsAt),
     )
     .sort((a, b) => msOf(a.session.startsAt) - msOf(b.session.startsAt));
@@ -119,7 +159,7 @@ export interface ScanOutcome {
 /**
  * The atomic gate transaction: evaluate the pipeline, then apply every effect
  * (consume token, deduct credits, check in booking, write the access log) in
- * one synchronous block — the gate never opens without its deduction.
+ * one synchronous block - the gate never opens without its deduction.
  */
 export function processGateScan(
   deps: UseCaseDeps,
@@ -173,7 +213,7 @@ export function processGateScan(
         memberId: member.id,
         type: 'VISIT_DEDUCTION',
         amount: -effect.amount,
-        description: `${effect.description} — ${gate.name}`,
+        description: `${effect.description} - ${gate.name}`,
         sourceType: 'ACCESS',
         sourceId: logId,
         reversesEntryId: null,

@@ -29,41 +29,51 @@ export function AppLayout() {
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col">
       <OfflineBanner />
-      <header className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto flex max-w-md items-center justify-between bg-gradient-to-b from-[#f6f6f2] via-[#f6f6f2]/75 to-transparent px-5 pb-4 pt-[max(env(safe-area-inset-top),1.1rem)] [&_a]:pointer-events-auto">
+      <header className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto flex max-w-md items-center justify-between bg-gradient-to-b from-[#f3ece2] via-[#f3ece2]/75 to-transparent px-5 pb-4 pt-[max(env(safe-area-inset-top),1.1rem)] [&_a]:pointer-events-auto">
         <div className="flex items-center gap-2.5">
           <Link
             to="/profile"
             aria-label="Profile"
-            className="block h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[#1b1b1f] shadow-[0_4px_14px_rgb(17_17_20/0.18)]"
+            className="block h-10 w-10 shrink-0 overflow-hidden rounded-full bg-ink-soft shadow-[0_4px_14px_rgb(0_40_26/0.18)]"
           >
             {me?.member.avatarUrl ? (
               <img src={me.member.avatarUrl} alt="" className="h-full w-full object-cover" />
-            ) : (
+            ) : me ? (
               <span className="flex h-full w-full items-center justify-center text-sm font-black text-white">
-                {me?.member.fullName
+                {me.member.fullName
                   .split(' ')
                   .slice(0, 2)
                   .map((p) => p[0])
-                  .join('') ?? ''}
+                  .join('')}
+              </span>
+            ) : (
+              <span className="flex h-full w-full items-center justify-center">
+                <img src="/brand/nuhabit-logo-alt-white.png" alt="" className="h-3.5 w-auto" />
               </span>
             )}
           </Link>
           <Link
             to="/train/explore"
             aria-label="Explore"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1b1b1f] text-white shadow-[0_4px_14px_rgb(17_17_20/0.18)]"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-ink-soft text-white shadow-[0_4px_14px_rgb(0_40_26/0.18)]"
           >
             <Search size={17} strokeWidth={2.4} />
           </Link>
         </div>
+        {/* Wordmark - black logo on the beige ground. */}
+        <img
+          src="/brand/nuhabit-logo-black.png"
+          alt="NüHabit"
+          className="pointer-events-none absolute left-1/2 top-[max(env(safe-area-inset-top),1.1rem)] h-[18px] w-auto -translate-x-1/2 translate-y-[11px]"
+        />
         <Link
           to="/notifications"
-          className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[#1b1b1f] text-white shadow-[0_4px_14px_rgb(17_17_20/0.18)]"
+          className="relative flex h-10 w-10 items-center justify-center rounded-full bg-ink-soft text-white shadow-[0_4px_14px_rgb(0_40_26/0.18)]"
           aria-label="Notifications"
         >
           <Bell size={17} strokeWidth={2.4} />
           {me && me.unreadNotifications > 0 ? (
-            <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand px-1 text-[10px] font-black text-white ring-2 ring-[#f6f6f2]">
+            <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand px-1 text-[10px] font-black text-white ring-2 ring-[#f3ece2]">
               {me.unreadNotifications}
             </span>
           ) : null}
@@ -75,7 +85,7 @@ export function AppLayout() {
         </div>
       </main>
       <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-md px-5 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
-        <div className="surface-ink flex items-center justify-between rounded-full px-3 py-2.5 shadow-[0_18px_40px_rgb(13_13_16/0.35)]">
+        <div className="surface-ink flex items-center justify-between rounded-full px-3 py-2.5 shadow-[0_18px_40px_rgb(0_40_26/0.35)]">
           {NAV.map(({ to, label, icon: Icon, emphasized }) => (
             <NavLink
               key={to}
@@ -85,7 +95,7 @@ export function AppLayout() {
               title={t(label)}
               className={({ isActive }) =>
                 emphasized
-                  ? 'surface-brand flex h-12 w-12 items-center justify-center rounded-full text-white shadow-[0_6px_18px_rgb(237_28_36/0.45)] transition active:scale-95'
+                  ? 'surface-brand flex h-12 w-12 items-center justify-center rounded-full text-ink shadow-[0_6px_18px_rgb(218_255_89/0.35)] transition active:scale-95'
                   : `flex h-12 w-12 items-center justify-center rounded-full transition active:scale-95 ${
                       isActive ? 'bg-white/12 text-white' : 'text-white/45'
                     }`

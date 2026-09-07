@@ -60,10 +60,10 @@ export function WorkoutGeneratorPage() {
       <h1 className="display text-3xl">{t('Workout generator')}</h1>
 
       <div className="card surface-ink relative overflow-hidden !border-0 !p-6 text-white">
-        <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
+        <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-lime/20 blur-3xl" />
         <div className="relative flex items-center gap-4">
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10">
-            <Dumbbell size={22} className="text-[#ff4348]" />
+            <Dumbbell size={22} className="text-lime" />
           </span>
           <div className="min-w-0 flex-1">
             <p className="display text-xl leading-tight">Build your HYROX day.</p>
@@ -116,7 +116,7 @@ export function WorkoutGeneratorPage() {
       {needsStations ? (
         <div>
           <p className="label">
-            Stations ({type === 'PRACTICE' ? 'pick one' : 'pick any — empty = random 4'})
+            Stations ({type === 'PRACTICE' ? 'pick one' : 'pick any - empty = random 4'})
           </p>
           <div className="grid grid-cols-2 gap-2">
             {stations.map((s) => {

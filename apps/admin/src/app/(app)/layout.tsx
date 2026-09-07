@@ -8,6 +8,7 @@ import {
   DoorOpen,
   Dumbbell,
   Flag,
+  HandCoins,
   Trophy,
   Video,
   LayoutDashboard,
@@ -57,6 +58,7 @@ const NAV: NavGroup[] = [
       { href: '/operations/bookings', label: 'Bookings', icon: ClipboardList, permission: 'operations.view' },
       { href: '/operations/coaches', label: 'Coaches', icon: Users, permission: 'operations.view' },
       { href: '/operations/exercises', label: 'Exercise Guides', icon: Video, permission: 'operations.view' },
+      { href: '/operations/incentives', label: 'Coach Incentives', icon: HandCoins, permission: 'incentives.view' },
     ],
   },
   {
@@ -129,8 +131,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <div className="flex min-h-dvh">
       {/* Mobile top bar */}
       <header className="surface-ink fixed inset-x-0 top-0 z-30 flex items-center justify-between px-4 py-3 text-white lg:hidden">
-        <Link href="/dashboard" className="display text-base font-black">
-          HYROX<span className="text-[#ff4348]">STUDIO</span>
+        <Link href="/dashboard" className="flex items-center gap-2.5">
+          <img src="/admin/brand/nuhabit-logo-white.png" alt="NüHabit" className="h-[22px] w-auto" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/35">
+            Admin
+          </span>
         </Link>
         <button
           onClick={() => setNavOpen((v) => !v)}
@@ -149,10 +154,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         }`}
       >
         <div className="px-6 pb-4 pt-6">
-          <Link href="/dashboard" className="display text-lg font-black">
-            HYROX<span className="text-[#ff4348]">STUDIO</span>
+          <Link href="/dashboard" className="block">
+            <img src="/admin/brand/nuhabit-logo-white.png" alt="NüHabit" className="h-6 w-auto" />
           </Link>
-          <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.22em] text-white/35">
+          <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-white/35">
             Admin Panel
           </p>
         </div>
@@ -179,7 +184,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                           : 'text-white/45 hover:bg-white/5 hover:text-white/80'
                       }`}
                     >
-                      <Icon size={16} className={active ? 'text-[#ff4348]' : undefined} />
+                      <Icon size={16} className={active ? 'text-lime' : undefined} />
                       {label}
                     </Link>
                   );
@@ -190,7 +195,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </nav>
         <div className="border-t border-white/10 p-4 text-sm">
           <p className="font-black">{user.name}</p>
-          <p className="mb-3 text-[11px] font-bold uppercase tracking-wide text-[#ff4348]">
+          <p className="mb-3 text-[11px] font-bold uppercase tracking-wide text-lime">
             {user.role.replaceAll('_', ' ')}
           </p>
           <div className="flex gap-2">

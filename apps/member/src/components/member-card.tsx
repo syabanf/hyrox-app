@@ -45,15 +45,13 @@ export function MemberCardSheet({ onClose }: { onClose: () => void }) {
     >
       <div className="sheet-panel w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
         <div className="surface-ink relative overflow-hidden rounded-3xl p-6 text-white shadow-[0_30px_80px_rgb(0_0_0/0.5)]">
-          <div className="pointer-events-none absolute -right-20 -top-28 h-64 w-64 rounded-full bg-brand/30 blur-3xl" />
+          <div className="pointer-events-none absolute -right-20 -top-28 h-64 w-64 rounded-full bg-lime/25 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 -left-16 h-48 w-48 rounded-full bg-white/[0.05] blur-2xl" />
 
           <div className="relative flex items-start justify-between">
             <div>
-              <p className="display text-lg">
-                HYROX<span className="text-[#ff4348]">STUDIO</span>
-              </p>
-              <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.24em] text-white/40">
+              <img src="/brand/nuhabit-logo-white.png" alt="NüHabit" className="h-5 w-auto" />
+              <p className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.24em] text-white/40">
                 Member card
               </p>
             </div>
@@ -88,7 +86,7 @@ export function MemberCardSheet({ onClose }: { onClose: () => void }) {
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">
                 Credits
               </p>
-              <p className="display text-2xl leading-none text-[#ff4348]">{me.balance}</p>
+              <p className="display text-2xl leading-none text-lime">{me.balance}</p>
             </div>
           </div>
         </div>

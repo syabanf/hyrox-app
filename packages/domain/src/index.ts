@@ -11,6 +11,7 @@ export * from './booking';
 export * from './qr';
 export * from './access';
 export * from './rules';
+export * from './incentive';
 export * from './rbac';
 export * from './audit';
 export * from './notification';

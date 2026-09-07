@@ -4,8 +4,9 @@ import { Providers } from '../lib/providers';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'HYROX Studio Admin',
-  description: 'Operations dashboard for HYROX Studio',
+  title: 'NüHabit Admin',
+  description: 'Operations dashboard for NüHabit',
+  icons: { icon: '/admin/favicon.png' },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -17,7 +18,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Manrope:wght@400..800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Outfit:wght@400..900&family=Manrope:wght@300..800&display=swap"
         />
         <Providers>{children}</Providers>
       </body>

@@ -7,7 +7,6 @@ const CLASS_IMAGES: Record<string, string> = {
   cls_sim: '/img/class-sim.jpg',
   cls_str: '/img/class-str.jpg',
   cls_eng: '/img/class-eng.jpg',
-  cls_open: '/img/class-open.jpg',
   cls_mob: '/img/class-mob.jpg',
   cls_wod: '/img/class-wod.jpg',
   cls_test: '/img/class-test.jpg',

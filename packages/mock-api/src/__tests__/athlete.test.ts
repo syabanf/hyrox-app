@@ -178,7 +178,8 @@ describe('athlete module (Strava-style)', () => {
   it('generates a booking reminder for a class starting within 24h', async () => {
     // Demo member books tomorrow-ish session via admin (guaranteed CONFIRMED).
     const admin = await call('POST', '/api/admin/auth/login', { body: { userId: 'adm_super' } });
-    const sessions = await call('GET', '/api/admin/sessions', { token: admin.data.token });
+    // Listed as the member so myBooking reflects the demo's seeded bookings.
+    const sessions = await call('GET', '/api/sessions', { token: demo });
     const soon = sessions.data.find(
       (v: any) =>
         v.session.status === 'PUBLISHED' &&

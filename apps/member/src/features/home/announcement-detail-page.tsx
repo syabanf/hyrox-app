@@ -26,9 +26,9 @@ export function AnnouncementDetailPage() {
         </div>
       ) : (
         <div className="card surface-ink relative overflow-hidden !border-0 !p-6 text-white">
-          <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
+          <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-lime/20 blur-3xl" />
           <span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
-            <Megaphone size={22} className="text-[#ff4348]" />
+            <Megaphone size={22} className="text-lime" />
           </span>
         </div>
       )}

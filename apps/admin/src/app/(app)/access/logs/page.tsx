@@ -1,6 +1,6 @@
 'use client';
 
-import { Spinner, StatusBadge, formatDayTime } from '@hyrox/ui';
+import { Spinner, StatusBadge, formatDayTime, gateReasonLabel } from '@hyrox/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
@@ -47,7 +47,10 @@ export default function AccessLogsPage() {
 
   return (
     <div>
-      <PageTitle title="Access Logs" subtitle="Every gate decision, incl. offline fallback & re-sync" />
+      <PageTitle
+        title="Access Logs"
+        subtitle="Every gate decision, incl. offline fallback & re-sync - approving a conflict deducts the booked class"
+      />
       <ErrorNote message={error} />
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <StatCard label="Offline transactions" value={offline.length} />
@@ -108,16 +111,18 @@ export default function AccessLogsPage() {
                 .map((v) => (
                 <tr key={v.log.id}>
                   <td className="whitespace-nowrap text-muted">{formatDayTime(v.log.createdAt)}</td>
-                  <td className="font-bold">{v.memberName ?? '—'}</td>
+                  <td className="font-bold">{v.memberName ?? '-'}</td>
                   <td>{v.gateName}</td>
                   <td>{v.branchName}</td>
                   <td>
                     <StatusBadge status={v.log.result} />
                     {v.log.reasonCode ? (
-                      <span className="ml-1 text-xs text-danger">{v.log.reasonCode.replaceAll('_', ' ')}</span>
+                      <span className="ml-1 text-xs text-danger" title={gateReasonLabel(v.log.reasonCode)}>
+                        {v.log.reasonCode.replaceAll('_', ' ')}
+                      </span>
                     ) : null}
                   </td>
-                  <td className="text-right font-bold">{v.log.creditDelta || '—'}</td>
+                  <td className="text-right font-bold">{v.log.creditDelta || '-'}</td>
                   <td className="text-muted">{v.log.mode}</td>
                   <td className="text-right">
                     {v.log.result === 'CONFLICT' && can('access.simulate') ? (

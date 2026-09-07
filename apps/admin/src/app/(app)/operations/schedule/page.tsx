@@ -118,7 +118,7 @@ export default function SchedulePage() {
                     </Link>
                   ))}
                   {daySessions.length === 0 ? (
-                    <p className="py-4 text-center text-[10px] text-muted/60">—</p>
+                    <p className="py-4 text-center text-[10px] text-muted/60">-</p>
                   ) : null}
                 </div>
               </div>

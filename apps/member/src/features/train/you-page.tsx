@@ -60,7 +60,7 @@ export function YouPage() {
             strokeDashoffset={CIRC * (1 - goalPct)}
             transform="rotate(-90 44 44)"
           />
-          <text x="44" y="49" textAnchor="middle" fontSize="16" fontWeight="800" fill="#191919">
+          <text x="44" y="49" textAnchor="middle" fontSize="16" fontWeight="800" fill="#131a1c">
             {Math.round(goalPct * 100)}%
           </text>
         </svg>
@@ -123,7 +123,7 @@ export function YouPage() {
       </div>
 
       <div className="card surface-ink relative overflow-hidden !border-0 !p-6 text-white">
-        <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
+        <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-lime/20 blur-3xl" />
         <div className="relative grid grid-cols-3 gap-3 text-center text-sm">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/50">Activities</p>
@@ -146,9 +146,9 @@ export function YouPage() {
           <span className="text-muted">Best 1k</span>
           <span className="text-right font-black">{formatPace(stats.prs.best1kPaceSec, units)}</span>
           <span className="text-muted">Best 5k (est.)</span>
-          <span className="text-right font-black">{stats.prs.best5kSec ? formatDuration(stats.prs.best5kSec) : '—'}</span>
+          <span className="text-right font-black">{stats.prs.best5kSec ? formatDuration(stats.prs.best5kSec) : '-'}</span>
           <span className="text-muted">Best 10k (est.)</span>
-          <span className="text-right font-black">{stats.prs.best10kSec ? formatDuration(stats.prs.best10kSec) : '—'}</span>
+          <span className="text-right font-black">{stats.prs.best10kSec ? formatDuration(stats.prs.best10kSec) : '-'}</span>
           <span className="text-muted">Longest</span>
           <span className="text-right font-black">{formatDistanceM(stats.prs.longestDistanceM, units)}</span>
         </div>
@@ -202,7 +202,7 @@ export function YouPage() {
           ))}
           {(mine ?? []).length === 0 ? (
             <p className="card text-sm text-muted">
-              Nothing yet —{' '}
+              Nothing yet -{' '}
               <Link to="/train/record" className="font-bold text-brand">
                 record your first activity
               </Link>

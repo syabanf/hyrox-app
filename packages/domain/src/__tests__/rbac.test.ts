@@ -33,6 +33,19 @@ describe('RBAC', () => {
     expect(hasPermission('COACH', 'ledger.view')).toBe(false);
   });
 
+  it('coach incentives: HQ and finance manage, branch managers view, floor roles see nothing', () => {
+    for (const role of ['SUPER_ADMIN', 'HQ_ADMIN', 'FINANCE'] as const) {
+      expect(hasPermission(role, 'incentives.view'), role).toBe(true);
+      expect(hasPermission(role, 'incentives.manage'), role).toBe(true);
+    }
+    expect(hasPermission('BRANCH_MANAGER', 'incentives.view')).toBe(true);
+    expect(hasPermission('BRANCH_MANAGER', 'incentives.manage')).toBe(false);
+    for (const role of ['COACH', 'FRONT_DESK'] as const) {
+      expect(hasPermission(role, 'incentives.view'), role).toBe(false);
+      expect(hasPermission(role, 'incentives.manage'), role).toBe(false);
+    }
+  });
+
   it('every role permission is a declared permission', () => {
     for (const role of ADMIN_ROLES) {
       for (const p of ROLE_PERMISSIONS[role]) expect(PERMISSIONS).toContain(p);

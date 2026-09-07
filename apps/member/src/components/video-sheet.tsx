@@ -42,7 +42,7 @@ export function VideoSheet({
           />
         </div>
         <p className="mt-2.5 text-center text-xs text-muted">
-          Video opens from YouTube — technique first, speed second.
+          Video opens from YouTube - technique first, speed second.
         </p>
       </div>
     </div>

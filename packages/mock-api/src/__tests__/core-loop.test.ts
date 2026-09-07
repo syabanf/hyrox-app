@@ -69,7 +69,7 @@ describe('end-to-end core loop through the mock API', () => {
     expect(topup.data.payment.status).toBe('PENDING');
     expect(topup.data.payment.totalIdr).toBe(1_350_000);
 
-    // Balance unchanged while pending — PAYMENT ≠ LEDGER.
+    // Balance unchanged while pending - PAYMENT ≠ LEDGER.
     const before = await call('GET', '/api/me/wallet', { token: memberToken });
     expect(before.data.balance).toBe(0);
 
@@ -92,8 +92,9 @@ describe('end-to-end core loop through the mock API', () => {
     const sessions = await call('GET', '/api/sessions?branchId=brn_senopati', {
       token: memberToken,
     });
-    // Starts >24h out so the later gate scan is an open-gym entry, not this
-    // booking's check-in, and cancellation stays inside the deadline.
+    // Starts >24h out so this booking is outside the gate's check-in window
+    // (the scan below checks in to the seeded live class instead) and its
+    // cancellation stays inside the deadline.
     const bookable = sessions.data.find(
       (v: any) =>
         v.session.status === 'PUBLISHED' &&
@@ -116,7 +117,7 @@ describe('end-to-end core loop through the mock API', () => {
     expect(res.data.error.code).toBe('ALREADY_BOOKED');
   });
 
-  it('issues a short-lived dynamic QR and scans it at the gate', async () => {
+  it('denies the gate without a class booked around now - there is no open gym', async () => {
     const qr = await call('POST', '/api/me/qr', { token: memberToken });
     expect(qr.status).toBe(200);
     expect(qr.data.ttlSeconds).toBeGreaterThan(0);
@@ -125,11 +126,35 @@ describe('end-to-end core loop through the mock API', () => {
       body: { qrToken: qr.data.token },
     });
     expect(scan.status).toBe(200);
+    expect(scan.data.decision).toBe('DENIED');
+    expect(scan.data.reason).toBe('NO_BOOKING');
+    expect(scan.data.entryKind).toBeNull();
+    expect(scan.data.remainingCredits).toBe(10); // nothing deducted
+  });
+
+  it('books the live class, then a fresh QR scan checks in and deducts its cost', async () => {
+    // The seed always has a Senopati class starting in ~20 minutes (ses_live),
+    // i.e. inside the 60-minute check-in window.
+    const book = await call('POST', '/api/sessions/ses_live/book', { token: memberToken, body: {} });
+    expect(book.status).toBe(201);
+    expect(book.data.decision).toBe('CONFIRMED');
+
+    const qr = await call('POST', '/api/me/qr', { token: memberToken });
+    const scan = await call('POST', '/api/gates/gat_sen_a/scan', {
+      body: { qrToken: qr.data.token },
+    });
+    expect(scan.status).toBe(200);
     expect(scan.data.decision).toBe('ALLOWED');
+    expect(scan.data.entryKind).toBe('BOOKING');
     expect(scan.data.remainingCredits).toBe(9);
+    expect(scan.data.accessLog.bookingId).toBe(book.data.booking.id);
+
+    const bookings = await call('GET', '/api/me/bookings', { token: memberToken });
+    const live = bookings.data.find((b: any) => b.booking.id === book.data.booking.id);
+    expect(live.booking.status).toBe('CHECKED_IN');
 
     const visits = await call('GET', '/api/me/visits', { token: memberToken });
-    expect(visits.data.length).toBe(1);
+    expect(visits.data.length).toBe(2); // the earlier denial + this check-in
     expect(visits.data[0].log.result).toBe('ALLOWED');
   });
 
@@ -139,7 +164,7 @@ describe('end-to-end core loop through the mock API', () => {
       body: { qrToken: qr.data.token },
     });
     expect(first.data.decision).toBe('ALLOWED');
-    expect(first.data.entryKind).toBe('RE_ENTRY'); // within grace — no extra deduction
+    expect(first.data.entryKind).toBe('RE_ENTRY'); // within grace - no extra deduction
     expect(first.data.remainingCredits).toBe(9);
 
     const replay = await call('POST', '/api/gates/gat_sen_a/scan', {
@@ -212,6 +237,59 @@ describe('RBAC is enforced server-side', () => {
     expect(rules.status).toBe(403);
   });
 
+  it('approving an offline conflict deducts the booked class and checks it in', async () => {
+    const login = await call('POST', '/api/admin/auth/login', { body: { userId: 'adm_super' } });
+    const token = login.data.token;
+    const conflicts = await call('GET', '/api/admin/access-logs?result=CONFLICT', { token });
+    const row = conflicts.data[0];
+    expect(row).toBeTruthy();
+    const session = api.state.db.sessions.find(
+      (s) => s.branchId === row.log.branchId && s.id === api.state.db.bookings.find((b) => b.memberId === row.log.memberId && b.status === 'CONFIRMED')?.sessionId,
+    );
+    expect(session).toBeTruthy();
+
+    const res = await call('POST', `/api/admin/access-logs/${row.log.id}/resolve`, {
+      token,
+      body: { action: 'APPROVE', reason: 'Verified offline entry' },
+    });
+    expect(res.status).toBe(200);
+    expect(res.data.log.result).toBe('SYNCED');
+    expect(res.data.log.creditDelta).toBe(-session!.creditCost);
+    expect(res.data.log.bookingId).toBeTruthy();
+    const booking = api.state.db.bookings.find((b) => b.id === res.data.log.bookingId)!;
+    expect(booking.status).toBe('CHECKED_IN');
+  });
+
+  it('an offline conflict with no matching booking cannot be approved', async () => {
+    const login = await call('POST', '/api/admin/auth/login', { body: { userId: 'adm_super' } });
+    const token = login.data.token;
+    api.state.db.accessLogs.push({
+      id: 'acc_orphan',
+      memberId: 'mem_demo',
+      gateId: 'gat_pik_b',
+      branchId: 'brn_pik',
+      result: 'CONFLICT',
+      reasonCode: null,
+      creditDelta: 0,
+      mode: 'OFFLINE',
+      bookingId: null,
+      createdAt: new Date(Date.now() - 3 * 3600_000).toISOString(),
+    });
+    const res = await call('POST', '/api/admin/access-logs/acc_orphan/resolve', {
+      token,
+      body: { action: 'APPROVE', reason: 'Trying anyway' },
+    });
+    expect(res.status).toBe(409);
+    expect(res.data.error.code).toBe('NO_BOOKING');
+
+    const reject = await call('POST', '/api/admin/access-logs/acc_orphan/resolve', {
+      token,
+      body: { action: 'REJECT', reason: 'No class booked' },
+    });
+    expect(reject.status).toBe(200);
+    expect(reject.data.log.result).toBe('DENIED');
+  });
+
   it('super admin rule changes take effect in the gate pipeline', async () => {
     const login = await call('POST', '/api/admin/auth/login', { body: { userId: 'adm_super' } });
     const token = login.data.token;
@@ -234,6 +312,20 @@ describe('seed integrity', () => {
     expect(report.status).toBe(200);
     const sum = report.data.perMember.reduce((s: number, m: any) => s + m.balance, 0);
     expect(report.data.outstandingTotal).toBe(sum);
+  });
+
+  it('demo member is confirmed on the live class so the QR walkthrough scan is ALLOWED', async () => {
+    const live = api.state.db.sessions.find((s) => s.id === 'ses_live')!;
+    expect(live.status).toBe('PUBLISHED');
+    const startsIn = new Date(live.startsAt).getTime() - Date.now();
+    expect(startsIn).toBeGreaterThan(0);
+    expect(startsIn).toBeLessThanOrEqual(60 * 60_000);
+    expect(
+      api.state.db.bookings.some(
+        (b) => b.memberId === 'mem_demo' && b.sessionId === 'ses_live' && b.status === 'CONFIRMED',
+      ),
+    ).toBe(true);
+    expect(api.state.db.classTypes.some((t) => /open gym/i.test(t.name))).toBe(false);
   });
 
   it('demo member exists with a coherent ledger', async () => {

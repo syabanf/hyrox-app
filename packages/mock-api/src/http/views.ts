@@ -1,9 +1,12 @@
-import type { UseCaseDeps } from '@hyrox/application';
-import { balanceOf, expiringCreditsFor } from '@hyrox/application';
+import type { CoachStatementResult, UseCaseDeps } from '@hyrox/application';
+import { balanceOf, buildStatements, expiringCreditsFor } from '@hyrox/application';
 import type {
   AccessLogView,
   BookingView,
+  CoachStatementView,
   DashboardStatsView,
+  IncentivePayoutView,
+  IncentiveSchemeView,
   MemberDetailView,
   MemberSummaryView,
   MeView,
@@ -12,8 +15,17 @@ import type {
   SessionView,
   VoucherView,
 } from '@hyrox/contracts';
-import type { AccessLog, Booking, ClassSession, Member, Payment, Voucher } from '@hyrox/domain';
-import { msOf } from '@hyrox/domain';
+import type {
+  AccessLog,
+  Booking,
+  ClassSession,
+  IncentivePayout,
+  IncentiveScheme,
+  Member,
+  Payment,
+  Voucher,
+} from '@hyrox/domain';
+import { msOf, periodMonthOf } from '@hyrox/domain';
 import type { MockDb } from '../db';
 
 export function sessionView(db: MockDb, session: ClassSession, memberId?: string): SessionView {
@@ -191,6 +203,41 @@ export function rosterView(db: MockDb, sessionId: string): RosterEntryView[] {
     });
 }
 
+// ── Coach incentives ──────────────────────────────────────────────────────────
+export function incentiveSchemeView(db: MockDb, scheme: IncentiveScheme): IncentiveSchemeView {
+  return {
+    scheme,
+    coachName: scheme.coachId
+      ? (db.coaches.find((c) => c.id === scheme.coachId)?.name ?? scheme.coachId)
+      : null,
+  };
+}
+
+export function incentivePayoutView(db: MockDb, payout: IncentivePayout): IncentivePayoutView {
+  return {
+    payout,
+    coachName: db.coaches.find((c) => c.id === payout.coachId)?.name ?? payout.coachId,
+    branchName: db.branches.find((b) => b.id === payout.branchId)?.name ?? payout.branchId,
+    periodMonth: periodMonthOf(payout.periodStart),
+  };
+}
+
+export function coachStatementView(db: MockDb, result: CoachStatementResult): CoachStatementView {
+  return {
+    coachId: result.coach.id,
+    coachName: result.coach.name,
+    branchId: result.coach.branchId,
+    branchName: db.branches.find((b) => b.id === result.coach.branchId)?.name ?? result.coach.branchId,
+    periodMonth: result.periodMonth,
+    periodStart: result.period.start,
+    periodEnd: result.period.end,
+    scheme: result.scheme,
+    lines: result.statement.lines,
+    totals: result.statement.totals,
+    payout: result.payout ? incentivePayoutView(db, result.payout) : null,
+  };
+}
+
 const sameDay = (iso: string, ref: Date): boolean => {
   const d = new Date(iso);
   return (
@@ -214,6 +261,10 @@ export function dashboardView(db: MockDb, deps: UseCaseDeps): DashboardStatsView
   const paidToday = db.payments.filter((p) => p.paidAt && sameDay(p.paidAt, today));
   const outstanding = activeMembers.reduce((sum, m) => sum + balanceOf(deps, m.id), 0);
   const expiring = activeMembers.reduce((sum, m) => sum + expiringCreditsFor(deps, m.id), 0);
+  const incentives = buildStatements(deps, { periodMonth: periodMonthOf(today.toISOString()) });
+  const coachIncentivesPayableIdr = incentives.ok
+    ? incentives.value.reduce((sum, r) => sum + r.statement.totals.totalIdr, 0)
+    : 0;
   return {
     visitorsToday,
     classesToday: todaySessions.length,
@@ -222,6 +273,7 @@ export function dashboardView(db: MockDb, deps: UseCaseDeps): DashboardStatsView
     outstandingCredits: outstanding,
     expiringCredits: expiring,
     activeMembers: activeMembers.length,
+    coachIncentivesPayableIdr,
     todaySessions: todaySessions.map((s) => sessionView(db, s)),
   };
 }

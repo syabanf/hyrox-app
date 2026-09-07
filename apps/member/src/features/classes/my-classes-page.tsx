@@ -53,7 +53,7 @@ export function MyClassesPage() {
 
       {activePkgs.length === 0 ? (
         <div className="card surface-ink relative overflow-hidden !border-0 !p-6 text-white">
-          <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
+          <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-lime/20 blur-3xl" />
           <div className="relative">
             <p className="display text-2xl leading-tight">No active package yet.</p>
             <p className="mt-1.5 text-sm text-white/60">

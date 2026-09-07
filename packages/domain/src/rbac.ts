@@ -34,6 +34,8 @@ export const PERMISSIONS = [
   'campaigns.manage',
   'reports.view',
   'reports.financial',
+  'incentives.view',
+  'incentives.manage',
   'config.view',
   'branches.manage',
   'gates.manage',
@@ -61,6 +63,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, readonly Permission[]> = {
     'access.view',
     'access.simulate',
     'reports.view',
+    'incentives.view',
     'config.view',
   ],
   FRONT_DESK: [
@@ -86,6 +89,8 @@ export const ROLE_PERMISSIONS: Record<AdminRole, readonly Permission[]> = {
     'refunds.manage',
     'reports.view',
     'reports.financial',
+    'incentives.view',
+    'incentives.manage',
   ],
 };
 

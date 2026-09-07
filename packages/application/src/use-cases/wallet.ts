@@ -193,7 +193,7 @@ export function confirmPayment(
     memberId: payment.memberId,
     type: 'TOP_UP',
     amount: payment.credits,
-    description: `Top up — ${pkg?.name ?? payment.packageId}`,
+    description: `Top up - ${pkg?.name ?? payment.packageId}`,
     sourceType: 'PAYMENT',
     sourceId: payment.id,
     reversesEntryId: null,

@@ -1,19 +1,32 @@
-/* HYROX Studio design tokens — dark ground, WIT.ID red, bold type. */
+/* NüHabit design tokens (brand guideline 2026) - White Beige ground, Deep Forest
+   Green ink, Pale Lime signature accent, Outfit titles + Manrope body. */
 @theme {
-  --color-brand: #ed1c24; /* WIT Red */
-  --color-brand-press: #c4161c;
-  --color-ink: #0a0a0a;
-  --color-ink-soft: #161616;
-  --color-surface: #1b1b1b;
-  --color-surface-raised: #242424;
-  --color-line: #2e2e2e;
-  --color-muted: #9a9a9a;
-  --color-ok: #34d27b;
-  --color-warn: #ffb020;
-  --color-danger: #ff4d4f;
-  --color-info: #4dabf7;
+  /* Main colors */
+  --color-brand: #00281a; /* Deep Forest Green - primary ink accent on light surfaces */
+  --color-brand-press: #203b32; /* Everglade */
+  --color-lime: #daff59; /* Pale Lime - the signature accent */
+  --color-lime-soft: #eeffb1; /* Lemon Lime */
+  --color-lettuce: #abde67; /* Lettuce */
+  --color-ochre: #c9a227; /* Golden Ochre */
+  --color-beige: #f3ece2; /* White Beige - page ground */
+  --color-cream: #fdfff2; /* Mint Cream - cards */
 
-  --font-display: 'Archivo', 'Arial Narrow', ui-sans-serif, sans-serif;
+  /* Ink + surfaces (light mode; both apps run light) */
+  --color-ink: #131a1c; /* guideline dark ground */
+  --color-ink-soft: #1c261b; /* Dark Jungle */
+  --color-surface: #fdfff2;
+  --color-surface-raised: #ece5d8;
+  --color-line: #e3dbcc;
+  --color-muted: #5f6b62;
+
+  /* Semantic - Lettuce / Ochre hues deepened just enough to read as text on beige;
+     use --color-lettuce / --color-ochre for fills. Danger is deliberately desaturated. */
+  --color-ok: #4d8a1c;
+  --color-warn: #9c7a14;
+  --color-danger: #d13b40;
+  --color-info: #203b32; /* Everglade */
+
+  --font-display: 'Outfit', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-body: 'Manrope', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   --radius-card: 1rem;
@@ -37,7 +50,7 @@
   width: 1.5rem;
   height: 1.5rem;
   border-radius: 50%;
-  border: 3px solid rgb(0 0 0 / 0.15);
+  border: 3px solid rgb(0 40 26 / 0.15);
   border-top-color: currentColor;
   animation: hx-spin 0.7s linear infinite;
 }

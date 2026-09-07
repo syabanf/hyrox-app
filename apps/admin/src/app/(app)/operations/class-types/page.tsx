@@ -30,7 +30,7 @@ export default function ClassTypesPage() {
     <div>
       <PageTitle
         title="Class Types"
-        subtitle="Reusable templates — sessions are scheduled from these"
+        subtitle="Reusable templates - sessions are scheduled from these"
         actions={
           can('class_types.manage') ? (
             <button className="a-btn" onClick={() => setEditing('new')}>
@@ -45,7 +45,7 @@ export default function ClassTypesPage() {
         <StatCard label="Active" value={(data ?? []).filter((t) => t.active).length} />
         <StatCard
           label="Avg credit cost"
-          value={(data ?? []).length > 0 ? ((data ?? []).reduce((sum, t) => sum + t.defaultCreditCost, 0) / (data ?? []).length).toFixed(1) : '—'}
+          value={(data ?? []).length > 0 ? ((data ?? []).reduce((sum, t) => sum + t.defaultCreditCost, 0) / (data ?? []).length).toFixed(1) : '-'}
         />
       </div>
       <div className="mb-4">

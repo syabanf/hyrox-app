@@ -56,7 +56,7 @@ export function formatDuration(totalSec: number): string {
 }
 
 export function formatPace(secPerKm: number | null, units: Units = 'METRIC'): string {
-  if (secPerKm === null || !Number.isFinite(secPerKm)) return '—';
+  if (secPerKm === null || !Number.isFinite(secPerKm)) return '-';
   const sec = units === 'IMPERIAL' ? secPerKm * KM_PER_MI : secPerKm;
   const m = Math.floor(sec / 60);
   const s = Math.round(sec % 60);
@@ -64,7 +64,7 @@ export function formatPace(secPerKm: number | null, units: Units = 'METRIC'): st
 }
 
 export function formatSpeedKmh(distanceM: number, movingSec: number, units: Units = 'METRIC'): string {
-  if (movingSec <= 0) return '—';
+  if (movingSec <= 0) return '-';
   const kmh = distanceM / 1000 / (movingSec / 3600);
   if (units === 'IMPERIAL') return `${(kmh / KM_PER_MI).toFixed(1)} mph`;
   return `${kmh.toFixed(1)} km/h`;

@@ -1,12 +1,14 @@
 export type Tone = 'ok' | 'warn' | 'danger' | 'info' | 'neutral' | 'brand';
 
+/* NüHabit palette: Lettuce / Golden Ochre tints for fills, deepened for text on beige;
+   the brand tone is Pale Lime with Deep Forest Green. */
 const TONE_STYLES: Record<Tone, { background: string; color: string }> = {
-  ok: { background: 'rgb(52 210 123 / 0.15)', color: '#34d27b' },
-  warn: { background: 'rgb(255 176 32 / 0.15)', color: '#ffb020' },
-  danger: { background: 'rgb(255 77 79 / 0.15)', color: '#ff4d4f' },
-  info: { background: 'rgb(77 171 247 / 0.15)', color: '#4dabf7' },
-  neutral: { background: 'rgb(154 154 154 / 0.18)', color: '#9a9a9a' },
-  brand: { background: 'rgb(237 28 36 / 0.14)', color: '#ed1c24' },
+  ok: { background: 'rgb(171 222 103 / 0.28)', color: '#3e7314' },
+  warn: { background: 'rgb(201 162 39 / 0.2)', color: '#8a6a10' },
+  danger: { background: 'rgb(209 59 64 / 0.14)', color: '#c2363b' },
+  info: { background: 'rgb(32 59 50 / 0.12)', color: '#203b32' },
+  neutral: { background: 'rgb(95 107 98 / 0.15)', color: '#5f6b62' },
+  brand: { background: 'rgb(218 255 89 / 0.5)', color: '#00281a' },
 };
 
 /** Maps every entity state in the system to a visual tone. */
@@ -44,6 +46,7 @@ export function statusTone(status: string): Tone {
     case 'REFUNDED':
     case 'INACTIVE':
     case 'DISABLED':
+    case 'VOID':
       return 'neutral';
     default:
       return 'info';

@@ -11,11 +11,15 @@ import type {
   ClassSession,
   ClassType,
   Coach,
+  CoachStatementLine,
+  CoachStatementTotals,
   CreditLedgerEntry,
   CreditPackage,
   Gate,
   GateDenialReason,
   GateEntryKind,
+  IncentivePayout,
+  IncentiveScheme,
   Member,
   MemberNotification,
   Payment,
@@ -199,6 +203,8 @@ export interface DashboardStatsView {
   outstandingCredits: number;
   expiringCredits: number;
   activeMembers: number;
+  /** Sum of every active coach's statement for the current month (IDR). */
+  coachIncentivesPayableIdr: number;
   todaySessions: SessionView[];
 }
 export interface DailyPointView {
@@ -281,6 +287,35 @@ export interface HomeView {
   todaySessions: SessionView[];
   challenge: { id: string; name: string; progressKm: number; targetKm: number } | null;
   spotlightRace: HomeSpotlightRace | null;
+}
+
+// ── Coach incentives ────────────────────────────────────────────────────────
+export interface IncentiveSchemeView {
+  scheme: IncentiveScheme;
+  /** null for the organization default. */
+  coachName: string | null;
+}
+export interface IncentivePayoutView {
+  payout: IncentivePayout;
+  coachName: string;
+  branchName: string;
+  /** YYYY-MM label of the payout period. */
+  periodMonth: string;
+}
+export interface CoachStatementView {
+  coachId: string;
+  coachName: string;
+  branchId: string;
+  branchName: string;
+  periodMonth: string;
+  periodStart: string;
+  periodEnd: string;
+  /** The scheme in force (coach override or org default). */
+  scheme: IncentiveScheme;
+  lines: CoachStatementLine[];
+  totals: CoachStatementTotals;
+  /** Live (non-VOID) payout for this coach + period, if any. */
+  payout: IncentivePayoutView | null;
 }
 
 // ── Config ──────────────────────────────────────────────────────────────────

@@ -66,14 +66,14 @@ export function TutorialsPage() {
       <TrainTabs />
 
       <div className="card surface-ink relative overflow-hidden !border-0 !p-6 text-white">
-        <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
+        <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-lime/20 blur-3xl" />
         <div className="relative">
           <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/50">
             Technique library
           </p>
           <p className="display mt-1 text-2xl leading-tight">Master all 8 stations.</p>
           <p className="mt-1.5 text-sm text-white/60">
-            One short video per movement — watch before you race the clock.
+            One short video per movement - watch before you race the clock.
           </p>
         </div>
       </div>

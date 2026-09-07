@@ -148,6 +148,16 @@ export function createDeps(db: MockDb): UseCaseDeps {
       all: () => db.adminUsers,
       save: (u) => upsert(db.adminUsers, u),
     },
+    incentiveSchemes: {
+      byId: (id) => db.incentiveSchemes.find((s) => s.id === id) ?? null,
+      all: () => db.incentiveSchemes,
+      save: (s) => upsert(db.incentiveSchemes, s),
+    },
+    incentivePayouts: {
+      byId: (id) => db.incentivePayouts.find((p) => p.id === id) ?? null,
+      all: () => db.incentivePayouts,
+      save: (p) => upsert(db.incentivePayouts, p),
+    },
     athlete: {
       activities: {
         byId: (id) => db.activities.find((a) => a.id === id) ?? null,

@@ -13,3 +13,4 @@ export {
   formatSpeedKmh,
   type Units,
 } from './format';
+export { gateReasonLabel, gateEntryKindLabel } from './labels';

@@ -1,3 +1,4 @@
+import { monthPeriod, periodMonthOf } from '@hyrox/domain';
 import { getResponse } from 'msw';
 import { createMockApi, type MockApi } from '../index';
 import type { MockDb } from '../db';
@@ -8,8 +9,13 @@ const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 
 /**
  * The committed snapshot froze its dates the day it was dumped. Shift every
- * timestamp forward by whole days so "today" in the data is always today —
- * sessions keep their time of day, windows keep their durations.
+ * timestamp forward by whole days so "today" in the data is always today -
+ * sessions keep their time of day, windows keep their durations. The one
+ * exception is the "live" demo class (`ses_live`), which is re-anchored to
+ * start 20 minutes from load time so the demo member's booking is inside the
+ * gate's check-in window whenever the app is opened. Coach payout periods are
+ * snapped back to calendar months after the shift (a day shift would otherwise
+ * leave them straddling two months).
  */
 function reanchoredSnapshot(): MockDb {
   const source = snapshotJson as unknown as MockDb;
@@ -24,7 +30,23 @@ function reanchoredSnapshot(): MockDb {
     return value;
   };
   // walk() also deep-copies, so mutations never touch the imported module.
-  return walk(source) as MockDb;
+  const db = walk(source) as MockDb;
+  const live = db.sessions.find((s) => s.id === 'ses_live');
+  if (live) {
+    const shift = Date.now() + 20 * 60_000 - new Date(live.startsAt).getTime();
+    const move = (iso: string) => new Date(new Date(iso).getTime() + shift).toISOString();
+    live.startsAt = move(live.startsAt);
+    live.endsAt = move(live.endsAt);
+    live.bookingOpensAt = move(live.bookingOpensAt);
+    live.bookingClosesAt = move(live.bookingClosesAt);
+  }
+  for (const payout of db.incentivePayouts ?? []) {
+    const midpoint = (new Date(payout.periodStart).getTime() + new Date(payout.periodEnd).getTime()) / 2;
+    const period = monthPeriod(periodMonthOf(new Date(midpoint).toISOString()));
+    payout.periodStart = period.start;
+    payout.periodEnd = period.end;
+  }
+  return db;
 }
 
 let backend: MockApi | null = null;
@@ -52,7 +74,7 @@ export function ensureInProcessBackend(): MockApi {
 
 /**
  * Transport for `createApiClient`: answers requests straight from the mock
- * handlers as ordinary function calls — no service worker, no fetch patching,
+ * handlers as ordinary function calls - no service worker, no fetch patching,
  * nothing global. Requests no handler matches fall through to the network.
  */
 export function inProcessTransport(request: Request): Promise<Response> {

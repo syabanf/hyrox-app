@@ -48,7 +48,7 @@ export function ActivityDetailPage() {
     if (!name) return;
     try {
       await api.athlete.saveRoute(a.id, name);
-      setNotice(`Route "${name}" saved — find it in Explore › Routes.`);
+      setNotice(`Route "${name}" saved - find it in Explore › Routes.`);
       invalidate();
     } catch (e) {
       setNotice(e instanceof ApiError ? e.message : 'Could not save route.');
@@ -135,7 +135,7 @@ export function ActivityDetailPage() {
       <div className="card grid grid-cols-3 gap-3 text-center">
         <div>
           <p className="label !mb-0">Distance</p>
-          <p className="display text-2xl">{a.type === 'WORKOUT' ? '—' : formatDistanceM(a.distanceM, units)}</p>
+          <p className="display text-2xl">{a.type === 'WORKOUT' ? '-' : formatDistanceM(a.distanceM, units)}</p>
         </div>
         <div>
           <p className="label !mb-0">Moving time</p>
@@ -155,11 +155,11 @@ export function ActivityDetailPage() {
         </div>
         <div>
           <p className="label !mb-0">Elev gain</p>
-          <p className="font-bold">{a.elevationGainM > 0 ? `${a.elevationGainM} m` : '—'}</p>
+          <p className="font-bold">{a.elevationGainM > 0 ? `${a.elevationGainM} m` : '-'}</p>
         </div>
         <div>
           <p className="label !mb-0">Gear</p>
-          <p className="truncate font-bold">{a.gearName ?? '—'}</p>
+          <p className="truncate font-bold">{a.gearName ?? '-'}</p>
         </div>
       </div>
 

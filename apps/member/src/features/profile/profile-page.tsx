@@ -58,7 +58,7 @@ export function ProfilePage() {
           {m.avatarUrl ? (
             <img src={m.avatarUrl} alt="" className="h-16 w-16 rounded-full object-cover" />
           ) : (
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#1b1b1f] text-2xl font-black text-white">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-ink-soft text-2xl font-black text-white">
               {m.fullName
                 .split(' ')
                 .slice(0, 2)
@@ -129,7 +129,7 @@ export function ProfilePage() {
           onClick={() => setCardOpen(true)}
           className="flex items-center gap-3 rounded-xl px-2 py-2.5 text-left active:bg-surface-raised"
         >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1b1b1f] text-white">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink-soft text-white">
             <IdCard size={16} />
           </span>
           <span className="min-w-0 flex-1">
@@ -147,13 +147,13 @@ export function ProfilePage() {
             title: 'Emergency contact',
             hint: m.emergencyContact
               ? `${m.emergencyContact.name} · ${m.emergencyContact.phone}`
-              : 'Not set — add one',
+              : 'Not set - add one',
           },
           { to: '/profile/gear', icon: Footprints, title: 'My gear', hint: 'Shoes & bike mileage' },
           { to: '/profile/settings', icon: Settings, title: 'Settings', hint: 'Units, reminders' },
         ].map(({ to, icon: Icon, title, hint }) => (
           <Link key={to} to={to} className="flex items-center gap-3 rounded-xl px-2 py-2.5 active:bg-surface-raised">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1b1b1f] text-white">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink-soft text-white">
               <Icon size={16} />
             </span>
             <span className="min-w-0 flex-1">
@@ -168,7 +168,7 @@ export function ProfilePage() {
       <section className="card flex flex-col gap-2 text-sm">
         <p className="label !mb-0">Digital waiver</p>
         <div className="flex justify-between">
-          <span className="text-muted">Version {m.waiverVersion ?? '—'}</span>
+          <span className="text-muted">Version {m.waiverVersion ?? '-'}</span>
           <span className="font-bold text-ok">
             {m.waiverAcceptedAt ? `Signed ${formatDay(m.waiverAcceptedAt)}` : 'Not signed'}
           </span>

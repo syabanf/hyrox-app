@@ -30,11 +30,6 @@ const BASE: Record<string, Segment[]> = {
     { label: 'Engine intervals', minutes: 40 },
     { label: 'Cooldown', minutes: 10 },
   ],
-  cls_open: [
-    { label: 'Check-in', minutes: 5 },
-    { label: 'Open floor', minutes: 50 },
-    { label: 'Cooldown', minutes: 5 },
-  ],
   cls_mob: [
     { label: 'Breathwork', minutes: 5 },
     { label: 'Mobility flow', minutes: 45 },

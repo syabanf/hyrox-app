@@ -6,6 +6,7 @@ export * from './use-cases/bookings';
 export * from './use-cases/access';
 export * from './use-cases/engagement';
 export * from './use-cases/config';
+export * from './use-cases/incentives';
 export * from './use-cases/athlete';
 export * from './use-cases/workout';
 export * from './use-cases/races';

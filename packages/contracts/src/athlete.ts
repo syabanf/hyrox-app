@@ -120,7 +120,7 @@ export interface ActivityDetailView extends ActivityCardView {
   gearName: string | null;
   efforts: SegmentEffortView[];
   comments: ActivityCommentView[];
-  /** Strava-style "grouped with" — others who trained together. */
+  /** Strava-style "grouped with" - others who trained together. */
   groupedWith: { activityId: string; memberName: string }[];
 }
 

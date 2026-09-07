@@ -292,7 +292,7 @@ describe('Admin deepening', () => {
   it('classes report aggregates attendance and no-shows', async () => {
     const token = await superAdmin();
     const res = await call('GET', '/api/admin/reports/classes', { token });
-    expect(res.data.perType.length).toBe(8);
+    expect(res.data.perType.length).toBe(7); // no open gym class type
     const withData = res.data.perType.find((t: any) => t.booked > 0);
     expect(withData.attendanceRate).toBeGreaterThan(0);
     expect(Array.isArray(res.data.recentNoShows)).toBe(true);

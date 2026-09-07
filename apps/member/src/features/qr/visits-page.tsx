@@ -1,4 +1,4 @@
-import { EmptyState, Spinner, StatusBadge, formatDayTime } from '@hyrox/ui';
+import { EmptyState, Spinner, StatusBadge, formatDayTime, gateReasonLabel } from '@hyrox/ui';
 import { useMyVisits } from '../../lib/queries';
 
 export function VisitsPage() {
@@ -18,15 +18,13 @@ export function VisitsPage() {
                 <p className="truncate font-bold">{v.gateName}</p>
                 <p className="text-sm text-muted">{formatDayTime(v.log.createdAt)}</p>
                 {v.log.reasonCode ? (
-                  <p className="text-xs font-bold text-danger">
-                    {v.log.reasonCode.replaceAll('_', ' ')}
-                  </p>
+                  <p className="text-xs font-bold text-danger">{gateReasonLabel(v.log.reasonCode)}</p>
                 ) : null}
               </div>
               <div className="flex flex-col items-end gap-1">
                 <StatusBadge status={v.log.result} />
                 <span className="text-xs font-black text-muted">
-                  {v.log.creditDelta !== 0 ? `${v.log.creditDelta} cr` : '—'}
+                  {v.log.creditDelta !== 0 ? `${v.log.creditDelta} cr` : '-'}
                   {v.log.mode === 'OFFLINE' ? ' · offline' : ''}
                 </span>
               </div>

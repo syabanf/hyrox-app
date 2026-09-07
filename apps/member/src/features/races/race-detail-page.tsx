@@ -58,7 +58,7 @@ export function RaceDetailPage() {
 
       {myRace ? (
         <div className="card surface-ink relative overflow-hidden !border-0 !p-6 text-white">
-          <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
+          <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-lime/20 blur-3xl" />
           <div className="relative">
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/50">
               You're registered
@@ -71,12 +71,12 @@ export function RaceDetailPage() {
               <div>
                 <p className="text-white/50">Goal</p>
                 <p className="display text-xl">
-                  {myRace.userRace.goalSec ? formatDuration(myRace.userRace.goalSec) : '—'}
+                  {myRace.userRace.goalSec ? formatDuration(myRace.userRace.goalSec) : '-'}
                 </p>
               </div>
             </div>
             <p className="mt-3 text-xs text-white/50">
-              Train with full simulations in Record — your readiness score lives on the Races tab.
+              Train with full simulations in Record - your readiness score lives on the Races tab.
             </p>
           </div>
         </div>

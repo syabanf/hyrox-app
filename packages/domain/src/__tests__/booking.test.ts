@@ -97,7 +97,7 @@ describe('evaluateBookingEligibility', () => {
     expect(d).toEqual({ kind: 'DENY', reason: 'INSUFFICIENT_CREDITS' });
   });
 
-  it('waitlists when full — FULL status or capacity reached', () => {
+  it('waitlists when full - FULL status or capacity reached', () => {
     expect(
       evaluateBookingEligibility({ ...base, confirmedCount: 16, waitlistCount: 2 }),
     ).toEqual({ kind: 'WAITLIST', position: 3 });

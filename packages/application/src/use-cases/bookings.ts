@@ -89,7 +89,7 @@ export function bookSession(
       return err(
         appError(
           'PACKAGE_NOT_COVERED',
-          'None of your packages cover this class — top up with a package that includes it.',
+          'None of your packages cover this class - top up with a package that includes it.',
           422,
         ),
       );
@@ -115,7 +115,7 @@ export function bookSession(
 
   const name = classTypeName(deps, session);
   if (booking.status === 'CONFIRMED') {
-    notify(deps, args.memberId, 'BOOKING_CONFIRMED', 'Booking confirmed', `You're in — ${name}.`);
+    notify(deps, args.memberId, 'BOOKING_CONFIRMED', 'Booking confirmed', `You're in - ${name}.`);
   } else {
     notify(
       deps,
@@ -135,7 +135,7 @@ function bookingDenialMessage(reason: string): string {
     BOOKING_NOT_OPEN_YET: 'Booking has not opened yet for this class.',
     BOOKING_WINDOW_CLOSED: 'Booking is closed for this class.',
     ALREADY_BOOKED: 'You already have a booking for this class.',
-    INSUFFICIENT_CREDITS: 'Not enough credits — top up first.',
+    INSUFFICIENT_CREDITS: 'Not enough credits - top up first.',
   };
   return messages[reason] ?? 'Booking not possible.';
 }
@@ -182,7 +182,7 @@ export function cancelBooking(
       memberId: booking.memberId,
       type: 'VISIT_DEDUCTION',
       amount: -penaltyCredits,
-      description: `Late cancellation — ${classTypeName(deps, session)}`,
+      description: `Late cancellation - ${classTypeName(deps, session)}`,
       sourceType: 'BOOKING',
       sourceId: booking.id,
       reversesEntryId: null,
@@ -211,7 +211,7 @@ export function cancelBooking(
           next.memberId,
           'WAITLIST_PROMOTED',
           'You got a spot!',
-          `A slot opened up — you're confirmed for ${classTypeName(deps, session)}.`,
+          `A slot opened up - you're confirmed for ${classTypeName(deps, session)}.`,
         );
       } else if (next.promotionOfferedAt === null) {
         next.promotionOfferedAt = now;
@@ -264,7 +264,7 @@ export function confirmPromotion(
   if (confirmedCount(deps, session.id) >= session.capacity) {
     booking.promotionOfferedAt = null;
     deps.bookings.save(booking);
-    return err(appError('SLOT_TAKEN', 'Sorry — that spot has been filled again.'));
+    return err(appError('SLOT_TAKEN', 'Sorry - that spot has been filled again.'));
   }
   const now = deps.clock.now();
   booking.status = 'CONFIRMED';
@@ -278,7 +278,7 @@ export function confirmPromotion(
     booking.memberId,
     'BOOKING_CONFIRMED',
     'Spot confirmed',
-    `You're in — ${classTypeName(deps, session)}.`,
+    `You're in - ${classTypeName(deps, session)}.`,
   );
   return ok(booking);
 }
@@ -306,7 +306,7 @@ export function markNoShow(
         memberId: booking.memberId,
         type: 'VISIT_DEDUCTION',
         amount: -penalty,
-        description: `No-show — ${classTypeName(deps, session)}`,
+        description: `No-show - ${classTypeName(deps, session)}`,
         sourceType: 'BOOKING',
         sourceId: booking.id,
         reversesEntryId: null,
@@ -353,7 +353,7 @@ export function manualCheckIn(
     memberId: booking.memberId,
     type: 'VISIT_DEDUCTION',
     amount: -session.creditCost,
-    description: `Class check-in (front desk) — ${classTypeName(deps, session)}`,
+    description: `Class check-in (front desk) - ${classTypeName(deps, session)}`,
     sourceType: 'BOOKING',
     sourceId: booking.id,
     reversesEntryId: null,

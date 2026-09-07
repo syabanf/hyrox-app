@@ -77,7 +77,7 @@ export default function ExercisesPage() {
               <tr key={e.id}>
                 <td className="font-bold">{e.name}</td>
                 <td className="text-muted">{e.category}</td>
-                <td>{e.hyroxStationOrder ? <span className="chip bg-brand/10 text-brand">#{e.hyroxStationOrder}</span> : '—'}</td>
+                <td>{e.hyroxStationOrder ? <span className="chip bg-brand/10 text-brand">#{e.hyroxStationOrder}</span> : '-'}</td>
                 <td>{'●'.repeat(e.difficulty)}</td>
                 <td>
                   {e.videoUrl ? (

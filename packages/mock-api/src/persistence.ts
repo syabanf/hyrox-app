@@ -28,7 +28,7 @@ export function saveSnapshot(db: MockDb): void {
   try {
     localStorage.setItem(storageKey(), JSON.stringify(db));
   } catch {
-    // Storage full or unavailable — the demo keeps running in memory.
+    // Storage full or unavailable - the demo keeps running in memory.
   }
 }
 

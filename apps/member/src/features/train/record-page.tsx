@@ -95,7 +95,7 @@ function OptionRow({
       onClick={onClick}
       className="flex w-full items-center gap-3 px-2 py-3 text-left active:bg-surface-raised"
     >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1b1b1f] text-white">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink-soft text-white">
         <Icon size={16} />
       </span>
       <span className="min-w-0 flex-1">
@@ -256,7 +256,7 @@ export function RecordPage() {
             pos.coords.longitude,
             typeof pos.coords.altitude === 'number' ? pos.coords.altitude : undefined,
           ),
-        (err) => setGpsError(`GPS: ${err.message} — switch to Demo GPS to keep going.`),
+        (err) => setGpsError(`GPS: ${err.message} - switch to Demo GPS to keep going.`),
         { enableHighAccuracy: true, maximumAge: 1000 },
       );
     } else {
@@ -366,7 +366,7 @@ export function RecordPage() {
 
       {followRoute ? (
         <p className="rounded-xl bg-brand/10 px-3 py-2 text-sm font-bold text-brand">
-          {t('Routes')}: {followRoute.name} ({formatDistanceM(followRoute.distanceM, units)}) — Demo
+          {t('Routes')}: {followRoute.name} ({formatDistanceM(followRoute.distanceM, units)}) - Demo
           GPS follows this route.
         </p>
       ) : null}
@@ -384,13 +384,13 @@ export function RecordPage() {
                     onClick={() => setType(id)}
                     className={`flex min-w-[104px] shrink-0 snap-start flex-col items-start gap-2.5 rounded-2xl p-3.5 text-left transition active:scale-[0.97] ${
                       selected
-                        ? 'surface-ink text-white shadow-[0_10px_26px_rgb(13_13_16/0.3)]'
+                        ? 'surface-ink text-white shadow-[0_10px_26px_rgb(0_40_26/0.3)]'
                         : 'card !p-3.5'
                     }`}
                   >
                     <span
                       className={`flex h-9 w-9 items-center justify-center rounded-full ${
-                        selected ? 'surface-brand text-white' : 'bg-[#1b1b1f] text-white'
+                        selected ? 'surface-brand text-ink' : 'bg-ink-soft text-white'
                       }`}
                     >
                       <Icon size={17} strokeWidth={2.2} />
@@ -436,7 +436,7 @@ export function RecordPage() {
                 <div className="flex flex-col divide-y divide-line">
                   {exercises.map((ex, i) => (
                     <div key={ex.name} className="flex items-center gap-3 py-2.5">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1b1b1f] text-white">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink-soft text-white">
                         <Dumbbell size={15} />
                       </span>
                       <div className="min-w-0 flex-1">
@@ -464,14 +464,14 @@ export function RecordPage() {
             </button>
           ) : (
           <div className="card surface-ink relative overflow-hidden !border-0 !p-6 text-white">
-            <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-brand/25 blur-3xl" />
+            <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-lime/20 blur-3xl" />
             <div className="relative">
               <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.22em] text-white/50">
-                <Flame size={13} className="text-[#ff4348]" /> {t('HYROX simulation')}
+                <Flame size={13} className="text-lime" /> {t('HYROX simulation')}
               </p>
               <p className="display mt-1 text-2xl leading-tight">8 runs. 8 stations. Race pace.</p>
               <p className="mt-1.5 text-sm text-white/60">
-                {t('Guided station by station with your division loads — timed like race day.')}
+                {t('Guided station by station with your division loads - timed like race day.')}
               </p>
               <div className="mt-4 grid grid-cols-2 gap-2">
                 {DIVISIONS.map((d) => (
@@ -488,7 +488,7 @@ export function RecordPage() {
                   </button>
                 ))}
               </div>
-              {simError ? <p className="mt-3 text-sm font-bold text-[#ff4348]">{simError}</p> : null}
+              {simError ? <p className="mt-3 text-sm font-bold text-lime">{simError}</p> : null}
               <button
                 onClick={() => void startHyroxSim()}
                 disabled={simBusy}
@@ -532,7 +532,7 @@ export function RecordPage() {
               <OptionRow
                 icon={Radio}
                 label="Share live location"
-                hint={liveCopied ? 'Demo link copied — anyone with it can watch' : 'Send friends a live beacon link'}
+                hint={liveCopied ? 'Demo link copied - anyone with it can watch' : 'Send friends a live beacon link'}
                 right={
                   <Toggle
                     on={liveShare}
@@ -628,7 +628,7 @@ export function RecordPage() {
                         <span className="text-center text-sm font-black text-muted">{si + 1}</span>
                         <input
                           inputMode="decimal"
-                          placeholder="—"
+                          placeholder="-"
                           value={set.kg}
                           onChange={(e) =>
                             setExercises((prev) =>
@@ -648,7 +648,7 @@ export function RecordPage() {
                         />
                         <input
                           inputMode="numeric"
-                          placeholder="—"
+                          placeholder="-"
                           value={set.reps}
                           onChange={(e) =>
                             setExercises((prev) =>
@@ -948,7 +948,7 @@ function SaveForm({
 }
 
 
-/** Mock sensor pairing — scans, finds nothing (demo build has no Bluetooth). */
+/** Mock sensor pairing - scans, finds nothing (demo build has no Bluetooth). */
 function SensorSheet({ onClose }: { onClose: () => void }) {
   const [scanning, setScanning] = useState(true);
   useEffect(() => {
@@ -962,14 +962,14 @@ function SensorSheet({ onClose }: { onClose: () => void }) {
         <p className="mb-4 text-sm text-muted">Heart rate straps, cadence and power meters.</p>
         {scanning ? (
           <div className="flex items-center gap-3 rounded-2xl bg-surface-raised px-4 py-4 text-sm font-bold">
-            <span className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-[#ed1c24]" />
+            <span className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-brand" />
             Scanning for nearby sensors…
           </div>
         ) : (
           <div className="rounded-2xl bg-surface-raised px-4 py-4 text-sm">
             <p className="font-bold">No sensors nearby</p>
             <p className="mt-0.5 text-muted">
-              Pairing needs Bluetooth on a real device — this demo build stops here.
+              Pairing needs Bluetooth on a real device - this demo build stops here.
             </p>
           </div>
         )}

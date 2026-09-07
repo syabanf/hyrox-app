@@ -100,7 +100,7 @@ export function requireMember(db: MockDb, request: Request): AuthResult<Member> 
 }
 
 /**
- * RBAC is enforced here — on the "server" side — so hiding a button in the
+ * RBAC is enforced here - on the "server" side - so hiding a button in the
  * admin UI is never the only thing standing between a role and an action.
  */
 export function requireAdmin(

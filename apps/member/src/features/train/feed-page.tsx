@@ -21,7 +21,7 @@ export function ActivityStatsRow({ a }: { a: ActivityCardView }) {
     <div className="flex gap-5 text-sm">
       <div>
         <p className="label !mb-0">Distance</p>
-        <p className="display text-lg">{a.type === 'WORKOUT' ? '—' : formatDistanceM(a.distanceM, units)}</p>
+        <p className="display text-lg">{a.type === 'WORKOUT' ? '-' : formatDistanceM(a.distanceM, units)}</p>
       </div>
       <div>
         <p className="label !mb-0">{a.type === 'RIDE' ? 'Speed' : 'Pace'}</p>
@@ -47,7 +47,7 @@ export function ActivityCard({ a }: { a: ActivityCardView }) {
         {a.memberAvatarUrl ? (
           <img src={a.memberAvatarUrl} alt="" className="h-10 w-10 rounded-full object-cover" />
         ) : (
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1b1b1f] text-sm font-black text-white">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-ink-soft text-sm font-black text-white">
             {a.memberName
               .split(' ')
               .slice(0, 2)

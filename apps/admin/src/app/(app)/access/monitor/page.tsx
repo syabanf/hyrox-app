@@ -1,7 +1,7 @@
 'use client';
 
 import type { ScanResultView } from '@hyrox/contracts';
-import { Spinner, StatusBadge, formatTime } from '@hyrox/ui';
+import { Spinner, StatusBadge, formatTime, gateEntryKindLabel, gateReasonLabel } from '@hyrox/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
@@ -12,6 +12,7 @@ const PIPELINE_STEPS = [
   { key: 'token', label: 'QR valid' },
   { key: 'member', label: 'Membership active' },
   { key: 'passback', label: 'Anti-passback clear' },
+  { key: 'booking', label: 'Class booked now' },
   { key: 'credit', label: 'Credit available' },
 ] as const;
 
@@ -20,6 +21,7 @@ function failedStep(reason: string | null): string | null {
   if (reason.startsWith('TOKEN')) return 'token';
   if (reason === 'MEMBER_NOT_ACTIVE') return 'member';
   if (reason === 'ANTI_PASSBACK') return 'passback';
+  if (reason === 'NO_BOOKING') return 'booking';
   if (reason === 'INSUFFICIENT_CREDITS') return 'credit';
   return null;
 }
@@ -61,12 +63,15 @@ export default function MonitorPage() {
                     <td>
                       <StatusBadge status={v.log.result} />
                       {v.log.reasonCode ? (
-                        <span className="ml-1 text-xs font-bold text-danger">
+                        <span
+                          className="ml-1 text-xs font-bold text-danger"
+                          title={gateReasonLabel(v.log.reasonCode)}
+                        >
                           {v.log.reasonCode.replaceAll('_', ' ')}
                         </span>
                       ) : null}
                     </td>
-                    <td className="text-right font-bold">{v.log.creditDelta || '—'}</td>
+                    <td className="text-right font-bold">{v.log.creditDelta || '-'}</td>
                     <td className="text-muted">{v.log.mode}</td>
                   </tr>
                 ))}
@@ -111,6 +116,7 @@ function GateSimulator({ onScanned }: { onScanned: () => void }) {
       <p className="display text-lg font-black">Gate Simulator</p>
       <p className="mb-3 text-sm text-muted">
         Runs the exact hardware path: issue QR → scan → validation pipeline → deduction → log.
+        Entry always needs a booked class at this branch - there is no open gym.
       </p>
       <div className="flex flex-col gap-3">
         <div>
@@ -154,8 +160,11 @@ function GateSimulator({ onScanned }: { onScanned: () => void }) {
             ) : null}
             {result.entryKind ? (
               <p className="text-xs font-bold uppercase tracking-wide text-muted">
-                {result.entryKind.replaceAll('_', ' ')} entry
+                {gateEntryKindLabel(result.entryKind)}
               </p>
+            ) : null}
+            {result.reason ? (
+              <p className="mt-1 text-sm font-bold text-danger">{gateReasonLabel(result.reason)}</p>
             ) : null}
             <div className="mt-3 flex flex-col gap-1.5">
               {PIPELINE_STEPS.map((s, i) => {

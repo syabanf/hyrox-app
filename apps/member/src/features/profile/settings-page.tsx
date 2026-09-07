@@ -80,7 +80,7 @@ export function SettingsPage() {
       <div className="card text-sm text-muted">
         <p className="label">About</p>
         <p>
-          HYROX Studio App — demo build. All data lives in this browser; use the dev tools (flask
+          NüHabit App - demo build. All data lives in this browser; use the dev tools (flask
           button) to reset it.
         </p>
       </div>

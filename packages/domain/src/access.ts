@@ -22,6 +22,7 @@ export type GateDenialReason =
   | 'TOKEN_CONSUMED'
   | 'MEMBER_NOT_ACTIVE'
   | 'ANTI_PASSBACK'
+  | 'NO_BOOKING'
   | 'INSUFFICIENT_CREDITS';
 
 export interface AccessLog {
@@ -43,7 +44,11 @@ export type GateEffect =
   | { kind: 'DEDUCT_CREDITS'; amount: number; description: string }
   | { kind: 'CHECK_IN_BOOKING'; bookingId: string };
 
-export type GateEntryKind = 'BOOKING' | 'OPEN_GYM' | 'RE_ENTRY';
+/**
+ * Every entry is tied to a booked class session - the studio does not offer
+ * open gym. RE_ENTRY is a free pass-through within the grace window.
+ */
+export type GateEntryKind = 'BOOKING' | 'RE_ENTRY';
 
 export interface GateScanEvaluation {
   decision: 'ALLOWED' | 'DENIED';
@@ -53,17 +58,18 @@ export interface GateScanEvaluation {
 }
 
 /**
- * The gate validation pipeline (QR → membership → anti-passback → credit →
- * decision). Pure: returns a decision plus an *effects list*; the application
- * layer applies effects atomically so the gate never opens without its
- * deduction (and vice versa).
+ * The gate validation pipeline (QR → membership → anti-passback → booking →
+ * credit → decision). Pure: returns a decision plus an *effects list*; the
+ * application layer applies effects atomically so the gate never opens without
+ * its deduction (and vice versa). A scan with no candidate booking is DENIED
+ * with NO_BOOKING - there is no open-gym entry.
  */
 export function evaluateGateScan(args: {
   tokenCheck: Result<QrToken, { reason: QrTokenProblem }>;
   member: Member | null;
   balance: number;
   lastAllowedEntryAt: IsoDate | null;
-  /** The member's CONFIRMED booking around `now` at this branch, if any. */
+  /** The member's CONFIRMED booking around `now` at this branch - required for entry. */
   candidateBooking: (Pick<Booking, 'id'> & { creditCost: number }) | null;
   rules: BusinessRules;
   now: IsoDate;
@@ -102,34 +108,24 @@ export function evaluateGateScan(args: {
     }
   }
 
-  // 4. Credit + policy: booked entry deducts the session cost, open gym the configured cost.
-  if (args.candidateBooking) {
-    if (args.balance < args.candidateBooking.creditCost)
-      return denied('INSUFFICIENT_CREDITS', [consume]);
-    return {
-      decision: 'ALLOWED',
-      reason: null,
-      entryKind: 'BOOKING',
-      effects: [
-        consume,
-        {
-          kind: 'DEDUCT_CREDITS',
-          amount: args.candidateBooking.creditCost,
-          description: 'Class check-in',
-        },
-        { kind: 'CHECK_IN_BOOKING', bookingId: args.candidateBooking.id },
-      ],
-    };
-  }
+  // 4. Booking required: no class booked around now → no entry.
+  if (!args.candidateBooking) return denied('NO_BOOKING', [consume]);
 
-  if (args.balance < rules.openGymCreditCost) return denied('INSUFFICIENT_CREDITS', [consume]);
+  // 5. Credit: the booked session's cost must be covered.
+  if (args.balance < args.candidateBooking.creditCost)
+    return denied('INSUFFICIENT_CREDITS', [consume]);
   return {
     decision: 'ALLOWED',
     reason: null,
-    entryKind: 'OPEN_GYM',
+    entryKind: 'BOOKING',
     effects: [
       consume,
-      { kind: 'DEDUCT_CREDITS', amount: rules.openGymCreditCost, description: 'Studio entry' },
+      {
+        kind: 'DEDUCT_CREDITS',
+        amount: args.candidateBooking.creditCost,
+        description: 'Class check-in',
+      },
+      { kind: 'CHECK_IN_BOOKING', bookingId: args.candidateBooking.id },
     ],
   };
 }

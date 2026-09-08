@@ -1,6 +1,6 @@
 # The whole product in one command:
 #
-#   docker compose up -d --build
+#   docker compose up -d --build       # database, API, both apps, front door
 #   docker compose --profile seed run --rm seed     # load the demo studio
 #
 #   http://localhost:8088         member PWA
@@ -47,6 +47,14 @@ services:
       HTTP_ALLOWED_ORIGINS: '*'
     ports:
       - '9080:8080'
+    healthcheck:
+      # The image is scratch — no shell, no wget — so the check is the binary
+      # asking itself. `api -health` exits non-zero when the API is not ready.
+      test: ['CMD', '/usr/local/bin/api', '-health']
+      interval: 10s
+      timeout: 3s
+      start_period: 10s
+      retries: 6
     restart: unless-stopped
 
   # One-shot: load the demo studio, then exit.
@@ -55,7 +63,9 @@ services:
       context: ./apps/backend
     profiles: ['seed']
     depends_on:
-      postgres:
+      # The API owns the migrations; seeding a schema that has not been
+      # migrated yet fails on a table that does not exist.
+      api:
         condition: service_healthy
     environment:
       APP_ENV: development
@@ -69,9 +79,10 @@ services:
       context: .
       dockerfile: deploy/member.Dockerfile
       args:
-        # Empty means the app keeps its in-process mock, so the demo still
-        # runs with no database at all.
+        # /api on the front door's own origin. VITE_OFFLINE_DEMO=1 builds the
+        # app against its bundled seed instead, with no server behind it.
         VITE_API_BASE_URL: ${VITE_API_BASE_URL-/api}
+        VITE_OFFLINE_DEMO: ${VITE_OFFLINE_DEMO-}
     restart: unless-stopped
 
   admin:
@@ -80,6 +91,7 @@ services:
       dockerfile: deploy/admin.Dockerfile
       args:
         NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL-/api}
+        NEXT_PUBLIC_OFFLINE_DEMO: ${NEXT_PUBLIC_OFFLINE_DEMO-}
     restart: unless-stopped
 
   # The front door: one origin for the apps and the API, so the browser makes
@@ -91,9 +103,12 @@ services:
     ports:
       - '8088:80'
     depends_on:
-      - member
-      - admin
-      - api
+      member:
+        condition: service_healthy
+      admin:
+        condition: service_healthy
+      api:
+        condition: service_healthy
     restart: unless-stopped
 
   # ── Split deployment ───────────────────────────────────────────────────────

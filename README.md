@@ -4,7 +4,7 @@ Monorepo implementing the **NüHabit Studio Operating System** blueprint - membe
 
 **REGISTER → TOP UP → BOOK → CHECK-IN (QR) → CREDIT DEDUCTION → ATTEND**
 
-The admin panel talks to the Go backend: it calls `/api` on its own origin, which nginx routes in production and the dev server proxies in development (`API_PROXY_TARGET`, default `http://localhost:8080`). `NEXT_PUBLIC_OFFLINE_DEMO=1` takes the server out of the picture and answers every request in-process from a bundled seed instead — a demo with no database behind it, minus the four ERP modules, which say so rather than pretending. The member PWA still defaults to that in-process mock; point `VITE_API_BASE_URL` at the backend to switch it over. Same contracts either way.
+Both apps talk to the Go backend: they call `/api` on their own origin, which nginx routes in the Docker stack and each dev server proxies in development (`API_PROXY_TARGET`, default `http://localhost:8080`). `NEXT_PUBLIC_OFFLINE_DEMO=1` / `VITE_OFFLINE_DEMO=1` takes the server out of the picture and answers every request in-process from a bundled seed instead — a demo with no database behind it, minus the four ERP modules, which say so rather than pretending. Same contracts either way.
 
 ## Apps & packages
 
@@ -38,6 +38,20 @@ pnpm stack:up       # PostgreSQL + Go API + member app + admin panel, then seede
 
 One origin serves all three, so the browser never makes a cross-origin call.
 `pnpm stack:down` stops it, `pnpm stack:reset` also drops the data.
+
+Every service reports its own health, and each waits for what it depends on:
+the API waits for a healthy database, the seeder waits for a ready API (so the
+migrations have run), and the front door waits for all three rather than
+answering the first request with a 502. The API image is `scratch`, so its
+probe is the binary asking itself — `api -health` reads `/ready` and exits
+with the answer.
+
+To build the apps against their bundled seed instead of the API — a demo with
+no database at all:
+
+```bash
+VITE_OFFLINE_DEMO=1 NEXT_PUBLIC_OFFLINE_DEMO=1 pnpm stack:up
+```
 
 Or run the pieces from source:
 

@@ -8,10 +8,12 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -22,11 +24,49 @@ import (
 	"github.com/syabanf/hyrox-app/apps/backend/migrations"
 )
 
+// health is the container healthcheck. The runtime image is scratch — no
+// shell, no curl — so the binary is what asks the question, and the answer is
+// the exit code.
+var health = flag.Bool("health", false, "probe the local server and exit")
+
 func main() {
+	flag.Parse()
+	if *health {
+		os.Exit(probe())
+	}
 	if err := run(); err != nil {
 		slog.Error("server exited with an error", "error", err)
 		os.Exit(1)
 	}
+}
+
+// probe asks the server on this container's own port whether it can serve.
+//
+// It reads /ready rather than /health: "the process is alive" is not the
+// question a dependent service is asking. Readiness means the database is
+// reachable, which is what the seeder and the front door actually wait for.
+//
+// HTTP_ADDR rather than a hard-coded :8080, so a container started on another
+// port checks the port it is really listening on.
+func probe() int {
+	addr := os.Getenv("HTTP_ADDR")
+	if addr == "" {
+		addr = ":8080"
+	}
+	if strings.HasPrefix(addr, ":") {
+		addr = "127.0.0.1" + addr
+	}
+
+	client := &http.Client{Timeout: 3 * time.Second}
+	res, err := client.Get("http://" + addr + "/ready")
+	if err != nil {
+		return 1
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return 1
+	}
+	return 0
 }
 
 func run() error {

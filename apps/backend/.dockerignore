@@ -1,0 +1,23 @@
+# The backend builds from ./apps/backend, so the repository-root .dockerignore
+# does not apply here — Docker reads the one beside the build context.
+#
+# Without this, `bin/` alone ships 48 MB of locally compiled binaries into the
+# build context, which the image then throws away and rebuilds from source.
+
+# Locally built binaries. The image compiles its own.
+bin/
+
+# Tooling caches and editor droppings.
+.turbo/
+.DS_Store
+*.log
+
+# Real configuration never goes into an image. The example is documentation
+# and is small, but the image reads its settings from the environment.
+.env
+.env.*
+!.env.example
+
+# The Dockerfile itself is not an input to the build it describes.
+Dockerfile
+.dockerignore

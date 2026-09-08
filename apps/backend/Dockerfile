@@ -40,4 +40,9 @@ ENV HTTP_ADDR=:8080 \
 
 EXPOSE 8080
 
+# scratch has no shell and no curl, so the binary probes itself. `-health`
+# asks the local server whether it is ready and exits with the answer.
+HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=6 \
+    CMD ["/usr/local/bin/api", "-health"]
+
 ENTRYPOINT ["/usr/local/bin/api"]

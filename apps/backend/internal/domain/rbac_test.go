@@ -54,10 +54,28 @@ func TestFrontDeskAndCoachAreTightlyScoped(t *testing.T) {
 		PermOperationsView: true, PermBookingsManage: true, PermAttendanceManage: true,
 		PermAccessView: true, PermAccessSimulate: true, PermCommercialView: true,
 		PermPaymentsView: true,
+		// The desk runs the till and answers "have you got this in a medium",
+		// so it sells, and it can look at stock and at a member's tier.
+		PermPOSView: true, PermPOSSell: true,
+		PermInventoryView: true, PermCRMView: true,
 	}
 	for _, p := range Permissions {
 		if got := HasPermission(RoleFrontDesk, p); got != allowed[p] {
 			t.Fatalf("FRONT_DESK %s = %v, want %v", p, got, allowed[p])
+		}
+	}
+
+	// The lines that matter on the other side of that: taking money is not the
+	// same as unwinding a sale, seeing a shelf is not the same as rewriting
+	// what is on it, and nobody at the counter signs for a purchase or hands
+	// out loyalty points by hand.
+	for _, denied := range []Permission{
+		PermPOSVoid, PermInventoryManage, PermInventoryCount,
+		PermPurchasingView, PermPurchasingApprove, PermPurchasingReceive,
+		PermCRMAdjust, PermCRMManage,
+	} {
+		if HasPermission(RoleFrontDesk, denied) {
+			t.Fatalf("FRONT_DESK must not hold %s", denied)
 		}
 	}
 
@@ -67,6 +85,15 @@ func TestFrontDeskAndCoachAreTightlyScoped(t *testing.T) {
 	}
 	if HasPermission(RoleCoach, PermPaymentsView) || HasPermission(RoleCoach, PermBookingsManage) {
 		t.Fatal("COACH must not reach payments or bookings")
+	}
+	// A coach teaches. The till, the stockroom and the purchase ledger are
+	// somebody else's job entirely.
+	for _, denied := range []Permission{
+		PermPOSView, PermPOSSell, PermInventoryView, PermPurchasingView, PermCRMView,
+	} {
+		if HasPermission(RoleCoach, denied) {
+			t.Fatalf("COACH must not hold %s", denied)
+		}
 	}
 }
 

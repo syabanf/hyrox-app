@@ -61,6 +61,29 @@ const (
 	PermHRISManage     Permission = "hris.manage"
 	PermHRISAttendance Permission = "hris.attendance"
 	PermHRISApprove    Permission = "hris.approve"
+	// Stock. Viewing is broad — the front desk has to know whether a shirt is
+	// on the shelf — but changing a quantity is not.
+	PermInventoryView   Permission = "inventory.view"
+	PermInventoryManage Permission = "inventory.manage"
+	PermInventoryCount  Permission = "inventory.count"
+	// Buying. Approving is separate from raising, and receiving is separate
+	// from both, because one person doing all three is how invoices get paid
+	// for goods that never arrived.
+	PermPurchasingView    Permission = "purchasing.view"
+	PermPurchasingManage  Permission = "purchasing.manage"
+	PermPurchasingApprove Permission = "purchasing.approve"
+	PermPurchasingReceive Permission = "purchasing.receive"
+	// The till. Selling is the front desk's job; voiding a paid order is not.
+	PermPOSView   Permission = "pos.view"
+	PermPOSSell   Permission = "pos.sell"
+	PermPOSManage Permission = "pos.manage"
+	PermPOSVoid   Permission = "pos.void"
+	// Loyalty. Adjusting somebody's XP by hand is its own grant, for the same
+	// reason adjusting their credits is.
+	PermCRMView    Permission = "crm.view"
+	PermCRMManage  Permission = "crm.manage"
+	PermCRMApprove Permission = "crm.approve"
+	PermCRMAdjust  Permission = "crm.adjust"
 )
 
 // Permissions is the full list, in the order the admin panel expects.
@@ -74,6 +97,10 @@ var Permissions = []Permission{
 	PermIncentivesView, PermIncentivesManage, PermConfigView, PermBranchesManage,
 	PermGatesManage, PermUsersManage, PermRulesUpdate,
 	PermHRISView, PermHRISManage, PermHRISAttendance, PermHRISApprove,
+	PermInventoryView, PermInventoryManage, PermInventoryCount,
+	PermPurchasingView, PermPurchasingManage, PermPurchasingApprove, PermPurchasingReceive,
+	PermPOSView, PermPOSSell, PermPOSManage, PermPOSVoid,
+	PermCRMView, PermCRMManage, PermCRMApprove, PermCRMAdjust,
 }
 
 // RolePermissions is the authorization matrix. Super Admin holds everything;
@@ -88,11 +115,21 @@ var RolePermissions = map[AdminRole][]Permission{
 		PermBookingsManage, PermAttendanceManage, PermAccessView, PermAccessSimulate,
 		PermReportsView, PermIncentivesView, PermConfigView,
 		PermHRISView, PermHRISAttendance, PermHRISApprove,
+		PermInventoryView, PermInventoryManage, PermInventoryCount,
+		// A branch manager is the first signature on the approval chain, and
+		// the person who signs for goods arriving at their own branch.
+		PermPurchasingView, PermPurchasingManage, PermPurchasingApprove, PermPurchasingReceive,
+		PermPOSView, PermPOSSell, PermPOSManage, PermPOSVoid,
+		PermCRMView,
 	},
 	RoleFrontDesk: {
 		PermDashboardView, PermMembersView, PermLedgerView, PermOperationsView,
 		PermBookingsManage, PermAttendanceManage, PermAccessView, PermAccessSimulate,
 		PermCommercialView, PermPaymentsView,
+		// They run the till and answer "have you got this in a medium", so
+		// they sell and they look. Voiding a paid order needs a manager, and
+		// changing a stock figure is not a counter job.
+		PermPOSView, PermPOSSell, PermInventoryView, PermCRMView,
 	},
 	RoleCoach: {
 		PermDashboardView, PermOperationsView, PermAttendanceManage, PermMembersView,
@@ -102,6 +139,10 @@ var RolePermissions = map[AdminRole][]Permission{
 		PermPaymentsView, PermPaymentsSimulate, PermRefundsManage, PermReportsView,
 		PermReportsFinancial, PermIncentivesView, PermIncentivesManage,
 		PermHRISView,
+		// Finance is the second signature on a purchase and the reason stock
+		// valuation exists, but it never touches a quantity or a till.
+		PermInventoryView, PermPurchasingView, PermPurchasingApprove,
+		PermPOSView, PermCRMView,
 	},
 }
 

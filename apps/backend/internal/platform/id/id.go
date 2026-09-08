@@ -66,6 +66,37 @@ const (
 	Holiday          = "hol"
 	Leave            = "lve"
 	Overtime         = "ovt"
+
+	// Stock, and everything that moves it.
+	InventoryItem     = "itm"
+	InventoryCategory = "ictg"
+	StockMovement     = "stm"
+	StockTransfer     = "strf"
+	StockTake         = "stk"
+	StockTakeLine     = "stl"
+
+	// Buying.
+	Supplier        = "sup"
+	PurchaseRequest = "pr"
+	PurchaseOrder   = "po"
+	GoodsReceipt    = "grn"
+	PurchaseReturn  = "prt"
+	LineItem        = "lin"
+
+	// The till.
+	POSProduct  = "prd"
+	POSCategory = "pctg"
+	POSOrder    = "ord"
+	POSPayment  = "pmt"
+	POSShift    = "psh"
+
+	// Loyalty.
+	Tier              = "tir"
+	MemberProfile     = "mpr"
+	XPRule            = "xpr"
+	XPEntry           = "xpe"
+	Reward            = "rwd"
+	LoyaltyRedemption = "rdm"
 )
 
 // Generator hands out identifiers. It is safe for concurrent use.

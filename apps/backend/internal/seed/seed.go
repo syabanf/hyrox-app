@@ -55,6 +55,7 @@ type Summary struct {
 	Activities  int
 	Bookings    int
 	Campaigns   int
+	Orders      int
 	Pictures    int
 }
 
@@ -125,6 +126,9 @@ func (s *Seeder) Run(ctx context.Context) (Summary, error) {
 		}
 		// Points come from visits and purchases, so this runs after both.
 		if summary.Campaigns, err = s.seedCRMActivity(ctx); err != nil {
+			return err
+		}
+		if summary.Orders, err = s.seedPurchasingActivity(ctx); err != nil {
 			return err
 		}
 		// Last, because it fills in pictures for rows the other seeders made.

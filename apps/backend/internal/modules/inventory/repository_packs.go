@@ -180,3 +180,17 @@ func (r *Repository) DeletePack(ctx context.Context, id string) error {
 	}
 	return nil
 }
+
+// ItemIDBySKU resolves a SKU from somebody else's spreadsheet to an item here.
+func (r *Repository) ItemIDBySKU(ctx context.Context, sku string) (string, error) {
+	var itemID string
+	err := r.db.QueryRow(ctx,
+		`SELECT id FROM inventory.items WHERE upper(sku) = upper($1)`, sku).Scan(&itemID)
+	if database.IsNoRows(err) {
+		return "", httpx.NotFound("item")
+	}
+	if err != nil {
+		return "", fmt.Errorf("inventory: resolving SKU: %w", err)
+	}
+	return itemID, nil
+}

@@ -202,6 +202,11 @@ func New(cfg config.Config, db *database.DB) *App {
 		// refuses everything when no app secret is configured.
 		crm.NewInstagramWebhook(crmService,
 			cfg.Social.InstagramVerifyToken, cfg.Social.InstagramAppSecret).Mount(router)
+		// Partners post here. Signed with their own shared secret, so the
+		// route takes no guard and a partner without a secret can post
+		// nothing.
+		router.Post("/api/webhooks/partners/{partner}/events",
+			crm.NewHandler(crmService, guard).ReceiveEvent)
 	}
 	if cfg.Modules.IsEnabled(ModulePOS) {
 		pos.NewHandler(posService, guard).Mount(router)

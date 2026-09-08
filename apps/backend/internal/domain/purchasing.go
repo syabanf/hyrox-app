@@ -92,10 +92,14 @@ type Supplier struct {
 
 // SupplierPrice is what one supplier charges for one item.
 type SupplierPrice struct {
-	ID            string    `json:"id"`
-	SupplierID    string    `json:"supplierId"`
-	ItemID        string    `json:"itemId"`
+	ID         string `json:"id"`
+	SupplierID string `json:"supplierId"`
+	ItemID     string `json:"itemId"`
+	// Quoted per pack, because that is how a supplier quotes: a carton price
+	// on a carton line. Dividing it down to a unit cost is the receipt's job.
 	UnitPriceIDR  float64   `json:"unitPriceIdr"`
+	Unit          string    `json:"unit"`
+	PackFactor    float64   `json:"packFactor"`
 	MinOrderQty   Quantity  `json:"minOrderQty"`
 	LeadTimeDays  int       `json:"leadTimeDays"`
 	EffectiveFrom Date      `json:"effectiveFrom"`

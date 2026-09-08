@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -103,6 +104,7 @@ func truncateAll(t *testing.T, db *database.DB) {
 			pos.product_prices, pos.products, pos.categories,
 			crm.redemptions, crm.xp_ledger, crm.rewards, crm.member_profiles,
 			crm.xp_rules, crm.tiers,
+			crm.external_events, crm.integration_partners,
 			crm.conversation_messages, crm.conversations, crm.reviews,
 			crm.member_badges, crm.badges, crm.contact_preferences,
 			purchasing.credit_applications, purchasing.vendor_payments,
@@ -915,4 +917,25 @@ func (h *harness) loyaltyOf(t *testing.T, token, memberID string) float64 {
 		t.Fatalf("no profile in %v", detail)
 	}
 	return profile["currentXp"].(float64)
+}
+
+// rawText fetches a non-JSON response body, for CSV exports.
+func (h *harness) rawText(method, path, token string) (string, error) {
+	req, err := http.NewRequest(method, h.server.URL+path, nil)
+	if err != nil {
+		return "", err
+	}
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("%s %s returned %d", method, path, res.StatusCode)
+	}
+	body, err := io.ReadAll(res.Body)
+	return string(body), err
 }

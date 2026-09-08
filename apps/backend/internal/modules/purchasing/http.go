@@ -98,6 +98,12 @@ func (h *Handler) Mount(r *httpx.Router) {
 	r.Get("/api/admin/purchasing/credits", h.listCredits, view)
 	r.Post("/api/admin/purchasing/credits", h.raiseCredit, pay)
 
+	// Spreadsheets in and out.
+	r.Post("/api/admin/purchasing/suppliers/import", h.importSuppliers, manage)
+	r.Get("/api/admin/purchasing/suppliers/export", h.exportSuppliers, view)
+	r.Post("/api/admin/purchasing/suppliers/{id}/prices/import", h.importPrices, manage)
+	r.Get("/api/admin/purchasing/orders/export", h.exportOrders, view)
+
 	// What buying cost, and how suppliers actually behaved.
 	r.Get("/api/admin/purchasing/reports/orders", h.reportOrders, view)
 	r.Get("/api/admin/purchasing/reports/suppliers", h.reportSuppliers, view)

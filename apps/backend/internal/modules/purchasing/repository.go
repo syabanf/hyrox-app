@@ -180,14 +180,14 @@ func (r *Repository) DeleteSupplier(ctx context.Context, id string) error {
 
 // ── Supplier prices ──────────────────────────────────────────────────────────
 
-const priceColumns = `id, supplier_id, item_id, unit_price_idr, min_order_qty, lead_time_days,
-	effective_from, active, created_at`
+const priceColumns = `id, supplier_id, item_id, unit_price_idr, unit, pack_factor,
+	min_order_qty, lead_time_days, effective_from, active, created_at`
 
 func scanPrice(row pgx.Row) (domain.SupplierPrice, error) {
 	var p domain.SupplierPrice
 	var from time.Time
-	err := row.Scan(&p.ID, &p.SupplierID, &p.ItemID, &p.UnitPriceIDR, &p.MinOrderQty,
-		&p.LeadTimeDays, &from, &p.Active, &p.CreatedAt)
+	err := row.Scan(&p.ID, &p.SupplierID, &p.ItemID, &p.UnitPriceIDR, &p.Unit, &p.PackFactor,
+		&p.MinOrderQty, &p.LeadTimeDays, &from, &p.Active, &p.CreatedAt)
 	if err != nil {
 		return domain.SupplierPrice{}, err
 	}
@@ -228,16 +228,17 @@ func (r *Repository) SupplierPrices(ctx context.Context, supplierID, itemID stri
 func (r *Repository) UpsertSupplierPrice(ctx context.Context, p domain.SupplierPrice) (domain.SupplierPrice, error) {
 	saved, err := scanPrice(r.db.QueryRow(ctx, `
 		INSERT INTO purchasing.supplier_prices (id, supplier_id, item_id, unit_price_idr,
-			min_order_qty, lead_time_days, effective_from, active)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			unit, pack_factor, min_order_qty, lead_time_days, effective_from, active)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		ON CONFLICT (supplier_id, item_id, effective_from) DO UPDATE
 			SET unit_price_idr = EXCLUDED.unit_price_idr,
+				unit = EXCLUDED.unit, pack_factor = EXCLUDED.pack_factor,
 				min_order_qty = EXCLUDED.min_order_qty,
 				lead_time_days = EXCLUDED.lead_time_days,
 				active = EXCLUDED.active
 		RETURNING `+priceColumns,
-		p.ID, p.SupplierID, p.ItemID, p.UnitPriceIDR, p.MinOrderQty, p.LeadTimeDays,
-		requiredDate(p.EffectiveFrom), p.Active))
+		p.ID, p.SupplierID, p.ItemID, p.UnitPriceIDR, p.Unit, p.PackFactor,
+		p.MinOrderQty, p.LeadTimeDays, requiredDate(p.EffectiveFrom), p.Active))
 	if database.IsForeignKeyViolation(err) {
 		return domain.SupplierPrice{}, httpx.NotFound("supplier")
 	}

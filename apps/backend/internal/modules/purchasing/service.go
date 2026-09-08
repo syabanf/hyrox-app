@@ -62,6 +62,9 @@ type Stock interface {
 	// here rather than silently treated as one piece, which is how an order
 	// for ten cartons is received as ten pieces.
 	PackFor(ctx context.Context, itemID, unitCode string) (domain.ItemPack, error)
+	// ItemIDBySKU resolves what a supplier's price list calls a thing to what
+	// this system calls it.
+	ItemIDBySKU(ctx context.Context, sku string) (string, error)
 }
 
 // Catalog is the port for branches.

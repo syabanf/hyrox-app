@@ -107,3 +107,7 @@ func (a posSupervisors) VerifyPIN(ctx context.Context, pin string,
 	}
 	return pos.SupervisorRef{ID: supervisor.ID, Name: supervisor.Name}, true, nil
 }
+
+func (a purchasingStock) ItemIDBySKU(ctx context.Context, sku string) (string, error) {
+	return a.inventory.ItemIDBySKU(ctx, sku)
+}

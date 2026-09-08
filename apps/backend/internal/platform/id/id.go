@@ -123,13 +123,15 @@ const (
 	LoyaltyRedemption = "rdm"
 
 	// Reaching a member, and hearing back.
-	Badge        = "bdg"
-	MemberBadge  = "mbd"
-	Review       = "rev"
-	Conversation = "cnv"
-	ChatMessage  = "cmg"
-	Template     = "tpl"
-	Recipient    = "rcp"
+	Badge         = "bdg"
+	MemberBadge   = "mbd"
+	Review        = "rev"
+	Conversation  = "cnv"
+	ChatMessage   = "cmg"
+	Template      = "tpl"
+	Recipient     = "rcp"
+	Partner       = "ptn"
+	ExternalEvent = "evt"
 )
 
 // Generator hands out identifiers. It is safe for concurrent use.

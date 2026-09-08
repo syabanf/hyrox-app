@@ -227,3 +227,9 @@ func (s *Service) PackFor(ctx context.Context, itemID, unitCode string,
 	}
 	return pack, nil
 }
+
+// ItemIDBySKU is how another module turns a SKU from a supplier's file into
+// an item here.
+func (s *Service) ItemIDBySKU(ctx context.Context, sku string) (string, error) {
+	return s.repo.ItemIDBySKU(ctx, sku)
+}

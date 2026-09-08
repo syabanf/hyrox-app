@@ -495,3 +495,112 @@ func (s *Service) RecordSend(ctx context.Context, campaignID, memberID string,
 		Status: domain.RecipientSent, NotificationID: notificationID, SentAt: &sentAt,
 	})
 }
+
+// ── Campaign preview ─────────────────────────────────────────────────────────
+
+// CampaignPreview is a campaign as one member will actually receive it.
+//
+// Different from a template preview, which renders words against values
+// somebody typed. This renders against a real member's real details, which is
+// where you find out that half the audience has no first name on file.
+type CampaignPreview struct {
+	MemberID   string `json:"memberId"`
+	MemberName string `json:"memberName"`
+	Message    string `json:"message"`
+	DeepLink   string `json:"deepLink"`
+	// Missing names the placeholders this member has nothing to fill, which is
+	// the thing worth knowing before four hundred people read "Hi {{name}}".
+	Missing []string `json:"missing"`
+	// Deliverable is whether this member would actually be sent it: consent is
+	// part of the preview, because "who will get this" is the question.
+	Deliverable bool   `json:"deliverable"`
+	SkipReason  string `json:"skipReason,omitempty"`
+}
+
+// PreviewCampaign renders a campaign for particular members.
+//
+// When no members are named it takes the first few of the audience, so
+// somebody can see what the send looks like before committing to it.
+func (s *Service) PreviewCampaign(ctx context.Context, message, deepLink string,
+	memberIDs []string, channel domain.ContactChannel) ([]CampaignPreview, error) {
+
+	if strings.TrimSpace(message) == "" {
+		return nil, httpx.Invalid("A campaign needs something to say.")
+	}
+	if len(memberIDs) == 0 {
+		return nil, httpx.Invalid("Preview it against at least one member.")
+	}
+	if channel == "" {
+		channel = domain.ContactPush
+	}
+
+	members, err := s.members.MembersByIDs(ctx, memberIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	previews := make([]CampaignPreview, 0, len(memberIDs))
+	for _, memberID := range memberIDs {
+		member, known := members[memberID]
+		if !known {
+			continue
+		}
+
+		values := map[string]string{
+			"name":      member.FullName,
+			"firstName": firstWord(member.FullName),
+			"email":     member.Email,
+			"phone":     member.Phone,
+		}
+		preview := CampaignPreview{
+			MemberID: memberID, MemberName: member.FullName,
+			Message: RenderTemplate(message, values),
+			Missing: []string{},
+		}
+		if deepLink != "" {
+			preview.DeepLink = RenderTemplate(deepLink, values)
+		}
+		// Anything still in braces had nothing to fill it.
+		for _, placeholder := range placeholders(preview.Message) {
+			preview.Missing = append(preview.Missing, placeholder)
+		}
+
+		prefs, err := s.repo.ContactPreferences(ctx, memberID)
+		if err != nil {
+			return nil, err
+		}
+		preview.Deliverable = domain.MayContact(prefs, channel, domain.MessageMarketing)
+		if !preview.Deliverable {
+			preview.SkipReason = "opted out of marketing"
+		}
+		previews = append(previews, preview)
+	}
+	return previews, nil
+}
+
+func firstWord(value string) string {
+	fields := strings.Fields(value)
+	if len(fields) == 0 {
+		return ""
+	}
+	return fields[0]
+}
+
+// placeholders finds the {{...}} that survived rendering.
+func placeholders(text string) []string {
+	out := []string{}
+	rest := text
+	for {
+		open := strings.Index(rest, "{{")
+		if open < 0 {
+			return out
+		}
+		rest = rest[open+2:]
+		close := strings.Index(rest, "}}")
+		if close < 0 {
+			return out
+		}
+		out = append(out, strings.TrimSpace(rest[:close]))
+		rest = rest[close+2:]
+	}
+}

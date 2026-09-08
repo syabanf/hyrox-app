@@ -80,9 +80,17 @@ func (h *Handler) Mount(r *httpx.Router) {
 	r.Post("/api/admin/crm/reviews/{id}/reply", h.replyToReview, manage)
 	r.Put("/api/admin/crm/reviews/{id}/status", h.setReviewStatus, manage)
 
+	// Partners, and what they tell us.
+	r.Get("/api/admin/crm/partners", h.listPartners, view)
+	r.Put("/api/admin/crm/partners", h.savePartner, manage)
+	r.Get("/api/admin/crm/events", h.listEvents, view)
+	r.Post("/api/admin/crm/events/{id}/rematch", h.rematchEvent, manage)
+
 	// What a campaign actually did, per member.
 	r.Get("/api/admin/crm/campaigns/{id}/report", h.campaignReport, view)
 	r.Post("/api/admin/crm/campaigns/{id}/mark", h.markCampaign, manage)
+	// A campaign as a real member will actually receive it, consent included.
+	r.Post("/api/admin/crm/campaigns/preview", h.previewCampaign, view)
 
 	// The member's own view of what they have earned.
 	r.Get("/api/me/loyalty", h.myLoyalty, h.guard.RequireMember)

@@ -40,6 +40,12 @@ func (h *Handler) Mount(r *httpx.Router) {
 
 	// Units and packs: the conversion between what arrives on a pallet and
 	// what leaves in a hand.
+	// The catalogue as a spreadsheet. Importing writes to it, so it takes the
+	// grant that writes to it; exporting only reads.
+	r.Post("/api/admin/inventory/items/import", h.importItems, manage)
+	r.Get("/api/admin/inventory/items/export", h.exportItems, view)
+	r.Get("/api/admin/inventory/stock/export", h.exportStock, view)
+
 	// Dated stock: what is on the shelf, and how long it has left.
 	// What the shelf is worth, and how every quantity got there.
 	r.Get("/api/admin/inventory/reports/valuation", h.reportValuation, view)

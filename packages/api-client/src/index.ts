@@ -63,14 +63,21 @@ import type {
   InventoryItemDetailView,
   InventoryItemView,
   BatchView,
+  CampaignPreviewView,
   CampaignReportView,
   ClosingReportView,
+  DeliveryLineInput,
+  DeliveryView,
   ConversationView,
   ExpiryReportView,
   InboxOverviewView,
   InventoryOverviewView,
+  ExternalEventView,
+  GiftCardView,
+  IssueGiftCardInput,
   ItemPackView,
   LeaveReviewInput,
+  OpenDeliveryInput,
   LoyaltyMemberDetailView,
   MemberBadgeView,
   LoyaltyProfileView,
@@ -83,9 +90,14 @@ import type {
   PostMessageInput,
   ReviewsForView,
   ReviewView,
+  PayablesView,
   PriceHistoryEntryView,
+  PromotionView,
   ProfitLine,
   PurchaseSummaryView,
+  RaiseCreditInput,
+  RecordPaymentInput,
+  SaveTermsInput,
   RevenueCompositionView,
   RushHour,
   ScanView,
@@ -106,6 +118,9 @@ import type {
   TenderInput,
   TransferStockInput,
   UpsertBadgeInput,
+  UpsertMethodInput,
+  UpsertPartnerInput,
+  UpsertPromotionInput,
   UpsertInventoryItemInput,
   UpsertPackInput,
   UpsertPOSProductInput,
@@ -207,12 +222,19 @@ import type {
   Gate,
   Badge,
   ContactPreference,
+  Delivery,
   Gear,
   GeneratedWorkout,
   ItemPack,
   Member,
+  ExternalEvent,
+  GiftCard,
+  ImportResult,
+  IntegrationPartner,
   MemberBadge,
   MessageTemplate,
+  PaymentMethod,
+  PrintJob,
   MemberNotification,
   Department,
   EmploymentStatus,
@@ -221,6 +243,7 @@ import type {
   Payment,
   Position,
   ProductPrice,
+  ReceiptSettings,
   Review,
   RaceEvent,
   SalesChannel,
@@ -229,6 +252,8 @@ import type {
   SubstitutionRule,
   Unit,
   UnitKind,
+  VendorCredit,
+  VendorPayment,
   UserRace,
   VoucherStatus,
 } from '@nuhabit/domain';
@@ -299,6 +324,64 @@ export function createApiClient(options: ApiClientOptions) {
   const patch = <T>(path: string, body: unknown) => request<T>('PATCH', path, body);
   const put = <T>(path: string, body: unknown) => request<T>('PUT', path, body);
   const del = (path: string) => request<{ ok: boolean }>('DELETE', path);
+
+  /**
+   * Posts a spreadsheet as its own bytes.
+   *
+   * A CSV is not JSON and wrapping it in a string field would double its size
+   * and its escaping. The server reads either shape; this is the honest one.
+   */
+  async function postText<T>(path: string, body: string): Promise<T> {
+    const token = options.getToken();
+    const send = options.transport ?? ((req: Request) => fetch(req));
+    const res = await send(
+      new Request(`${base}${path}`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'text/csv',
+          ...(token ? { authorization: `Bearer ${token}` } : {}),
+        },
+        body,
+      }),
+    );
+    if (!res.ok) {
+      const parsed = (await res.json().catch(() => null)) as ApiErrorBody | null;
+      throw new ApiError(
+        res.status,
+        parsed?.error.code ?? 'UNKNOWN',
+        parsed?.error.message ?? `Upload failed (${res.status}).`,
+      );
+    }
+    return (await res.json()) as T;
+  }
+
+  /**
+   * Fetches an export as a file.
+   *
+   * Deliberately not a plain link with the token in the query string: a URL
+   * ends up in server logs, browser history and any Referer that follows it.
+   * Fetching with the header and handing back the bytes keeps the credential
+   * where it belongs, and the caller turns it into a download.
+   */
+  async function download(path: string, query?: Query): Promise<Blob> {
+    const token = options.getToken();
+    const send = options.transport ?? ((req: Request) => fetch(req));
+    const res = await send(
+      new Request(`${base}${path}${qs(query)}`, {
+        method: 'GET',
+        headers: token ? { authorization: `Bearer ${token}` } : {},
+      }),
+    );
+    if (!res.ok) {
+      const parsed = (await res.json().catch(() => null)) as ApiErrorBody | null;
+      throw new ApiError(
+        res.status,
+        parsed?.error.code ?? 'UNKNOWN',
+        parsed?.error.message ?? `Export failed (${res.status}).`,
+      );
+    }
+    return res.blob();
+  }
 
   return {
     auth: {
@@ -593,6 +676,15 @@ export function createApiClient(options: ApiClientOptions) {
           get<StockRowView[]>('/api/admin/inventory/stock', query),
         movements: (query?: { itemId?: string; branchId?: string; kind?: string; referenceType?: string; referenceId?: string; limit?: number }) =>
           get<StockMovement[]>('/api/admin/inventory/movements', query),
+        /**
+         * Spreadsheets. An import is a dry run until `apply` is set, so a
+         * three-hundred-row mistake is visible before it happens.
+         */
+        importItems: (csv: string, apply = false) =>
+          postText<ImportResult>(`/api/admin/inventory/items/import?apply=${apply}`, csv),
+        exportItems: () => download('/api/admin/inventory/items/export'),
+        exportStock: (branchId?: string) =>
+          download('/api/admin/inventory/stock/export', { branchId }),
         reports: {
           /** At weighted-average cost: what the stock on hand actually cost. */
           valuation: (branchId?: string) =>
@@ -627,6 +719,44 @@ export function createApiClient(options: ApiClientOptions) {
       purchasing: {
         overview: (branchId?: string) =>
           get<PurchasingSummaryView>('/api/admin/purchasing/overview', { branchId }),
+        /** What came off the truck, before anybody judged it. */
+        deliveries: {
+          list: (query?: { orderId?: string; supplierId?: string; branchId?: string; status?: string; limit?: number }) =>
+            get<Delivery[]>('/api/admin/purchasing/deliveries', query),
+          get: (id: string) => get<DeliveryView>(`/api/admin/purchasing/deliveries/${id}`),
+          open: (input: OpenDeliveryInput) =>
+            post<DeliveryView>('/api/admin/purchasing/deliveries', input),
+          addLine: (id: string, input: DeliveryLineInput) =>
+            post<DeliveryView>(`/api/admin/purchasing/deliveries/${id}/lines`, input),
+          /** Only once every unit has been accepted or rejected. */
+          close: (id: string) =>
+            post<DeliveryView>(`/api/admin/purchasing/deliveries/${id}/close`, {}),
+        },
+        /** What an order owes, and what has actually been paid against it. */
+        payables: {
+          get: (orderId: string) =>
+            get<PayablesView>(`/api/admin/purchasing/orders/${orderId}/payables`),
+          /** Build the schedule from the supplier's own terms. */
+          schedule: (orderId: string) =>
+            post<PayablesView>(`/api/admin/purchasing/orders/${orderId}/payables/schedule`, {}),
+          saveTerms: (orderId: string, input: SaveTermsInput) =>
+            put<PayablesView>(`/api/admin/purchasing/orders/${orderId}/payables/terms`, input),
+        },
+        payments: {
+          list: (query?: { supplierId?: string; orderId?: string; status?: string; limit?: number }) =>
+            get<VendorPayment[]>('/api/admin/purchasing/payments', query),
+          record: (input: RecordPaymentInput) =>
+            post<VendorPayment>('/api/admin/purchasing/payments', input),
+          post: (id: string) => post<VendorPayment>(`/api/admin/purchasing/payments/${id}/post`, {}),
+          void: (id: string, reason: string) =>
+            post<VendorPayment>(`/api/admin/purchasing/payments/${id}/void`, { reason }),
+        },
+        credits: {
+          list: (query?: { supplierId?: string; status?: string; openOnly?: string; limit?: number }) =>
+            get<VendorCredit[]>('/api/admin/purchasing/credits', query),
+          raise: (input: RaiseCreditInput) =>
+            post<VendorCredit>('/api/admin/purchasing/credits', input),
+        },
         reports: {
           orders: (query?: ReportWindow & { supplierId?: string }) =>
             get<PurchaseSummaryView>('/api/admin/purchasing/reports/orders', query),
@@ -641,6 +771,14 @@ export function createApiClient(options: ApiClientOptions) {
           priceHistory: (itemId: string, limit?: number) =>
             get<PriceHistoryEntryView[]>('/api/admin/purchasing/reports/price-history', { itemId, limit }),
         },
+        importSuppliers: (csv: string, apply = false) =>
+          postText<ImportResult>(`/api/admin/purchasing/suppliers/import?apply=${apply}`, csv),
+        importPrices: (supplierId: string, csv: string, apply = false) =>
+          postText<ImportResult>(
+            `/api/admin/purchasing/suppliers/${supplierId}/prices/import?apply=${apply}`, csv),
+        exportSuppliers: () => download('/api/admin/purchasing/suppliers/export'),
+        exportOrders: (query?: ReportWindow & { supplierId?: string }) =>
+          download('/api/admin/purchasing/orders/export', query),
         suppliers: {
           list: (query?: { query?: string; status?: string; limit?: number }) =>
             get<Supplier[]>('/api/admin/purchasing/suppliers', query),
@@ -717,6 +855,19 @@ export function createApiClient(options: ApiClientOptions) {
             post<PurchaseReturnView>('/api/admin/purchasing/returns', input),
           addLine: (id: string, input: { receiptItemId: string; qty: number; note?: string | null }) =>
             post<PurchaseReturnView>(`/api/admin/purchasing/returns/${id}/lines`, input),
+          /**
+           * Sending goods back is somebody's signature. Nothing leaves the
+           * building on the receiving bay's say-so, and a rejected return goes
+           * back to draft to be corrected rather than dying there.
+           */
+          submit: (id: string) =>
+            post<PurchaseReturnView>(`/api/admin/purchasing/returns/${id}/submit`, {}),
+          approve: (id: string, note?: string) =>
+            post<PurchaseReturnView>(`/api/admin/purchasing/returns/${id}/approve`, { note: note ?? null }),
+          reject: (id: string, note: string) =>
+            post<PurchaseReturnView>(`/api/admin/purchasing/returns/${id}/reject`, { note }),
+          revise: (id: string) =>
+            post<PurchaseReturnView>(`/api/admin/purchasing/returns/${id}/revise`, {}),
           post: (id: string) => post<PurchaseReturnView>(`/api/admin/purchasing/returns/${id}/post`, {}),
         },
       },
@@ -790,7 +941,24 @@ export function createApiClient(options: ApiClientOptions) {
           setStatus: (id: string, status: string) =>
             put<Review>(`/api/admin/crm/reviews/${id}/status`, { status }),
         },
+        partners: {
+          list: (activeOnly = false) =>
+            get<IntegrationPartner[]>('/api/admin/crm/partners', { activeOnly: activeOnly ? 'true' : '' }),
+          save: (input: UpsertPartnerInput) =>
+            put<IntegrationPartner>('/api/admin/crm/partners', input),
+        },
+        /** What partners have told us, and who we matched it to. */
+        events: {
+          list: (query?: { partnerId?: string; memberId?: string; status?: string; eventType?: string; limit?: number }) =>
+            get<ExternalEventView[]>('/api/admin/crm/events', query),
+          /** Point an unmatched event at a member by hand. */
+          rematch: (id: string, memberId: string) =>
+            post<ExternalEvent>(`/api/admin/crm/events/${id}/rematch`, { memberId }),
+        },
         campaigns: {
+          /** How it will actually read to particular members, consent included. */
+          preview: (input: { message: string; deepLink?: string; memberIds: string[]; channel?: string }) =>
+            post<CampaignPreviewView[]>('/api/admin/crm/campaigns/preview', input),
           report: (id: string) =>
             get<CampaignReportView>(`/api/admin/crm/campaigns/${id}/report`),
           mark: (id: string, memberId: string, event: 'OPENED' | 'CLICKED') =>
@@ -846,6 +1014,48 @@ export function createApiClient(options: ApiClientOptions) {
          */
         scan: (barcode: string, branchId?: string) =>
           get<ScanView>('/api/admin/pos/scan', { barcode, branchId }),
+        promotions: {
+          list: (activeOnly = false) =>
+            get<PromotionView[]>('/api/admin/pos/promotions', { activeOnly: activeOnly ? 'true' : '' }),
+          save: (input: UpsertPromotionInput) =>
+            put<PromotionView>('/api/admin/pos/promotions', input),
+        },
+        giftCards: {
+          list: (query?: { memberId?: string; status?: string; query?: string; limit?: number }) =>
+            get<GiftCard[]>('/api/admin/pos/gift-cards', query),
+          get: (code: string) => get<GiftCardView>(`/api/admin/pos/gift-cards/${code}`),
+          issue: (input: IssueGiftCardInput) =>
+            post<GiftCardView>('/api/admin/pos/gift-cards', input),
+          topUp: (code: string, amountIdr: number) =>
+            post<GiftCardView>(`/api/admin/pos/gift-cards/${code}/top-up`, { amountIdr }),
+          setStatus: (code: string, status: string) =>
+            put<GiftCardView>(`/api/admin/pos/gift-cards/${code}/status`, { status }),
+        },
+        paymentMethods: {
+          list: (activeOnly = false) =>
+            get<PaymentMethod[]>('/api/admin/pos/payment-methods', { activeOnly: activeOnly ? 'true' : '' }),
+          save: (input: UpsertMethodInput) =>
+            put<PaymentMethod>('/api/admin/pos/payment-methods', input),
+        },
+        receipts: {
+          settings: (branchId?: string) =>
+            get<ReceiptSettings>('/api/admin/pos/receipt-settings', { branchId }),
+          saveSettings: (input: ReceiptSettings) =>
+            put<ReceiptSettings>('/api/admin/pos/receipt-settings', input),
+          /** The rendered paper, exactly as it will print. */
+          preview: (orderId: string) =>
+            get<{ body: string }>(`/api/admin/pos/orders/${orderId}/receipt`),
+          print: (orderId: string) =>
+            post<PrintJob>(`/api/admin/pos/orders/${orderId}/print`, {}),
+          send: (orderId: string, channel: string, destination: string) =>
+            post<{ id: string; status: string }>(`/api/admin/pos/orders/${orderId}/send`, { channel, destination }),
+        },
+        printJobs: {
+          list: (query?: { branchId?: string; status?: string; limit?: number }) =>
+            get<PrintJob[]>('/api/admin/pos/print-jobs', query),
+          finish: (id: string, status: string, error?: string) =>
+            put<PrintJob>(`/api/admin/pos/print-jobs/${id}`, { status, error: error ?? null }),
+        },
         /**
          * What the counter did. Every one of these reads completed sales only
          * — a voided sale is money that came in and went out again.
@@ -892,8 +1102,17 @@ export function createApiClient(options: ApiClientOptions) {
           complete: (id: string) => post<POSOrderView>(`/api/admin/pos/orders/${id}/complete`, {}),
           cancel: (id: string) => post<POSOrderView>(`/api/admin/pos/orders/${id}/cancel`, {}),
           /** Unwinding a paid sale: puts the stock back, needs a reason. */
-          void: (id: string, reason: string) =>
-            post<POSOrderView>(`/api/admin/pos/orders/${id}/void`, { reason }),
+          /** A code somebody typed. Refused with a reason when it saves nothing. */
+          applyCode: (id: string, code: string) =>
+            post<POSOrderView>(`/api/admin/pos/orders/${id}/code`, { code }),
+          /**
+           * Unwinding a paid sale. A cashier without the grant may still do it
+           * with a manager's PIN, and the manager is recorded on the sale.
+           */
+          void: (id: string, reason: string, supervisorPin?: string) =>
+            post<POSOrderView>(`/api/admin/pos/orders/${id}/void`, {
+              reason, supervisorPin: supervisorPin ?? '',
+            }),
         },
       },
 

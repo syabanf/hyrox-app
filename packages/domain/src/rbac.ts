@@ -59,6 +59,9 @@ export const PERMISSIONS = [
   'purchasing.manage',
   'purchasing.approve',
   'purchasing.receive',
+  // Paying a supplier is a finance act, not a buying one: the person who
+  // chooses what to order should not also move the money out.
+  'purchasing.pay',
   // The till. Selling is the counter's job; unwinding a paid sale is not.
   'pos.view',
   'pos.sell',
@@ -150,6 +153,8 @@ export const ROLE_PERMISSIONS: Record<AdminRole, readonly Permission[]> = {
     'inventory.view',
     'purchasing.view',
     'purchasing.approve',
+    // And the only role besides the super admin that may actually pay one.
+    'purchasing.pay',
     'pos.view',
     'crm.view',
   ],

@@ -330,6 +330,17 @@ export const RETURN_REASONS = [
 ] as const;
 export type ReturnReason = (typeof RETURN_REASONS)[number];
 
+export const PURCHASE_RETURN_STATUSES = [
+  'DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'POSTED', 'CANCELLED',
+] as const;
+/**
+ * Where a return has got to.
+ *
+ * Its own list rather than the receipt's, because sending goods back needs a
+ * signature and a rejected return goes back to draft to be corrected.
+ */
+export type PurchaseReturnStatus = (typeof PURCHASE_RETURN_STATUSES)[number];
+
 export interface PurchaseReturn {
   id: string;
   returnNumber: string;
@@ -339,9 +350,18 @@ export interface PurchaseReturn {
   returnedOn: CalendarDate;
   reasonType: ReturnReason;
   reasonNote: string | null;
-  status: GoodsReceiptStatus;
+  status: PurchaseReturnStatus;
   totalIdr: number;
   postedAt: string | null;
+  /** Sending goods back is somebody's decision, so the return carries whose. */
+  submittedAt: string | null;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  rejectedBy: string | null;
+  rejectedAt: string | null;
+  decisionNote: string | null;
+  /** The credit note it produced, so the two documents point at each other. */
+  creditId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1069,4 +1089,351 @@ export interface StockCardEntry {
   balance: number;
   unitCostIdr: number;
   valueIdr: number;
+}
+
+// ── What arrived, what we owe, who signed ───────────────────────────────────
+
+export const DELIVERY_STATUSES = ['ARRIVED', 'INSPECTED', 'CANCELLED'] as const;
+export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number];
+
+/**
+ * What came off the truck.
+ *
+ * Not a goods receipt: the truck arriving is one event and accepting what was
+ * on it is another. Folded together, a short delivery looks identical to a
+ * rejection.
+ */
+export interface Delivery {
+  id: string;
+  deliveryNumber: string;
+  orderId: string;
+  supplierId: string;
+  branchId: string;
+  deliveryNoteNumber: string | null;
+  driverName: string | null;
+  vehicle: string | null;
+  arrivedOn: string;
+  arrivedAt: string;
+  receivedBy: string | null;
+  receivedByName: string | null;
+  status: DeliveryStatus;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DeliveryItem {
+  id: string;
+  deliveryId: string;
+  orderItemId: string;
+  itemId: string;
+  /** In the pack it was ordered in. One quantity, before anybody judged it. */
+  qtyDelivered: number;
+  unit: string;
+  packFactor: number;
+  batchNumber: string | null;
+  expiresOn: string | null;
+  note: string | null;
+}
+
+export interface InspectionOutcome {
+  delivered: number;
+  inspected: number;
+  outstanding: number;
+  /** Every unit accepted or rejected — both are decisions. */
+  complete: boolean;
+}
+
+export const PAYMENT_TERM_STATUSES = ['PENDING', 'PARTIAL', 'PAID', 'CANCELLED'] as const;
+export type PaymentTermStatus = (typeof PAYMENT_TERM_STATUSES)[number];
+
+/** One instalment on a purchase order. */
+export interface PaymentTerm {
+  id: string;
+  orderId: string;
+  sequence: number;
+  label: string;
+  dueOn: string;
+  /** The share agreed. The amount is what will actually be transferred. */
+  percent: number | null;
+  amountIdr: number;
+  status: PaymentTermStatus;
+  paidIdr: number;
+  note: string | null;
+}
+
+export const VENDOR_PAYMENT_METHODS = ['TRANSFER', 'CASH', 'CHEQUE', 'CARD', 'CREDIT_NOTE'] as const;
+export type VendorPaymentMethod = (typeof VENDOR_PAYMENT_METHODS)[number];
+
+/** Money that actually left. */
+export interface VendorPayment {
+  id: string;
+  paymentNumber: string;
+  supplierId: string;
+  orderId: string | null;
+  termId: string | null;
+  paidOn: string;
+  amountIdr: number;
+  /** The part settled with a credit note rather than cash. */
+  creditIdr: number;
+  method: VendorPaymentMethod;
+  reference: string | null;
+  status: 'DRAFT' | 'POSTED' | 'VOIDED';
+  note: string | null;
+  postedAt: string | null;
+  postedBy: string | null;
+  voidedAt: string | null;
+  voidReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const CREDIT_STATUSES = ['OPEN', 'PARTIALLY_APPLIED', 'APPLIED', 'CANCELLED'] as const;
+export type CreditStatus = (typeof CREDIT_STATUSES)[number];
+
+/**
+ * What a supplier owes back.
+ *
+ * Not a refund: the money does not move, the next invoice is smaller.
+ */
+export interface VendorCredit {
+  id: string;
+  creditNumber: string;
+  supplierId: string;
+  returnId: string | null;
+  issuedOn: string;
+  amountIdr: number;
+  appliedIdr: number;
+  status: CreditStatus;
+  reason: string | null;
+  expiresOn: string | null;
+}
+
+export interface PayablesPosition {
+  totalIdr: number;
+  scheduledIdr: number;
+  paidIdr: number;
+  creditedIdr: number;
+  /** Credit notes count as settled: the debt is gone even though no money moved. */
+  outstandingIdr: number;
+  overdueIdr: number;
+  nextDue: string | null;
+}
+
+// ── Offers, cards, tenders, paper ───────────────────────────────────────────
+
+export const PROMOTION_KINDS = ['PERCENT', 'AMOUNT', 'BUY_X_GET_Y', 'BUNDLE'] as const;
+export type PromotionKind = (typeof PROMOTION_KINDS)[number];
+
+export const PROMOTION_KIND_LABELS: Record<PromotionKind, string> = {
+  PERCENT: 'Percentage off',
+  AMOUNT: 'Amount off',
+  BUY_X_GET_Y: 'Buy X get Y',
+  BUNDLE: 'Bundle price',
+};
+
+/**
+ * An offer the till applies by itself.
+ *
+ * A price break says what one product costs at a quantity; a promotion is
+ * about a basket and has a start, an end and a decision behind it.
+ */
+export interface Promotion {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  kind: PromotionKind;
+  percent: number | null;
+  amountIdr: number | null;
+  buyQty: number | null;
+  freeQty: number | null;
+  bundlePriceIdr: number | null;
+  minSpendIdr: number;
+  minQty: number;
+  /** An offer somebody has to ask for by name. */
+  requiresCode: boolean;
+  channels: string[];
+  /** The only offer on the basket when it wins, so offers cannot stack into a loss. */
+  exclusive: boolean;
+  priority: number;
+  startsOn: string | null;
+  endsOn: string | null;
+  maxUses: number | null;
+  maxUsesPerMember: number | null;
+  usedCount: number;
+  active: boolean;
+}
+
+export interface PromotionTarget {
+  id: string;
+  promotionId: string;
+  productId: string | null;
+  categoryId: string | null;
+  /** How many of this product a bundle contains. */
+  qty: number;
+}
+
+export interface AppliedPromotion {
+  promotionId: string;
+  code: string;
+  name: string;
+  discountIdr: number;
+}
+
+export const GIFT_CARD_STATUSES = ['ACTIVE', 'FROZEN', 'EXPIRED', 'CANCELLED'] as const;
+export type GiftCardStatus = (typeof GIFT_CARD_STATUSES)[number];
+
+/**
+ * Money somebody has already paid for.
+ *
+ * Not the credit wallet: credits buy classes and are a liability in sessions,
+ * a card is money spendable on anything at the counter.
+ */
+export interface GiftCard {
+  id: string;
+  code: string;
+  barcode: string | null;
+  memberId: string | null;
+  issuedOn: string;
+  expiresOn: string | null;
+  initialIdr: number;
+  balanceIdr: number;
+  status: GiftCardStatus;
+  issuedBy: string | null;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GiftCardEntry {
+  id: string;
+  cardId: string;
+  kind: 'ISSUE' | 'TOP_UP' | 'SPEND' | 'REFUND' | 'ADJUSTMENT' | 'EXPIRY';
+  /** Signed: negative took money off the card. */
+  amountIdr: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  orderId: string | null;
+  reason: string | null;
+  actorId: string | null;
+  createdAt: string;
+}
+
+export const METHOD_KINDS = ['CASH', 'CARD', 'QR', 'TRANSFER', 'MEMBER_CREDIT', 'GIFT_CARD'] as const;
+export type PaymentMethodKind = (typeof METHOD_KINDS)[number];
+
+/**
+ * How the counter may be paid, as a row rather than a constant.
+ *
+ * What cannot be configured stays a rule: change comes out of the drawer, so a
+ * method that gives it has to be counted in it.
+ */
+export interface PaymentMethod {
+  id: string;
+  code: string;
+  name: string;
+  kind: PaymentMethodKind;
+  givesChange: boolean;
+  needsReference: boolean;
+  countsInDrawer: boolean;
+  sortOrder: number;
+  active: boolean;
+}
+
+export interface ReceiptSettings {
+  branchId: string;
+  header: string;
+  footer: string;
+  businessName: string;
+  address: string;
+  phone: string | null;
+  taxNumber: string | null;
+  /** 58mm and 80mm are the two thermal widths that exist in practice. */
+  paperWidth: 58 | 80;
+  showLogo: boolean;
+  showCashier: boolean;
+  autoPrint: boolean;
+}
+
+export const PRINT_JOB_STATUSES = ['QUEUED', 'PRINTING', 'PRINTED', 'FAILED', 'CANCELLED'] as const;
+export type PrintJobStatus = (typeof PRINT_JOB_STATUSES)[number];
+
+/** One document waiting for a printer a local agent drains. */
+export interface PrintJob {
+  id: string;
+  branchId: string;
+  kind: 'RECEIPT' | 'SHIFT_REPORT' | 'ORDER_COPY';
+  orderId: string | null;
+  shiftId: string | null;
+  /** The rendered document, so a reprint is the same paper as the original. */
+  payload: string;
+  status: PrintJobStatus;
+  attempts: number;
+  error: string | null;
+  claimedAt: string | null;
+  printedAt: string | null;
+  createdAt: string;
+}
+
+// ── Things that happened somewhere else ─────────────────────────────────────
+
+export const PARTNER_KINDS = ['RACE', 'GYM', 'HEALTH', 'RETAIL', 'PAYMENT', 'OTHER'] as const;
+export type PartnerKind = (typeof PARTNER_KINDS)[number];
+
+export interface IntegrationPartner {
+  id: string;
+  code: string;
+  name: string;
+  kind: PartnerKind;
+  contactName: string | null;
+  contactEmail: string | null;
+  /** Recording a partner's word and paying out on it are different trust levels. */
+  awardsXp: boolean;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+  /** Whether they can post at all. The secret itself never leaves the server. */
+  hasSecret: boolean;
+}
+
+export const EVENT_STATUSES = [
+  'RECEIVED', 'MATCHED', 'PROCESSED', 'UNMATCHED', 'IGNORED', 'FAILED',
+] as const;
+export type ExternalEventStatus = (typeof EVENT_STATUSES)[number];
+
+export interface ExternalEvent {
+  id: string;
+  partnerId: string;
+  externalId: string;
+  eventType: string;
+  /** Who the partner said it was about, in their terms. */
+  subject: string;
+  memberId: string | null;
+  occurredAt: string;
+  payload: Record<string, unknown>;
+  status: ExternalEventStatus;
+  xpAwarded: number;
+  error: string | null;
+  processedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ── Spreadsheets ────────────────────────────────────────────────────────────
+
+export interface ImportError {
+  line: number;
+  subject: string;
+  message: string;
+}
+
+export interface ImportResult {
+  /** An import says what it would do before it does it. */
+  dryRun: boolean;
+  rows: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  failures: ImportError[];
 }

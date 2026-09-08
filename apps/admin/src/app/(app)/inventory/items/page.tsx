@@ -18,6 +18,7 @@ import {
   SearchSelect,
   StatCard,
 } from '../../../../components/ui';
+import { ExportButton, ImportButton } from '../../../../components/spreadsheet';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
 
@@ -64,6 +65,19 @@ export default function ItemsPage() {
             <Link href="/inventory" className="a-btn-ghost">
               Stock
             </Link>
+            <ExportButton
+              filename="items"
+              fetcher={() => api.admin.inventory.exportItems()}
+            />
+            {can('inventory.manage') ? (
+              <ImportButton
+                title="Import a catalogue"
+                hint="However many rows somebody exported from whatever they used before. Typing them in is not a migration plan."
+                columns={['sku', 'name', 'category', 'unit', 'cost', 'kind', 'barcode']}
+                importer={(csv, apply) => api.admin.inventory.importItems(csv, apply)}
+                onDone={() => void qc.invalidateQueries({ queryKey: ['inventory'] })}
+              />
+            ) : null}
             {can('inventory.manage') ? (
               <button className="a-btn" onClick={() => setEditing('new')}>
                 + New item

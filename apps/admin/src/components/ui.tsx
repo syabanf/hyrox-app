@@ -274,11 +274,28 @@ export function StatCard({
   );
 }
 
-export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+export function Modal({
+  title,
+  onClose,
+  children,
+  wide,
+}: {
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+  /**
+   * For a sheet that carries a table. A five-column table in a form-width
+   * panel loses its last column off the edge, which is the one nobody knew
+   * was there.
+   */
+  wide?: boolean;
+}) {
   return (
     <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="modal-panel max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-3xl bg-surface p-6 shadow-[0_24px_60px_rgb(0_40_26/0.3)]"
+        className={`modal-panel max-h-[85dvh] w-full overflow-y-auto rounded-3xl bg-surface p-6 shadow-[0_24px_60px_rgb(0_40_26/0.3)] ${
+          wide ? 'max-w-3xl' : 'max-w-lg'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">

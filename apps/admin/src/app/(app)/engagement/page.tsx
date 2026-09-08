@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../lib/api';
 import { usePermissions } from '../../../lib/auth';
-import { Pencil, Send, Trash2 } from 'lucide-react';
+import { Eye, Pencil, Send, Trash2 } from 'lucide-react';
 import { ErrorNote, Modal, PageTitle, Pager, RowActions, SearchSelect, StatCard } from '../../../components/ui';
 
 const SEGMENT_LABEL: Record<MemberSegment, string> = {
@@ -307,6 +307,12 @@ function CampaignModal({
             value={message}
             onChange={(e) => setMessage(e.target.value)}
           />
+          <p className="mt-1 text-xs text-muted">
+            {'{{firstName}}'}, {'{{name}}'}, {'{{email}}'} and {'{{phone}}'} are filled in per
+            member. Preview it before sending — that is where you find out half the audience has
+            no first name on file.
+          </p>
+          <CampaignPreview message={message} />
         </div>
         <div>
           <label className="a-label">Image URL (optional, shown on the member Home)</label>
@@ -327,5 +333,83 @@ function CampaignModal({
         </button>
       </div>
     </Modal>
+  );
+}
+
+/**
+ * How a campaign will actually read, to real members.
+ *
+ * Not a template preview against values somebody typed: this renders against
+ * particular members' real details, and it says who would not receive it at
+ * all — consent is part of the question "who is getting this".
+ */
+function CampaignPreview({ message }: { message: string }) {
+  const [memberIds, setMemberIds] = useState<string[]>([]);
+  const [open, setOpen] = useState(false);
+
+  const { data: members } = useQuery({
+    queryKey: ['members', 'all'],
+    queryFn: () => api.admin.members.list(),
+  });
+
+  // Three is enough to spot a missing placeholder without being a send.
+  const sample = (members ?? []).slice(0, 3).map((m) => m.member.id);
+  const chosen = memberIds.length > 0 ? memberIds : sample;
+
+  const { data: previews, isFetching } = useQuery({
+    queryKey: ['crm', 'campaign-preview', message, chosen],
+    queryFn: () => api.admin.crm.campaigns.preview({ message, memberIds: chosen }),
+    enabled: open && message.trim().length > 0 && chosen.length > 0,
+  });
+
+  if (!message.trim()) return null;
+
+  return (
+    <div className="mt-2">
+      <button
+        className="a-btn-ghost !px-3 !py-1 text-xs"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <Eye size={13} /> {open ? 'Hide preview' : 'Preview it'}
+      </button>
+
+      {open ? (
+        <div className="mt-2 grid gap-2">
+          <SearchSelect
+            value={memberIds[0] ?? ''}
+            onChange={(v) => setMemberIds(v ? [v] : [])}
+            allowEmpty
+            emptyLabel="A few members"
+            placeholder="Preview as a particular member…"
+            options={(members ?? []).map((m) => ({ value: m.member.id, label: m.member.fullName }))}
+          />
+          {isFetching ? (
+            <p className="text-xs text-muted">Rendering…</p>
+          ) : (
+            (previews ?? []).map((preview) => (
+              <div
+                key={preview.memberId}
+                className={`rounded-xl px-3 py-2 text-sm ${
+                  preview.deliverable ? 'bg-surface-raised' : 'border border-dashed border-danger/40'
+                }`}
+              >
+                <p className="mb-1 flex flex-wrap items-center gap-2 text-xs font-bold text-muted">
+                  {preview.memberName}
+                  {!preview.deliverable ? (
+                    <span className="text-danger">will not receive it · {preview.skipReason}</span>
+                  ) : null}
+                  {preview.missing.length > 0 ? (
+                    <span className="text-danger">
+                      nothing to fill: {preview.missing.join(', ')}
+                    </span>
+                  ) : null}
+                </p>
+                <p>{preview.message}</p>
+              </div>
+            ))
+          )}
+        </div>
+      ) : null}
+    </div>
   );
 }

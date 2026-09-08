@@ -6,7 +6,8 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@nuhabit/admin", "dev"],
       "port": 3000,
-      "autoPort": true
+      "autoPort": true,
+      "env": { "NEXT_PUBLIC_API_BASE_URL": "http://localhost:9099" }
     }
   ]
 }

@@ -3,19 +3,30 @@ import type {
   CashierShift,
   GoodsReceipt,
   GoodsReceiptItem,
+  AppliedPromotion,
   Badge,
   Batch,
   CampaignRecipient,
   CampaignReport,
   ContactPreference,
   Conversation,
+  Delivery,
+  DeliveryItem,
   ConversationMessage,
   ExpiryState,
+  ExternalEvent,
   ExpirySummary,
+  GiftCard,
+  GiftCardEntry,
   InboxMetrics,
+  InspectionOutcome,
   InventoryItem,
   ItemPack,
   MemberBadge,
+  PayablesPosition,
+  PaymentTerm,
+  Promotion,
+  PromotionTarget,
   LoyaltyProfile,
   LoyaltyTier,
   POSOrder,
@@ -39,6 +50,8 @@ import type {
   ValuationReport,
   ReviewSummary,
   StockLevel,
+  VendorCredit,
+  VendorPayment,
   StockMovement,
   StockTake,
   StockTakeLine,
@@ -654,3 +667,167 @@ export interface ClosingReportView {
 }
 
 export type { ProfitLine, RushHour, SalesBucket, StockCardEntry, SupplierPerformance, ValuationReport };
+
+// ── What arrived, what we owe ───────────────────────────────────────────────
+
+/** One line off the truck, and how much of it has been judged since. */
+export interface DeliveryLineView extends DeliveryItem {
+  itemName: string;
+  qtyAccepted: number;
+  qtyRejected: number;
+  /** Units nobody has looked at yet. Rejections count as decided. */
+  outstanding: number;
+}
+
+export interface DeliveryView extends Delivery {
+  supplierName: string;
+  orderNumber: string;
+  items: DeliveryLineView[];
+  inspection: InspectionOutcome;
+}
+
+/** An order's money: what was agreed, what has moved, what is left. */
+export interface PayablesView {
+  orderId: string;
+  position: PayablesPosition;
+  terms: PaymentTerm[];
+  payments: VendorPayment[];
+}
+
+export interface SaveTermsInput {
+  terms: Array<{
+    sequence?: number;
+    label?: string;
+    dueOn: string;
+    /** Percentages win over typed amounts, and must add to 100. */
+    percent?: number;
+    amountIdr?: number;
+    note?: string | null;
+  }>;
+}
+
+export interface RecordPaymentInput {
+  supplierId: string;
+  orderId?: string | null;
+  termId?: string | null;
+  paidOn?: string;
+  amountIdr: number;
+  method?: string;
+  reference?: string | null;
+  note?: string | null;
+  /** Spend open credit notes before any cash moves. */
+  useCredits?: boolean;
+}
+
+export interface RaiseCreditInput {
+  supplierId: string;
+  returnId?: string | null;
+  amountIdr: number;
+  reason?: string | null;
+  expiresOn?: string | null;
+}
+
+export interface OpenDeliveryInput {
+  orderId: string;
+  deliveryNoteNumber?: string | null;
+  driverName?: string | null;
+  vehicle?: string | null;
+  arrivedOn?: string;
+  note?: string | null;
+}
+
+export interface DeliveryLineInput {
+  orderItemId: string;
+  qty: number;
+  batchNumber?: string | null;
+  expiresOn?: string | null;
+  note?: string | null;
+}
+
+// ── Offers, cards, tenders, paper ───────────────────────────────────────────
+
+export interface PromotionView extends Promotion {
+  targets: PromotionTarget[];
+}
+
+export interface UpsertPromotionInput {
+  code: string;
+  name: string;
+  description?: string;
+  kind: string;
+  percent?: number | null;
+  amountIdr?: number | null;
+  buyQty?: number | null;
+  freeQty?: number | null;
+  bundlePriceIdr?: number | null;
+  minSpendIdr?: number;
+  minQty?: number;
+  requiresCode?: boolean;
+  channels?: string[];
+  exclusive?: boolean;
+  priority?: number;
+  startsOn?: string | null;
+  endsOn?: string | null;
+  maxUses?: number | null;
+  maxUsesPerMember?: number | null;
+  active?: boolean;
+  targets?: Array<{ productId?: string | null; categoryId?: string | null; qty?: number }>;
+}
+
+export interface GiftCardView extends GiftCard {
+  memberName: string;
+  entries: GiftCardEntry[];
+}
+
+export interface IssueGiftCardInput {
+  code?: string;
+  barcode?: string | null;
+  memberId?: string | null;
+  amountIdr: number;
+  expiresOn?: string | null;
+  note?: string | null;
+}
+
+export interface UpsertMethodInput {
+  code: string;
+  name: string;
+  kind: string;
+  givesChange?: boolean;
+  needsReference?: boolean;
+  countsInDrawer?: boolean;
+  sortOrder?: number;
+  active?: boolean;
+}
+
+// ── Partners and previews ───────────────────────────────────────────────────
+
+export interface ExternalEventView extends ExternalEvent {
+  partnerName: string;
+  memberName: string;
+}
+
+export interface UpsertPartnerInput {
+  code: string;
+  name: string;
+  kind?: string;
+  contactName?: string | null;
+  contactEmail?: string | null;
+  awardsXp?: boolean;
+  active?: boolean;
+  /** Omitted leaves the existing secret alone. */
+  secret?: string;
+}
+
+/** A campaign as one member will actually receive it, consent included. */
+export interface CampaignPreviewView {
+  memberId: string;
+  memberName: string;
+  message: string;
+  deepLink: string;
+  /** Placeholders this member has nothing to fill. */
+  missing: string[];
+  deliverable: boolean;
+  skipReason?: string;
+}
+
+export type { AppliedPromotion, Delivery, GiftCard, PaymentTerm, Promotion, VendorCredit, VendorPayment };

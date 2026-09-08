@@ -17,6 +17,7 @@ import {
   SearchSelect,
   StatCard,
 } from '../../../../components/ui';
+import { ExportButton, ImportButton } from '../../../../components/spreadsheet';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
 
@@ -58,6 +59,19 @@ export default function SuppliersPage() {
             <Link href="/purchasing" className="a-btn-ghost">
               Orders
             </Link>
+            <ExportButton
+              filename="suppliers"
+              fetcher={() => api.admin.purchasing.exportSuppliers()}
+            />
+            {can('purchasing.manage') ? (
+              <ImportButton
+                title="Import suppliers"
+                hint="A list from wherever they were kept before. Blocked suppliers stay blocked — somebody blocked them for a reason."
+                columns={['code', 'name', 'contact', 'phone', 'email', 'city', 'terms']}
+                importer={(csv, apply) => api.admin.purchasing.importSuppliers(csv, apply)}
+                onDone={() => void qc.invalidateQueries({ queryKey: ['purchasing'] })}
+              />
+            ) : null}
             {can('purchasing.manage') ? (
               <button className="a-btn" onClick={() => setEditing('new')}>
                 + New supplier

@@ -106,12 +106,12 @@ func EvaluateDeliveryLine(order PurchaseOrder, line PurchaseOrderItem,
 
 // InspectionOutcome is how much of a delivery a receipt may still account for.
 type InspectionOutcome struct {
-	Delivered   Quantity
-	Inspected   Quantity
-	Outstanding Quantity
+	Delivered   Quantity `json:"delivered"`
+	Inspected   Quantity `json:"inspected"`
+	Outstanding Quantity `json:"outstanding"`
 	// Complete reports whether every delivered unit has now been either
 	// accepted or rejected, which is what lets the delivery close.
-	Complete bool
+	Complete bool `json:"complete"`
 }
 
 // InspectDelivery works out what is left to judge on an arrival.

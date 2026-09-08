@@ -50,8 +50,46 @@ func (h *Handler) Mount(r *httpx.Router) {
 	r.Get("/api/admin/crm/redemptions", h.listRedemptions, view)
 	r.Post("/api/admin/crm/redemptions/{id}/{action}", h.decideRedemption, approve)
 
+	// Badges: what a member has done, as opposed to what they have spent.
+	r.Get("/api/admin/crm/badges", h.listBadges, view)
+	r.Put("/api/admin/crm/badges", h.saveBadge, manage)
+	r.Get("/api/admin/crm/members/{id}/badges", h.memberBadges, view)
+	r.Post("/api/admin/crm/members/{id}/badges", h.awardBadge, adjust)
+	r.Delete("/api/admin/crm/members/{id}/badges/{badgeId}", h.revokeBadge, adjust)
+	r.Post("/api/admin/crm/members/{id}/badges/evaluate", h.evaluateBadges, manage)
+
+	// Consent. An opt-out is a hard exclusion, not a preference.
+	r.Get("/api/admin/crm/members/{id}/consent", h.listConsent, view)
+	r.Put("/api/admin/crm/members/{id}/consent", h.setConsent, manage)
+
+	// The inbox.
+	r.Get("/api/admin/crm/inbox", h.inboxOverview, view)
+	r.Get("/api/admin/crm/conversations", h.listConversations, view)
+	r.Post("/api/admin/crm/conversations", h.openConversation, manage)
+	r.Get("/api/admin/crm/conversations/{id}", h.getConversation, view)
+	r.Put("/api/admin/crm/conversations/{id}", h.updateConversation, manage)
+	r.Post("/api/admin/crm/conversations/{id}/messages", h.reply, manage)
+
+	r.Get("/api/admin/crm/templates", h.listTemplates, view)
+	r.Put("/api/admin/crm/templates", h.saveTemplate, manage)
+	r.Post("/api/admin/crm/templates/{id}/preview", h.previewTemplate, view)
+
+	// Reviews.
+	r.Get("/api/admin/crm/reviews", h.listReviews, view)
+	r.Get("/api/admin/crm/reviews/summary", h.reviewSummary, view)
+	r.Post("/api/admin/crm/reviews/{id}/reply", h.replyToReview, manage)
+	r.Put("/api/admin/crm/reviews/{id}/status", h.setReviewStatus, manage)
+
+	// What a campaign actually did, per member.
+	r.Get("/api/admin/crm/campaigns/{id}/report", h.campaignReport, view)
+	r.Post("/api/admin/crm/campaigns/{id}/mark", h.markCampaign, manage)
+
 	// The member's own view of what they have earned.
 	r.Get("/api/me/loyalty", h.myLoyalty, h.guard.RequireMember)
+	r.Get("/api/me/badges", h.myBadges, h.guard.RequireMember)
+	r.Get("/api/me/consent", h.myConsent, h.guard.RequireMember)
+	r.Put("/api/me/consent", h.setMyConsent, h.guard.RequireMember)
+	r.Post("/api/me/reviews", h.leaveReview, h.guard.RequireMember)
 }
 
 func actorFrom(r *http.Request) Actor {

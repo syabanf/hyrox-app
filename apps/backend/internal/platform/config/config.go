@@ -22,6 +22,7 @@ type Config struct {
 	Database       Database
 	Auth           Auth
 	Payments       Payments
+	Social         Social
 	Modules        Modules
 	Log            Log
 }
@@ -65,6 +66,18 @@ type Payments struct {
 	XenditCallback string
 	// InvoiceTTL is how long a pending payment stays payable.
 	InvoiceTTL time.Duration
+}
+
+// Social is what an inbound social webhook needs to prove itself.
+//
+// Both are empty by default, and an unconfigured webhook refuses everything.
+// A publicly reachable endpoint that writes to the support inbox without
+// checking a signature is an open door, so the safe state is off.
+type Social struct {
+	// InstagramVerifyToken is echoed back during the subscription handshake.
+	InstagramVerifyToken string
+	// InstagramAppSecret signs every delivery.
+	InstagramAppSecret string
 }
 
 // Modules decides which bounded contexts this process mounts. Running the
@@ -126,6 +139,10 @@ func Load() (Config, error) {
 			XenditAPIKey:   env("XENDIT_API_KEY", ""),
 			XenditCallback: env("XENDIT_CALLBACK_TOKEN", ""),
 			InvoiceTTL:     duration("PAYMENTS_INVOICE_TTL", 24*time.Hour),
+		},
+		Social: Social{
+			InstagramVerifyToken: env("INSTAGRAM_VERIFY_TOKEN", ""),
+			InstagramAppSecret:   env("INSTAGRAM_APP_SECRET", ""),
 		},
 		Modules: Modules{Enabled: list("MODULES", []string{ModuleAll})},
 		Log: Log{

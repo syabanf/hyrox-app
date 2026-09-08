@@ -196,6 +196,11 @@ func New(cfg config.Config, db *database.DB) *App {
 	}
 	if cfg.Modules.IsEnabled(ModuleCRM) {
 		crm.NewHandler(crmService, guard).Mount(router)
+		// The webhook mounts alongside the module it feeds. It authenticates
+		// by signature rather than by session, so it takes no guard — and
+		// refuses everything when no app secret is configured.
+		crm.NewInstagramWebhook(crmService,
+			cfg.Social.InstagramVerifyToken, cfg.Social.InstagramAppSecret).Mount(router)
 	}
 	if cfg.Modules.IsEnabled(ModulePOS) {
 		pos.NewHandler(posService, guard).Mount(router)

@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -30,6 +32,11 @@ type harness struct {
 	app    *app.App
 }
 
+const (
+	instagramVerifyToken = "integration-verify-token"
+	instagramSecret      = "integration-app-secret"
+)
+
 func newHarness(t *testing.T) *harness {
 	t.Helper()
 
@@ -42,6 +49,11 @@ func newHarness(t *testing.T) *harness {
 	t.Setenv("AUTH_SECRET", "integration-test-secret")
 	t.Setenv("AUTH_DEMO_OTP", "true")
 	t.Setenv("APP_ENV", "test")
+	// The Instagram webhook refuses everything unless it is configured, so
+	// the harness configures it — the signature check is the thing under test,
+	// not something to be switched off.
+	t.Setenv("INSTAGRAM_VERIFY_TOKEN", instagramVerifyToken)
+	t.Setenv("INSTAGRAM_APP_SECRET", instagramSecret)
 
 	cfg, err := config.Load()
 	if err != nil {
@@ -82,18 +94,23 @@ func truncateAll(t *testing.T, db *database.DB) {
 			wallet.credit_ledger_entries, wallet.vouchers,
 			incentives.payouts, incentives.schemes,
 			engagement.challenge_joins, engagement.challenges,
-			engagement.member_notifications, engagement.campaigns,
-			pos.payments, pos.order_items, pos.orders, pos.shifts, pos.products, pos.categories,
+			engagement.campaign_recipients, engagement.member_notifications,
+			engagement.campaigns, engagement.message_templates,
+			pos.payments, pos.order_items, pos.orders, pos.shifts,
+			pos.product_prices, pos.products, pos.categories,
 			crm.redemptions, crm.xp_ledger, crm.rewards, crm.member_profiles,
 			crm.xp_rules, crm.tiers,
+			crm.conversation_messages, crm.conversations, crm.reviews,
+			crm.member_badges, crm.badges, crm.contact_preferences,
 			purchasing.purchase_return_items, purchasing.purchase_returns,
 			purchasing.goods_receipt_items, purchasing.goods_receipts,
 			purchasing.purchase_order_items, purchasing.purchase_orders,
 			purchasing.purchase_request_items, purchasing.purchase_requests,
 			purchasing.supplier_prices, purchasing.suppliers,
 			inventory.stock_take_lines, inventory.stock_takes, inventory.stock_transfers,
-			inventory.stock_movements, inventory.stock_levels, inventory.items,
-			inventory.categories,
+			inventory.batch_movements, inventory.batches,
+			inventory.stock_movements, inventory.stock_levels,
+			inventory.item_packs, inventory.items, inventory.categories,
 			hris.attendance, hris.leaves, hris.leave_balances, hris.overtime_requests,
 			hris.employee_shifts, hris.employees, hris.shifts, hris.public_holidays,
 			hris.departments, hris.positions, hris.employment_statuses,
@@ -840,4 +857,56 @@ func TestAppendOnlyLedgerIsEnforcedByTheDatabase(t *testing.T) {
 	if _, err := h.app.DB.Exec(ctx, `DELETE FROM wallet.credit_ledger_entries`); err == nil {
 		t.Fatal("the ledger accepted a DELETE; it must be append-only")
 	}
+}
+
+// raw posts a body verbatim, with arbitrary headers.
+//
+// It exists for signed webhooks: the signature covers the exact bytes, so a
+// helper that re-encodes a map would sign something subtly different from what
+// the server verifies.
+func (h *harness) raw(method, path string, headers map[string]string, body string) (int, map[string]any) {
+	h.t.Helper()
+
+	req, err := http.NewRequest(method, h.server.URL+path, strings.NewReader(body))
+	if err != nil {
+		h.t.Fatalf("building request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	for key, value := range headers {
+		req.Header.Set(key, value)
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		h.t.Fatalf("%s %s: %v", method, path, err)
+	}
+	defer res.Body.Close()
+
+	var decoded map[string]any
+	_ = json.NewDecoder(res.Body).Decode(&decoded)
+	return res.StatusCode, decoded
+}
+
+// requestObject is request without the fatal-on-error, for a caller that wants
+// to handle a miss itself.
+func (h *harness) requestObject(method, path, token string) (map[string]any, error) {
+	status, body := h.request(method, path, token, nil)
+	if status != http.StatusOK {
+		return nil, fmt.Errorf("%s %s returned %d: %v", method, path, status, body)
+	}
+	return body, nil
+}
+
+// loyaltyOf reads a member's current point balance.
+func (h *harness) loyaltyOf(t *testing.T, token, memberID string) float64 {
+	t.Helper()
+	status, detail := h.request(http.MethodGet, "/api/admin/crm/members/"+memberID, token, nil)
+	if status != http.StatusOK {
+		t.Fatalf("reading loyalty returned %d: %v", status, detail)
+	}
+	profile, ok := detail["profile"].(map[string]any)
+	if !ok {
+		t.Fatalf("no profile in %v", detail)
+	}
+	return profile["currentXp"].(float64)
 }

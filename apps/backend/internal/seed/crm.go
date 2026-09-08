@@ -92,6 +92,69 @@ func (s *Seeder) seedLoyalty(ctx context.Context) (int, error) {
 			return 0, fmt.Errorf("seed: reward %s: %w", r.id, err)
 		}
 	}
+	// Badges: what a member has done, as opposed to what they have spent.
+	badges := []struct {
+		id, code, name, description, metric string
+		threshold                           float64
+		bonusXP, sortOrder                  int
+	}{
+		{"bdg_first", "FIRST-VISIT", "First one through the door",
+			"Turned up once. Everything starts here.", "VISITS", 1, 50, 1},
+		{"bdg_ten", "TEN-VISITS", "Regular",
+			"Ten visits. Not a phase any more.", "VISITS", 10, 150, 2},
+		{"bdg_fifty", "FIFTY-VISITS", "Fixture",
+			"Fifty visits.", "VISITS", 50, 500, 3},
+		{"bdg_booked", "TEN-BOOKINGS", "Planner",
+			"Ten classes booked ahead rather than walked into.", "BOOKINGS", 10, 100, 4},
+		{"bdg_spender", "SPEND-1M", "Regular at the counter",
+			"A million rupiah across the counter.", "SPEND_IDR", 1_000_000, 200, 5},
+		// Awarded by a person, for the things no counter can see.
+		{"bdg_spirit", "COMMUNITY", "Holds the room together",
+			"Given by a coach, for the thing that does not show up in a number.",
+			"MANUAL", 0, 300, 6},
+	}
+	for _, b := range badges {
+		if _, err := s.db.Exec(ctx, `
+			INSERT INTO crm.badges (id, code, name, description, metric, threshold,
+				bonus_xp, sort_order)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (id) DO NOTHING`,
+			b.id, b.code, b.name, b.description, b.metric, b.threshold,
+			b.bonusXP, b.sortOrder); err != nil {
+			return 0, fmt.Errorf("seed: badge %s: %w", b.id, err)
+		}
+	}
+
+	// Words written once and sent many times.
+	templates := []struct {
+		id, code, name, channel, subject, body string
+		variables                              []string
+	}{
+		{"tpl_welcome", "WELCOME", "Welcome", "INBOX", "Welcome to NuHabit",
+			"Hi {{name}} — welcome. Your first class is on us; just show the QR at the door.",
+			[]string{"name"}},
+		{"tpl_low_balance", "LOW-BALANCE", "Running low", "PUSH", "",
+			"{{name}}, you have {{credits}} credits left. Top up before your next booking.",
+			[]string{"name", "credits"}},
+		{"tpl_apology", "APOLOGY", "Sorry about that", "INBOX", "About your class",
+			"Hi {{name}} — sorry about {{issue}}. We have {{remedy}}.",
+			[]string{"name", "issue", "remedy"}},
+		{"tpl_expiring", "EXPIRING", "Credits expiring", "WHATSAPP", "",
+			"{{name}}, {{credits}} of your credits expire on {{date}}.",
+			[]string{"name", "credits", "date"}},
+	}
+	for _, t := range templates {
+		var subject any
+		if t.subject != "" {
+			subject = t.subject
+		}
+		if _, err := s.db.Exec(ctx, `
+			INSERT INTO engagement.message_templates (id, code, name, channel, subject, body, variables)
+			VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (id) DO NOTHING`,
+			t.id, t.code, t.name, t.channel, subject, t.body, t.variables); err != nil {
+			return 0, fmt.Errorf("seed: template %s: %w", t.id, err)
+		}
+	}
+
 	return len(tiers), nil
 }
 

@@ -106,6 +106,15 @@ const (
 	XPEntry           = "xpe"
 	Reward            = "rwd"
 	LoyaltyRedemption = "rdm"
+
+	// Reaching a member, and hearing back.
+	Badge        = "bdg"
+	MemberBadge  = "mbd"
+	Review       = "rev"
+	Conversation = "cnv"
+	ChatMessage  = "cmg"
+	Template     = "tpl"
+	Recipient    = "rcp"
 )
 
 // Generator hands out identifiers. It is safe for concurrent use.

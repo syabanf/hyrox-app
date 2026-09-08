@@ -146,3 +146,24 @@ func QueryBool(r *http.Request, key string, fallback bool) bool {
 
 // Param reads a path parameter declared in a ServeMux pattern.
 func Param(r *http.Request, key string) string { return r.PathValue(key) }
+
+// DecodeBytes parses a body that has already been read.
+//
+// It exists for signed webhooks, where the signature covers the raw bytes: the
+// body has to be read before it is parsed, and decoding from the reader a
+// second time would find it empty. Unknown fields are *allowed* here, unlike
+// Decode — a third party's payload gains fields whenever they feel like it,
+// and rejecting the whole delivery over one is a retry loop rather than a
+// safeguard.
+func DecodeBytes[T any](body []byte) (T, error) {
+	var target T
+	if err := json.Unmarshal(body, &target); err != nil {
+		return target, decodeError(err)
+	}
+	if v, ok := any(&target).(Validator); ok {
+		if err := v.Validate(); err != nil {
+			return target, err
+		}
+	}
+	return target, nil
+}

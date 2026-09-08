@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/syabanf/nuhabit-backend/internal/domain"
-	"github.com/syabanf/nuhabit-backend/internal/platform/auth"
-	"github.com/syabanf/nuhabit-backend/internal/platform/httpx"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/domain"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/auth"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/httpx"
 )
 
 // PackageStat is how a package has actually sold. It comes from the wallet

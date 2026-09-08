@@ -6,8 +6,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/syabanf/nuhabit-backend/internal/domain"
-	"github.com/syabanf/nuhabit-backend/internal/modules/scheduling"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/domain"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/modules/scheduling"
 )
 
 // The member app's home screen is a composite of several modules: the wallet

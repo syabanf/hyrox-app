@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/syabanf/nuhabit-backend/internal/platform/httpx"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/httpx"
 )
 
 // windowFrom reads a report's date range off the query string.

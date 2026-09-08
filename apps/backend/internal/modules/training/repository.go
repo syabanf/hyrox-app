@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/syabanf/nuhabit-backend/internal/domain"
-	"github.com/syabanf/nuhabit-backend/internal/platform/database"
-	"github.com/syabanf/nuhabit-backend/internal/platform/httpx"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/domain"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/database"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/httpx"
 )
 
 // Repository persists the athlete side of the member app. It reads and writes

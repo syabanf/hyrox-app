@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/syabanf/nuhabit-backend/internal/platform/config"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/config"
 )
 
 // Setup installs the default logger. JSON in production so logs are

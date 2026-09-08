@@ -14,9 +14,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/syabanf/nuhabit-backend/internal/platform/clock"
-	"github.com/syabanf/nuhabit-backend/internal/platform/database"
-	"github.com/syabanf/nuhabit-backend/internal/platform/id"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/clock"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/database"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/id"
 )
 
 // Topics published by the studio modules.

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/syabanf/nuhabit-backend/internal/domain"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/domain"
 )
 
 // A straight line of points a fixed distance apart, one sample per second.

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/syabanf/nuhabit-backend/internal/domain"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/domain"
 )
 
 // What buying actually cost, and how suppliers actually behaved.

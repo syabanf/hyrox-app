@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/syabanf/nuhabit-backend/internal/domain"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/domain"
 )
 
 // InvoiceRequest is what the studio asks the payment provider to collect.

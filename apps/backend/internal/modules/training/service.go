@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/syabanf/nuhabit-backend/internal/domain"
-	"github.com/syabanf/nuhabit-backend/internal/platform/clock"
-	"github.com/syabanf/nuhabit-backend/internal/platform/httpx"
-	"github.com/syabanf/nuhabit-backend/internal/platform/id"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/domain"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/clock"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/httpx"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/id"
 )
 
 // Athlete is one member as the athlete screens need them: a name and a face.

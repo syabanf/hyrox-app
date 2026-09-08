@@ -3,8 +3,8 @@ package crm
 import (
 	"context"
 
-	"github.com/syabanf/nuhabit-backend/internal/domain"
-	"github.com/syabanf/nuhabit-backend/internal/platform/outbox"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/domain"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/outbox"
 )
 
 // Earning points from what happens elsewhere in the studio.

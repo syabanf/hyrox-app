@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/syabanf/nuhabit-backend/internal/domain"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/domain"
 )
 
 // What the shelf is worth, and how every quantity got there.

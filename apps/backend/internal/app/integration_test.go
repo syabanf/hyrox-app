@@ -13,12 +13,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/syabanf/nuhabit-backend/internal/app"
-	"github.com/syabanf/nuhabit-backend/internal/platform/clock"
-	"github.com/syabanf/nuhabit-backend/internal/platform/config"
-	"github.com/syabanf/nuhabit-backend/internal/platform/database"
-	"github.com/syabanf/nuhabit-backend/internal/seed"
-	"github.com/syabanf/nuhabit-backend/migrations"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/app"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/clock"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/config"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/database"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/seed"
+	"github.com/syabanf/hyrox-app/apps/backend/migrations"
 )
 
 // These tests drive the real HTTP surface against a real PostgreSQL database.

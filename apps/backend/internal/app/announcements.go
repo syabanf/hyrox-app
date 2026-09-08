@@ -3,8 +3,8 @@ package app
 import (
 	"context"
 
-	"github.com/syabanf/nuhabit-backend/internal/modules/engagement"
-	"github.com/syabanf/nuhabit-backend/internal/modules/reporting"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/modules/engagement"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/modules/reporting"
 )
 
 // announcementFeed turns sent campaigns into the home-screen announcements the

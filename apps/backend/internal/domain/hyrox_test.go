@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/syabanf/nuhabit-backend/internal/domain"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/domain"
 )
 
 func station(order int, id, name string, distance, reps *int) domain.Exercise {

@@ -12,14 +12,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/syabanf/nuhabit-backend/internal/domain"
-	"github.com/syabanf/nuhabit-backend/internal/platform/audit"
-	"github.com/syabanf/nuhabit-backend/internal/platform/clock"
-	"github.com/syabanf/nuhabit-backend/internal/platform/config"
-	"github.com/syabanf/nuhabit-backend/internal/platform/database"
-	"github.com/syabanf/nuhabit-backend/internal/platform/httpx"
-	"github.com/syabanf/nuhabit-backend/internal/platform/id"
-	"github.com/syabanf/nuhabit-backend/internal/platform/outbox"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/domain"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/audit"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/clock"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/config"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/database"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/httpx"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/id"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/outbox"
 )
 
 // Catalog is the port for the package and rule facts the wallet needs.

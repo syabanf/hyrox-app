@@ -9,10 +9,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/syabanf/nuhabit-backend/internal/domain"
-	"github.com/syabanf/nuhabit-backend/internal/platform/clock"
-	"github.com/syabanf/nuhabit-backend/internal/platform/database"
-	"github.com/syabanf/nuhabit-backend/internal/platform/id"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/domain"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/clock"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/database"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/id"
 )
 
 // Event is one recorded change.

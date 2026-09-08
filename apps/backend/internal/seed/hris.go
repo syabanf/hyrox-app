@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/syabanf/nuhabit-backend/internal/domain"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/domain"
 )
 
 // seedHR loads the people side of the demo studio: the org chart, the shift

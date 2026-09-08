@@ -12,12 +12,12 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/syabanf/nuhabit-backend/internal/platform/clock"
-	"github.com/syabanf/nuhabit-backend/internal/platform/config"
-	"github.com/syabanf/nuhabit-backend/internal/platform/database"
-	"github.com/syabanf/nuhabit-backend/internal/platform/logging"
-	"github.com/syabanf/nuhabit-backend/internal/seed"
-	"github.com/syabanf/nuhabit-backend/migrations"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/clock"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/config"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/database"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/logging"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/seed"
+	"github.com/syabanf/hyrox-app/apps/backend/migrations"
 )
 
 func main() {

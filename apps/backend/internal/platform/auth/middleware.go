@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/syabanf/nuhabit-backend/internal/platform/clock"
-	"github.com/syabanf/nuhabit-backend/internal/platform/httpx"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/clock"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/httpx"
 )
 
 type ctxKey string

@@ -15,13 +15,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/syabanf/nuhabit-backend/internal/domain"
-	"github.com/syabanf/nuhabit-backend/internal/platform/audit"
-	"github.com/syabanf/nuhabit-backend/internal/platform/auth"
-	"github.com/syabanf/nuhabit-backend/internal/platform/clock"
-	"github.com/syabanf/nuhabit-backend/internal/platform/config"
-	"github.com/syabanf/nuhabit-backend/internal/platform/httpx"
-	"github.com/syabanf/nuhabit-backend/internal/platform/id"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/domain"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/audit"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/auth"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/clock"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/config"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/httpx"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/id"
 )
 
 // WaiverVersion is the liability waiver members accept at registration. Bump

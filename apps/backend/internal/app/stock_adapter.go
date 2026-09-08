@@ -3,11 +3,11 @@ package app
 import (
 	"context"
 
-	"github.com/syabanf/nuhabit-backend/internal/domain"
-	"github.com/syabanf/nuhabit-backend/internal/modules/identity"
-	"github.com/syabanf/nuhabit-backend/internal/modules/inventory"
-	"github.com/syabanf/nuhabit-backend/internal/modules/pos"
-	"github.com/syabanf/nuhabit-backend/internal/modules/purchasing"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/domain"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/modules/identity"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/modules/inventory"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/modules/pos"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/modules/purchasing"
 )
 
 // purchasingStock satisfies the port purchasing declares, in terms of the

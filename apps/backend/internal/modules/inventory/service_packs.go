@@ -4,9 +4,9 @@ import (
 	"context"
 	"strings"
 
-	"github.com/syabanf/nuhabit-backend/internal/domain"
-	"github.com/syabanf/nuhabit-backend/internal/platform/httpx"
-	"github.com/syabanf/nuhabit-backend/internal/platform/id"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/domain"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/httpx"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/id"
 )
 
 // Packs are the only place a quantity changes meaning.

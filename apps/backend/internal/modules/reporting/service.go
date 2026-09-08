@@ -12,11 +12,11 @@ import (
 	"sort"
 	"time"
 
-	"github.com/syabanf/nuhabit-backend/internal/domain"
-	"github.com/syabanf/nuhabit-backend/internal/modules/access"
-	"github.com/syabanf/nuhabit-backend/internal/modules/scheduling"
-	"github.com/syabanf/nuhabit-backend/internal/modules/wallet"
-	"github.com/syabanf/nuhabit-backend/internal/platform/clock"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/domain"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/modules/access"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/modules/scheduling"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/modules/wallet"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/clock"
 )
 
 // Ports onto the other modules. Each is the narrowest read surface this module

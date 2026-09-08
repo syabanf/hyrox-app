@@ -46,7 +46,7 @@ build: ## Build the binaries into ./bin
 	go build -trimpath -o bin/seed ./cmd/seed
 
 docker: ## Build the container image
-	docker build -t nuhabit-backend:dev .
+	docker build -t hyrox-backend:dev .
 
 # The compose stack lives at the repo root: one file brings up the database,
 # this API, the member PWA and the admin panel together.

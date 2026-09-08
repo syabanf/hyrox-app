@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/syabanf/nuhabit-backend/internal/platform/id"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/id"
 )
 
 // Middleware decorates a handler. Stacks are applied outermost-first.

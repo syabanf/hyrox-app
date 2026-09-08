@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/syabanf/nuhabit-backend/internal/domain"
-	"github.com/syabanf/nuhabit-backend/internal/platform/database"
-	"github.com/syabanf/nuhabit-backend/internal/platform/httpx"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/domain"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/database"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/httpx"
 )
 
 const batchColumns = `id, item_id, branch_id, batch_code, expires_on, qty_on_hand,

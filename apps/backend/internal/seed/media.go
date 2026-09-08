@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/syabanf/nuhabit-backend/internal/media"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/media"
 )
 
 // Pictures for the demo rows.

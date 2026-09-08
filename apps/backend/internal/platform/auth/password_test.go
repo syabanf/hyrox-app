@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/syabanf/nuhabit-backend/internal/platform/auth"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/auth"
 )
 
 func TestPasswordRoundTrip(t *testing.T) {

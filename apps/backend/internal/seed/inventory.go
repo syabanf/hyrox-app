@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/syabanf/nuhabit-backend/internal/domain"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/domain"
 )
 
 // seedInventory stocks the shelves: what a studio actually sells at its

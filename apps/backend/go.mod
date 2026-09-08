@@ -1,4 +1,4 @@
-module github.com/syabanf/nuhabit-backend
+module github.com/syabanf/hyrox-app/apps/backend
 
 go 1.26.4
 

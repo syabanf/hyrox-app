@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/syabanf/nuhabit-backend/internal/platform/auth"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/auth"
 )
 
 // Config is the whole configuration surface of any nuhabit binary.

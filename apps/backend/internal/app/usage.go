@@ -3,9 +3,9 @@ package app
 import (
 	"context"
 
-	"github.com/syabanf/nuhabit-backend/internal/modules/catalog"
-	"github.com/syabanf/nuhabit-backend/internal/modules/scheduling"
-	"github.com/syabanf/nuhabit-backend/internal/modules/wallet"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/modules/catalog"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/modules/scheduling"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/modules/wallet"
 )
 
 // catalogUsage answers catalog's questions about other modules: may this row

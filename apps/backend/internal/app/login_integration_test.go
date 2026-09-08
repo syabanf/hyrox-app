@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/syabanf/nuhabit-backend/internal/seed"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/seed"
 )
 
 // The ordinary way in: an email address and the password that belongs to it.

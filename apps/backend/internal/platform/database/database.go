@@ -12,7 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/syabanf/nuhabit-backend/internal/platform/config"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/config"
 )
 
 // Executor is the subset of pgx that repositories use. Both the pool and an

@@ -3,9 +3,9 @@ package app
 import (
 	"context"
 
-	"github.com/syabanf/nuhabit-backend/internal/domain"
-	"github.com/syabanf/nuhabit-backend/internal/modules/identity"
-	"github.com/syabanf/nuhabit-backend/internal/modules/reporting"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/domain"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/modules/identity"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/modules/reporting"
 )
 
 // reportingMembers adapts the identity service to the shape reporting asked

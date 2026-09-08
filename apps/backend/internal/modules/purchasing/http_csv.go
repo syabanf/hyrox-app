@@ -3,7 +3,7 @@ package purchasing
 import (
 	"net/http"
 
-	"github.com/syabanf/nuhabit-backend/internal/platform/httpx"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/platform/httpx"
 )
 
 const maxUploadBytes = 8 << 20

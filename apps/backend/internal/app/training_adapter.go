@@ -4,13 +4,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/syabanf/nuhabit-backend/internal/domain"
-	"github.com/syabanf/nuhabit-backend/internal/modules/access"
-	"github.com/syabanf/nuhabit-backend/internal/modules/catalog"
-	"github.com/syabanf/nuhabit-backend/internal/modules/engagement"
-	"github.com/syabanf/nuhabit-backend/internal/modules/identity"
-	"github.com/syabanf/nuhabit-backend/internal/modules/training"
-	"github.com/syabanf/nuhabit-backend/internal/modules/wallet"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/domain"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/modules/access"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/modules/catalog"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/modules/engagement"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/modules/identity"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/modules/training"
+	"github.com/syabanf/hyrox-app/apps/backend/internal/modules/wallet"
 )
 
 // Adapters for the athlete side of the app. Training speaks in Athletes and a

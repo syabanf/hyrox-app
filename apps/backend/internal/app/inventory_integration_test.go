@@ -64,7 +64,9 @@ func TestEveryQuantityEqualsTheSumOfItsMovements(t *testing.T) {
 	// A handful of movements of every shape.
 	for _, change := range []map[string]any{
 		{"itemId": "itm_bar", "branchId": senopati, "qty": -7.0, "reason": "Sold"},
-		{"itemId": "itm_bar", "branchId": senopati, "qty": 20.0, "reason": "Delivery"},
+		// Bars are dated goods, so stock arriving by hand says which batch.
+		{"itemId": "itm_bar", "branchId": senopati, "qty": 20.0, "reason": "Delivery",
+			"batchCode": "ADJ-1", "expiresOn": "2027-06-30"},
 		{"itemId": "itm_bar", "branchId": senopati, "qty": -1.5, "reason": "Damaged"},
 	} {
 		if status, body := h.request(http.MethodPost, "/api/admin/inventory/adjust", token, change); status != http.StatusCreated {

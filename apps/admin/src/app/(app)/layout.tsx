@@ -117,6 +117,7 @@ const NAV: NavGroup[] = [
       { href: '/inventory/items', label: 'Catalogue', icon: Package, permission: 'inventory.view' },
       { href: '/inventory/movements', label: 'Stock Ledger', icon: ScrollText, permission: 'inventory.view' },
       { href: '/inventory/counts', label: 'Stock Takes', icon: Boxes, permission: 'inventory.view' },
+      { href: '/inventory/expiry', label: 'Dates', icon: CalendarClock, permission: 'inventory.view' },
     ],
   },
   {

@@ -35,6 +35,10 @@ export interface InventoryItem {
   /** Weighted average of what the stock on hand cost — not a sale price. */
   unitCostIdr: number;
   trackStock: boolean;
+  /** Dated goods. Off unless asked for: most of a catalogue has no date. */
+  trackBatches: boolean;
+  /** How long before the printed date somebody should be told. */
+  expiryWarningDays: number;
   barcode: string | null;
   imageUrl: string | null;
   active: boolean;
@@ -746,4 +750,44 @@ export function packLabel(pack: Pick<ItemPack, 'unitCode' | 'factor' | 'isBase'>
 
 function round3(value: number): number {
   return Math.round(value * 1000) / 1000;
+}
+
+// ── Batches: stock that goes off ────────────────────────────────────────────
+
+export const EXPIRY_STATES = ['NONE', 'FRESH', 'NEAR', 'EXPIRED'] as const;
+/** How close a batch is to being worthless. */
+export type ExpiryState = (typeof EXPIRY_STATES)[number];
+
+export const EXPIRY_LABELS: Record<ExpiryState, string> = {
+  NONE: 'No date',
+  FRESH: 'Fresh',
+  NEAR: 'Near expiry',
+  EXPIRED: 'Expired',
+};
+
+/** One delivery of one item into one branch, with a date on it. */
+export interface Batch {
+  id: string;
+  itemId: string;
+  branchId: string;
+  batchCode: string;
+  expiresOn: string | null;
+  qtyOnHand: number;
+  /** What this batch cost, which is what a write-off is worth. */
+  unitCostIdr: number;
+  receivedOn: string;
+  receiptId: string | null;
+  receiptNumber: string | null;
+  note: string | null;
+}
+
+/** What a branch is about to lose. */
+export interface ExpirySummary {
+  nearBatches: number;
+  nearQty: number;
+  nearValueIdr: number;
+  /** Already a loss rather than a warning, so counted apart. */
+  expiredBatches: number;
+  expiredQty: number;
+  expiredValueIdr: number;
 }

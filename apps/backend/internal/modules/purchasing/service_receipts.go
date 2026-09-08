@@ -251,8 +251,17 @@ func (s *Service) PostReceipt(ctx context.Context, receiptID string, actor Actor
 			return err
 		}
 		for _, line := range lines {
+			// The batch travels from the delivery note straight onto the
+			// shelf. Capturing it on the receipt and then not carrying it
+			// through would leave dated goods indistinguishable once they are
+			// in stock, which is the entire problem batches solve.
+			batchCode := ""
+			if line.BatchNumber != nil {
+				batchCode = *line.BatchNumber
+			}
 			ref := StockRef{Type: "GOODS_RECEIPT", ID: receipt.ID, Number: receipt.GRNNumber,
-				PackUnit: line.Unit, PackFactor: line.PackFactor}
+				PackUnit: line.Unit, PackFactor: line.PackFactor,
+				BatchCode: batchCode, ExpiresOn: line.ExpiresOn}
 			if line.QtyAccepted > 0 {
 				// Ten cartons delivered is 240 pieces on the shelf, at the
 				// carton price divided by 24. Both conversions happen here,

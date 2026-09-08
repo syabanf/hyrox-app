@@ -106,3 +106,51 @@ func (h *Handler) deletePack(w http.ResponseWriter, r *http.Request) {
 	}
 	httpx.OK(w, map[string]bool{"deleted": true})
 }
+
+// ── Dated stock ──────────────────────────────────────────────────────────────
+
+func (h *Handler) listBatches(w http.ResponseWriter, r *http.Request) {
+	batches, err := h.service.Batches(r.Context(), BatchQuery{
+		ItemID:   httpx.Query(r, "itemId"),
+		BranchID: httpx.Query(r, "branchId"),
+		State:    httpx.Query(r, "state"),
+		Limit:    httpx.QueryInt(r, "limit", 300),
+	})
+	if err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	httpx.OK(w, batches)
+}
+
+func (h *Handler) expiryReport(w http.ResponseWriter, r *http.Request) {
+	report, err := h.service.ExpiryReport(r.Context(), httpx.Query(r, "branchId"))
+	if err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	httpx.OK(w, report)
+}
+
+func (h *Handler) writeOffBatch(w http.ResponseWriter, r *http.Request) {
+	movement, err := h.service.WriteOffExpired(r.Context(), httpx.Param(r, "id"), actorFrom(r))
+	if err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	httpx.Created(w, movement)
+}
+
+// parseOptionalDate reads a calendar date that may not be there. Validation
+// has already refused a malformed one, so a parse failure here is a nil date
+// rather than an error nobody would see.
+func parseOptionalDate(raw *string) *domain.Date {
+	if raw == nil || strings.TrimSpace(*raw) == "" {
+		return nil
+	}
+	parsed, err := domain.ParseDate(strings.TrimSpace(*raw))
+	if err != nil {
+		return nil
+	}
+	return &parsed
+}

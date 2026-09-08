@@ -28,6 +28,11 @@ type StockRef struct {
 	// CTN" beside the 240 pieces it actually moved.
 	PackUnit   string
 	PackFactor float64
+	// What this movement undoes, when it undoes something. Goods coming back
+	// from a voided sale belong in the batches that sale took them from, and
+	// this is how inventory finds them.
+	RestoresType string
+	RestoresID   string
 }
 type StockActor struct{ ID, Name string }
 

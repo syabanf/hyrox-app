@@ -92,8 +92,25 @@ type Movement struct {
 	// in something other than base units.
 	PackUnit   *string
 	PackFactor *float64
-	Reason     *string
-	Note       *string
+	// BatchCode and ExpiresOn name the batch stock is arriving into. They are
+	// required for an item that tracks batches and ignored for one that does
+	// not.
+	BatchCode string
+	ExpiresOn *domain.Date
+	// BatchID names a specific batch for stock leaving, which ordinarily FEFO
+	// chooses. It exists for the one case where the batch *is* the reason —
+	// writing off a batch that has expired, which FEFO deliberately refuses
+	// to touch.
+	BatchID string
+	// RestoresReferenceType and RestoresReferenceID identify a movement being
+	// undone. Goods coming back from a voided sale go into the batches that
+	// sale took them out of — asking the cashier to type a batch code off a
+	// receipt would be asking them to guess, and inventing a new batch would
+	// quietly give returned stock a fresh expiry date.
+	RestoresReferenceType string
+	RestoresReferenceID   string
+	Reason                *string
+	Note                  *string
 }
 
 // Post applies one movement: it locks the level, asks the domain whether the
@@ -150,6 +167,16 @@ func (s *Service) Post(ctx context.Context, in Movement, actor Actor) (domain.St
 		return domain.StockMovement{}, err
 	}
 
+	// Dated goods are also placed on, or taken off, a specific batch. The
+	// allocation is written inside the same transaction as the movement it
+	// explains, so batch quantities and the ledger can never disagree about
+	// what happened.
+	if item.TrackBatches {
+		if err := s.applyBatches(ctx, item, in, posted, saved); err != nil {
+			return domain.StockMovement{}, err
+		}
+	}
+
 	level.QtyOnHand = posted.QtyAfter
 	if _, err := s.repo.SaveLevel(ctx, level, true); err != nil {
 		return domain.StockMovement{}, err
@@ -160,6 +187,154 @@ func (s *Service) Post(ctx context.Context, in Movement, actor Actor) (domain.St
 		}
 	}
 	return saved, nil
+}
+
+// applyBatches puts arriving stock into a named batch, and takes leaving stock
+// out of whichever batches expire soonest.
+//
+// FEFO, not FIFO: goods that arrived later can easily expire sooner, and
+// issuing in arrival order leaves short-dated stock at the back of the shelf
+// until it is worthless.
+func (s *Service) applyBatches(ctx context.Context, item domain.InventoryItem,
+	in Movement, posted domain.PostedMovement, movement domain.StockMovement) error {
+
+	if posted.Qty > 0 {
+		// Goods coming back from something that already happened go where
+		// they came from.
+		if in.RestoresReferenceID != "" {
+			restored, err := s.restoreToOriginBatches(ctx, item, in, posted, movement)
+			if err != nil || restored {
+				return err
+			}
+		}
+
+		code := strings.TrimSpace(in.BatchCode)
+		if code == "" {
+			return httpx.Invalid(
+				"%s is tracked by batch, so goods arriving have to say which batch.", item.Name)
+		}
+		cost := in.UnitCostIDR
+		if cost <= 0 {
+			cost = item.UnitCostIDR
+		}
+		batch, err := s.repo.UpsertBatch(ctx, domain.Batch{
+			ID: s.ids.New(id.Batch), ItemID: item.ID, BranchID: in.BranchID,
+			BatchCode: code, ExpiresOn: in.ExpiresOn, QtyOnHand: posted.Qty,
+			UnitCostIDR: cost, ReceiptID: in.ReferenceID, ReceiptNumber: in.ReferenceNumber,
+		})
+		if err != nil {
+			return err
+		}
+		// The batch row is already updated by the upsert, so the allocation
+		// records what it did rather than doing it again.
+		return s.repo.RecordBatchArrival(ctx, movement.ID, batch, posted.Qty, s.ids.New(id.BatchMovement))
+	}
+
+	batches, err := s.repo.BatchesForIssue(ctx, item.ID, in.BranchID)
+	if err != nil {
+		return err
+	}
+
+	// A named batch bypasses FEFO. This is the write-off path: the goods being
+	// removed are expired, and FEFO refuses expired batches by design.
+	if in.BatchID != "" {
+		for _, batch := range batches {
+			if batch.ID != in.BatchID {
+				continue
+			}
+			take := -posted.Qty
+			if take > batch.QtyOnHand {
+				return httpx.Conflict("BATCH_SHORTFALL",
+					"Batch %s holds %v, which is less than the %v being taken from it.",
+					batch.BatchCode, batch.QtyOnHand, take)
+			}
+			return s.repo.DrawFromBatch(ctx, movement.ID, domain.Allocation{
+				BatchID: batch.ID, BatchCode: batch.BatchCode, ExpiresOn: batch.ExpiresOn,
+				Qty: posted.Qty, QtyBefore: batch.QtyOnHand,
+				QtyAfter:    domain.RoundQuantity(batch.QtyOnHand - take),
+				UnitCostIDR: batch.UnitCostIDR,
+			}, s.ids.New(id.BatchMovement))
+		}
+		return httpx.NotFound("batch")
+	}
+
+	today := domain.DateOf(s.clock.Now(), s.studio)
+	outcome := domain.AllocateFEFO(batches, -posted.Qty, today)
+
+	if !outcome.Allocated() {
+		// The level said there was enough and the batches say there is not.
+		// When the difference is expired stock, that is the honest answer —
+		// it is on the shelf and may not be sold.
+		if len(outcome.Expired) > 0 {
+			return httpx.Conflict("EXPIRED_STOCK",
+				"%s has %v short of unexpired stock: %d batch(es) are past their date and cannot be sold.",
+				item.Name, outcome.Shortfall, len(outcome.Expired))
+		}
+		return httpx.Conflict("BATCH_SHORTFALL",
+			"%s is %v short across its batches, which disagrees with its stock level.",
+			item.Name, outcome.Shortfall)
+	}
+
+	for _, allocation := range outcome.Allocations {
+		if err := s.repo.DrawFromBatch(ctx, movement.ID, allocation, s.ids.New(id.BatchMovement)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// restoreToOriginBatches puts returned goods back into the batches they were
+// taken from, newest allocation first.
+//
+// It reports whether it found an origin at all: a return against a movement
+// that predates batch tracking has nowhere to go back to, and falls through to
+// the ordinary path rather than failing.
+func (s *Service) restoreToOriginBatches(ctx context.Context, item domain.InventoryItem,
+	in Movement, posted domain.PostedMovement, movement domain.StockMovement) (bool, error) {
+
+	origins, err := s.repo.OutwardAllocations(ctx, item.ID, in.BranchID,
+		in.RestoresReferenceType, in.RestoresReferenceID)
+	if err != nil {
+		return false, err
+	}
+	if len(origins) == 0 {
+		return false, nil
+	}
+
+	remaining := posted.Qty
+	for _, origin := range origins {
+		if remaining <= 0 {
+			break
+		}
+		// Never put back more than that batch gave: a sale of 3 from one
+		// batch and 2 from another, voided, is 3 and 2 — not 5 into the first.
+		give := domain.RoundQuantity(-origin.Qty)
+		if give > remaining {
+			give = remaining
+		}
+		if give <= 0 {
+			continue
+		}
+		before, err := s.repo.BatchQty(ctx, origin.BatchID)
+		if err != nil {
+			return false, err
+		}
+		if err := s.repo.DrawFromBatch(ctx, movement.ID, domain.Allocation{
+			BatchID: origin.BatchID, BatchCode: origin.BatchCode, ExpiresOn: origin.ExpiresOn,
+			Qty: give, QtyBefore: before, QtyAfter: domain.RoundQuantity(before + give),
+			UnitCostIDR: origin.UnitCostIDR,
+		}, s.ids.New(id.BatchMovement)); err != nil {
+			return false, err
+		}
+		remaining = domain.RoundQuantity(remaining - give)
+	}
+
+	if remaining > 0 {
+		return false, httpx.Conflict("MORE_THAN_LEFT",
+			"%v of %s is being returned against a movement that only took out %v.",
+			posted.Qty, item.Name, posted.Qty-remaining)
+	}
+	return true, nil
 }
 
 // movementRejectionError turns a domain refusal into the HTTP answer, keeping
@@ -189,6 +364,26 @@ func (s *Service) Receive(ctx context.Context, itemID, branchID string, qty doma
 		ItemID: itemID, BranchID: branchID, Kind: domain.MovementIn, Qty: qty,
 		UnitCostIDR: unitCostIDR, ReferenceType: &ref.Type, ReferenceID: &ref.ID,
 		ReferenceNumber: &ref.Number,
+		BatchCode:       ref.BatchCode, ExpiresOn: ref.ExpiresOn,
+	}
+	ref.applyPack(&movement)
+	return s.Post(ctx, movement, actor)
+}
+
+// Restore is the entry point for goods coming back from something that already
+// happened: a voided sale, a reversed issue.
+//
+// It differs from Receive in one way that matters for dated stock — it puts
+// the goods back into the batches they came out of, rather than asking for a
+// batch code the person unwinding a receipt has no way to know.
+func (s *Service) Restore(ctx context.Context, itemID, branchID string, qty domain.Quantity,
+	unitCostIDR float64, ref Reference, actor Actor) (domain.StockMovement, error) {
+	movement := Movement{
+		ItemID: itemID, BranchID: branchID, Kind: domain.MovementIn, Qty: qty,
+		UnitCostIDR: unitCostIDR, ReferenceType: &ref.Type, ReferenceID: &ref.ID,
+		ReferenceNumber: &ref.Number,
+		BatchCode:       ref.BatchCode, ExpiresOn: ref.ExpiresOn,
+		RestoresReferenceType: ref.RestoresType, RestoresReferenceID: ref.RestoresID,
 	}
 	ref.applyPack(&movement)
 	return s.Post(ctx, movement, actor)
@@ -221,6 +416,14 @@ type Reference struct {
 	Number     string
 	PackUnit   string
 	PackFactor float64
+	// BatchCode and ExpiresOn come off the delivery note, for goods with a
+	// date on them. Ignored by an item that does not track batches.
+	BatchCode string
+	ExpiresOn *domain.Date
+	// RestoresType and RestoresID identify a movement being undone, so
+	// returned goods go back into the batches they left from.
+	RestoresType string
+	RestoresID   string
 }
 
 // applyPack copies the transacted pack onto a movement, when there is one.
@@ -412,16 +615,18 @@ func (s *Service) ItemDetail(ctx context.Context, itemID string) (ItemDetail, er
 // ItemInput is a whole catalogue entry. The average cost is not in it: that is
 // derived from receipts, never typed.
 type ItemInput struct {
-	SKU         string
-	Name        string
-	Description string
-	CategoryID  *string
-	Unit        string
-	Kind        domain.ItemKind
-	TrackStock  bool
-	Barcode     *string
-	ImageURL    *string
-	Active      bool
+	SKU               string
+	Name              string
+	Description       string
+	CategoryID        *string
+	Unit              string
+	Kind              domain.ItemKind
+	TrackStock        bool
+	TrackBatches      bool
+	ExpiryWarningDays int
+	Barcode           *string
+	ImageURL          *string
+	Active            bool
 }
 
 func (in ItemInput) apply(item domain.InventoryItem) domain.InventoryItem {
@@ -432,6 +637,11 @@ func (in ItemInput) apply(item domain.InventoryItem) domain.InventoryItem {
 	item.Unit = strings.ToUpper(strings.TrimSpace(in.Unit))
 	item.Kind = in.Kind
 	item.TrackStock = in.TrackStock
+	item.TrackBatches = in.TrackBatches
+	item.ExpiryWarningDays = in.ExpiryWarningDays
+	if item.ExpiryWarningDays <= 0 {
+		item.ExpiryWarningDays = 30
+	}
 	item.Barcode = in.Barcode
 	item.ImageURL = in.ImageURL
 	item.Active = in.Active
@@ -563,7 +773,13 @@ type AdjustInput struct {
 	BranchID string
 	Qty      domain.Quantity
 	Reason   string
-	Note     *string
+	// BatchCode and ExpiresOn are needed when dated stock is being added by
+	// hand — a surplus found at stocktake is a physical pile with a date on
+	// it, and the system has no way to guess which. Stock being removed does
+	// not name a batch: FEFO decides, same as a sale.
+	BatchCode string
+	ExpiresOn *domain.Date
+	Note      *string
 }
 
 func (s *Service) Adjust(ctx context.Context, in AdjustInput, actor Actor) (domain.StockMovement, error) {
@@ -576,7 +792,8 @@ func (s *Service) Adjust(ctx context.Context, in AdjustInput, actor Actor) (doma
 		var err error
 		movement, err = s.Post(ctx, Movement{
 			ItemID: in.ItemID, BranchID: in.BranchID, Kind: domain.MovementAdjustment,
-			Qty: in.Qty, Reason: &in.Reason, Note: in.Note,
+			Qty: in.Qty, BatchCode: in.BatchCode, ExpiresOn: in.ExpiresOn,
+			Reason: &in.Reason, Note: in.Note,
 		}, actor)
 		return err
 	})

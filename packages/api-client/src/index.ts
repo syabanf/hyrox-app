@@ -62,6 +62,8 @@ import type {
   GoodsReceiptView,
   InventoryItemDetailView,
   InventoryItemView,
+  BatchView,
+  ExpiryReportView,
   InventoryOverviewView,
   ItemPackView,
   LoyaltyMemberDetailView,
@@ -542,6 +544,17 @@ export function createApiClient(options: ApiClientOptions) {
           deletePack: (id: string, packId: string) =>
             del(`/api/admin/inventory/items/${id}/packs/${packId}`),
         },
+        /**
+         * Dated stock. The list comes back in FEFO order — soonest expiry
+         * first, undated last — which is the order it has to leave in.
+         */
+        batches: (query?: { itemId?: string; branchId?: string; state?: string; limit?: number }) =>
+          get<BatchView[]>('/api/admin/inventory/batches', query),
+        expiry: (branchId?: string) =>
+          get<ExpiryReportView>('/api/admin/inventory/expiry', { branchId }),
+        /** Takes an expired batch off the shelf, as an adjustment with a reason. */
+        writeOffBatch: (batchId: string) =>
+          post<StockMovement>(`/api/admin/inventory/batches/${batchId}/write-off`, {}),
         /** The unit master: a word for an amount, shared across the catalogue. */
         units: {
           list: (activeOnly?: boolean) =>

@@ -3,6 +3,9 @@ import type {
   CashierShift,
   GoodsReceipt,
   GoodsReceiptItem,
+  Batch,
+  ExpiryState,
+  ExpirySummary,
   InventoryItem,
   ItemPack,
   LoyaltyProfile,
@@ -210,6 +213,28 @@ export interface ScanView extends POSProductView {
   prices: ProductPrice[];
 }
 
+/**
+ * A batch with the question a shop actually asks answered: how long has this
+ * got, and what is it worth if the answer is "none".
+ */
+export interface BatchView extends Batch {
+  itemName: string;
+  itemSku: string;
+  branchName: string;
+  unit: string;
+  state: ExpiryState;
+  /** Negative once past the date; null when there is no date at all. */
+  daysLeft: number | null;
+  valueIdr: number;
+}
+
+export interface ExpiryReportView {
+  summary: ExpirySummary;
+  /** Still actionable, in date order. */
+  near: BatchView[];
+  expired: BatchView[];
+}
+
 /** A pack with its arithmetic already done, so a form need not repeat it. */
 export interface ItemPackView extends ItemPack {
   /** Reads the way a shelf edge does: "CTN (24 PCS)". */
@@ -277,6 +302,9 @@ export interface UpsertInventoryItemInput {
   unit?: string;
   kind?: string;
   trackStock?: boolean;
+  /** Dated goods. Turning it on makes a batch required on every receipt. */
+  trackBatches?: boolean;
+  expiryWarningDays?: number;
   barcode?: string | null;
   imageUrl?: string | null;
   active?: boolean;
@@ -288,6 +316,13 @@ export interface AdjustStockInput {
   /** Signed: negative takes stock away. Always carries a reason. */
   qty: number;
   reason: string;
+  /**
+   * Required when dated stock is being added: a surplus found at stocktake is
+   * a physical pile with a date on it, and nothing can guess which. Stock
+   * leaving names no batch — FEFO decides, the same as for a sale.
+   */
+  batchCode?: string;
+  expiresOn?: string | null;
   note?: string | null;
 }
 

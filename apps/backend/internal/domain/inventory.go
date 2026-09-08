@@ -46,13 +46,21 @@ type InventoryItem struct {
 	Kind        ItemKind `json:"kind"`
 	// UnitCostIDR is the weighted average of what the stock on hand cost, not
 	// the price it is sold at and not the last price paid.
-	UnitCostIDR float64   `json:"unitCostIdr"`
-	TrackStock  bool      `json:"trackStock"`
-	Barcode     *string   `json:"barcode"`
-	ImageURL    *string   `json:"imageUrl"`
-	Active      bool      `json:"active"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
+	UnitCostIDR float64 `json:"unitCostIdr"`
+	TrackStock  bool    `json:"trackStock"`
+	// TrackBatches turns on dates. Most of a catalogue does not want it — a
+	// steel bottle has no date on it, and demanding one would make every
+	// receipt a form nobody can fill in — so it is off unless asked for.
+	TrackBatches bool `json:"trackBatches"`
+	// ExpiryWarningDays is how long before the printed date somebody should
+	// be told. A drink with six months of life wants a longer warning than
+	// something with a fortnight.
+	ExpiryWarningDays int       `json:"expiryWarningDays"`
+	Barcode           *string   `json:"barcode"`
+	ImageURL          *string   `json:"imageUrl"`
+	Active            bool      `json:"active"`
+	CreatedAt         time.Time `json:"createdAt"`
+	UpdatedAt         time.Time `json:"updatedAt"`
 }
 
 // InventoryCategory groups items for the shelf and the report.

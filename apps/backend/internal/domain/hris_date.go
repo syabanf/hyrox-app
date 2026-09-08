@@ -154,3 +154,13 @@ func (t *TimeOfDay) UnmarshalJSON(data []byte) error {
 	*t = parsed
 	return nil
 }
+
+// DaysBetween is how many whole days separate two dates, positive when `to`
+// falls after `from`.
+//
+// The arithmetic happens at midnight UTC, so a span never gains or loses a day
+// crossing a daylight-saving seam — which is why an expiry counted in days is
+// the same number wherever the server happens to be running.
+func DaysBetween(from, to Date) int {
+	return int(to.utc().Sub(from.utc()).Hours() / 24)
+}

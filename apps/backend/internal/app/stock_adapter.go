@@ -22,7 +22,8 @@ func (a purchasingStock) Receive(ctx context.Context, itemID, branchID string,
 	qty domain.Quantity, unitCostIDR float64, ref purchasing.StockRef, actor purchasing.StockActor) error {
 	_, err := a.inventory.Receive(ctx, itemID, branchID, qty, unitCostIDR,
 		inventory.Reference{Type: ref.Type, ID: ref.ID, Number: ref.Number,
-			PackUnit: ref.PackUnit, PackFactor: ref.PackFactor},
+			PackUnit: ref.PackUnit, PackFactor: ref.PackFactor,
+			BatchCode: ref.BatchCode, ExpiresOn: ref.ExpiresOn},
 		inventory.Actor{ID: actor.ID, Name: actor.Name})
 	return err
 }
@@ -62,8 +63,10 @@ func (a posStock) Issue(ctx context.Context, itemID, branchID string, qty domain
 
 func (a posStock) Restock(ctx context.Context, itemID, branchID string, qty domain.Quantity,
 	unitCostIDR float64, ref pos.StockRef, actor pos.StockActor) error {
-	_, err := a.inventory.Receive(ctx, itemID, branchID, qty, unitCostIDR,
-		inventory.Reference{Type: ref.Type, ID: ref.ID, Number: ref.Number},
+	_, err := a.inventory.Restore(ctx, itemID, branchID, qty, unitCostIDR,
+		inventory.Reference{Type: ref.Type, ID: ref.ID, Number: ref.Number,
+			PackUnit: ref.PackUnit, PackFactor: ref.PackFactor,
+			RestoresType: ref.RestoresType, RestoresID: ref.RestoresID},
 		inventory.Actor{ID: actor.ID, Name: actor.Name})
 	return err
 }

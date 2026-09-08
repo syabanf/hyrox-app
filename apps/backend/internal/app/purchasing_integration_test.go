@@ -175,6 +175,8 @@ func TestReceivingMovesStockAndRevaluesIt(t *testing.T) {
 	status, withLine := h.request(http.MethodPost,
 		"/api/admin/purchasing/receipts/"+receiptID+"/lines", token, map[string]any{
 			"orderItemId": lineID, "qtyAccepted": 57, "qtyRejected": 3,
+			// Bars carry a date, so the delivery note's batch comes with them.
+			"batchNumber": "PB-2609", "expiresOn": "2027-03-31",
 		})
 	if status != http.StatusCreated {
 		t.Fatalf("adding a delivery line returned %d: %v", status, withLine)

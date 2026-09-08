@@ -384,6 +384,8 @@ function ReceiveSheet({ receiptId, onClose }: { receiptId: string; onClose: () =
   const [line, setLine] = useState('');
   const [accepted, setAccepted] = useState('');
   const [rejected, setRejected] = useState('');
+  const [batch, setBatch] = useState('');
+  const [expires, setExpires] = useState('');
 
   const { data: receipt } = useQuery({
     queryKey: ['purchasing', 'receipt', receiptId],
@@ -394,6 +396,17 @@ function ReceiveSheet({ receiptId, onClose }: { receiptId: string; onClose: () =
     queryFn: () => api.admin.purchasing.orders.get(receipt!.orderId),
     enabled: !!receipt,
   });
+  const { data: items } = useQuery({
+    queryKey: ['inventory', 'items', 'all'],
+    queryFn: () => api.admin.inventory.items.list(),
+  });
+
+  // Whether the line being received carries a date. Only dated goods ask for
+  // a batch, so a delivery of steel bottles is not a form nobody can fill in.
+  const chosenLine = (order?.items ?? []).find((i) => i.id === line);
+  const dated = Boolean(
+    chosenLine && (items ?? []).find((i) => i.id === chosenLine.itemId)?.trackBatches,
+  );
 
   const add = useMutation({
     mutationFn: () =>
@@ -401,12 +414,16 @@ function ReceiveSheet({ receiptId, onClose }: { receiptId: string; onClose: () =
         orderItemId: line,
         qtyAccepted: Number(accepted || 0),
         qtyRejected: Number(rejected || 0),
+        batchNumber: batch || null,
+        expiresOn: expires || null,
       }),
     onSuccess: () => {
       setError(null);
       setLine('');
       setAccepted('');
       setRejected('');
+      setBatch('');
+      setExpires('');
       void qc.invalidateQueries({ queryKey: ['purchasing'] });
     },
     onError: (e) => setError(e instanceof ApiError ? e.message : 'That line did not save.'),
@@ -460,12 +477,35 @@ function ReceiveSheet({ receiptId, onClose }: { receiptId: string; onClose: () =
               />
               <button
                 className="a-btn"
-                disabled={add.isPending || !line || (!accepted && !rejected)}
+                disabled={add.isPending || !line || (!accepted && !rejected) || (dated && !batch)}
                 onClick={() => add.mutate()}
               >
                 Add
               </button>
             </div>
+
+            {/*
+              Dated goods carry their batch from the delivery note straight
+              onto the shelf. Capturing it here and nowhere else would leave
+              the stock indistinguishable once it is in — which is the whole
+              problem batches solve.
+            */}
+            {dated ? (
+              <div className="grid gap-2 sm:grid-cols-2">
+                <input
+                  className="a-input font-mono"
+                  placeholder="Batch on the delivery note"
+                  value={batch}
+                  onChange={(e) => setBatch(e.target.value)}
+                />
+                <input
+                  className="a-input"
+                  type="date"
+                  value={expires}
+                  onChange={(e) => setExpires(e.target.value)}
+                />
+              </div>
+            ) : null}
           </div>
         ) : null}
 

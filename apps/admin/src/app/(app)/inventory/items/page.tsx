@@ -231,6 +231,8 @@ function ItemModal({
     unit: item?.unit ?? 'PCS',
     kind: item?.kind ?? 'RETAIL',
     trackStock: item?.trackStock ?? true,
+    trackBatches: item?.trackBatches ?? false,
+    expiryWarningDays: item?.expiryWarningDays ?? 30,
     barcode: item?.barcode ?? null,
     active: item?.active ?? true,
   }));
@@ -304,6 +306,28 @@ function ItemModal({
           />
           Counted as stock
         </label>
+        <label className="flex items-center gap-2 text-sm font-bold">
+          <input
+            type="checkbox"
+            checked={form.trackBatches ?? false}
+            onChange={(e) => set('trackBatches', e.target.checked)}
+          />
+          Goes off
+        </label>
+        {form.trackBatches ? (
+          <Field
+            label="Warn this many days before"
+            hint="Every delivery of this item will have to name its batch and date. Stock leaves in date order, soonest first."
+          >
+            <input
+              className="a-input max-w-[10rem]"
+              type="number"
+              min={0}
+              value={form.expiryWarningDays ?? 30}
+              onChange={(e) => set('expiryWarningDays', Number(e.target.value))}
+            />
+          </Field>
+        ) : null}
         <label className="flex items-center gap-2 text-sm font-bold">
           <input
             type="checkbox"

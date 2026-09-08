@@ -508,7 +508,8 @@ func (s *Service) Void(ctx context.Context, orderID, reason string, actor Actor)
 				continue
 			}
 			ref := StockRef{Type: "POS_VOID", ID: order.ID, Number: order.OrderNumber,
-				PackUnit: item.PackUnit, PackFactor: item.PackFactor}
+				PackUnit: item.PackUnit, PackFactor: item.PackFactor,
+				RestoresType: "POS_SALE", RestoresID: order.ID}
 			// Back at what it cost when it was sold, not at today's average:
 			// the goods returning are the same goods that left.
 			if err := s.stock.Restock(ctx, *item.InventoryItemID, order.BranchID,

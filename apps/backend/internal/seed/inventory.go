@@ -3,6 +3,7 @@ package seed
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/syabanf/nuhabit-backend/internal/domain"
 )
@@ -82,10 +83,16 @@ func (s *Seeder) seedInventory(ctx context.Context) (int, error) {
 
 	branches := []string{"brn_senopati", "brn_pik"}
 	for _, item := range items {
+		// Consumables carry a date; a steel bottle does not. Turning batch
+		// tracking on for everything would demand a date on every delivery
+		// note that has no date to give.
+		dated := item.category == "ictg_nutrition"
 		if _, err := s.db.Exec(ctx, `
-			INSERT INTO inventory.items (id, sku, name, category_id, unit, kind, unit_cost_idr)
-			VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (id) DO NOTHING`,
-			item.id, item.sku, item.name, item.category, item.unit, item.kind, item.cost); err != nil {
+			INSERT INTO inventory.items (id, sku, name, category_id, unit, kind, unit_cost_idr,
+				track_batches, expiry_warning_days)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT (id) DO NOTHING`,
+			item.id, item.sku, item.name, item.category, item.unit, item.kind, item.cost,
+			dated, 45); err != nil {
 			return 0, fmt.Errorf("seed: inventory item %s: %w", item.id, err)
 		}
 
@@ -111,6 +118,33 @@ func (s *Seeder) seedInventory(ctx context.Context) (int, error) {
 			// Every quantity is explained by a movement. An opening balance
 			// that appeared from nowhere is the thing this system exists to
 			// make impossible.
+			// Dated goods open in two batches with different dates, so FEFO
+			// has something real to choose between and the near-expiry
+			// screen is not empty on a fresh install.
+			if item.category == "ictg_nutrition" && opening > 0 {
+				short := opening * 0.25
+				batches := []struct {
+					suffix string
+					qty    float64
+					days   int
+				}{
+					{"A", short, 20},
+					{"B", opening - short, 210},
+				}
+				for _, b := range batches {
+					id := fmt.Sprintf("bat_%s_%s_%s", item.id[4:], branch[4:], b.suffix)
+					code := fmt.Sprintf("%s-%s", strings.ToUpper(item.id[4:]), b.suffix)
+					if _, err := s.db.Exec(ctx, `
+						INSERT INTO inventory.batches (id, item_id, branch_id, batch_code,
+							expires_on, qty_on_hand, unit_cost_idr)
+						VALUES ($1, $2, $3, $4, CURRENT_DATE + $5::int, $6, $7)
+						ON CONFLICT (item_id, branch_id, batch_code) DO NOTHING`,
+						id, item.id, branch, code, b.days, b.qty, item.cost); err != nil {
+						return 0, fmt.Errorf("seed: batch %s: %w", id, err)
+					}
+				}
+			}
+
 			movementID := fmt.Sprintf("stm_open_%s_%s", item.id[4:], branch[4:])
 			if _, err := s.db.Exec(ctx, `
 				INSERT INTO inventory.stock_movements (id, item_id, branch_id, kind, qty,

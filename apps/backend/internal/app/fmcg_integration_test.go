@@ -104,6 +104,7 @@ func TestOrderingInCartonsReceivesInPieces(t *testing.T) {
 	status, received := h.request(http.MethodPost,
 		"/api/admin/purchasing/receipts/"+receiptID+"/lines", token, map[string]any{
 			"orderItemId": lineID, "qtyAccepted": 8,
+			"batchNumber": "PB-CTN-1", "expiresOn": "2027-04-30",
 		})
 	if status != http.StatusCreated {
 		t.Fatalf("receiving cartons returned %d: %v", status, received)

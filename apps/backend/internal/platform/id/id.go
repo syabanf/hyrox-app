@@ -95,6 +95,10 @@ const (
 	Unit     = "unt"
 	ItemPack = "ipk"
 
+	// Dated stock.
+	Batch         = "bat"
+	BatchMovement = "bmv"
+
 	// Loyalty.
 	Tier              = "tir"
 	MemberProfile     = "mpr"

@@ -31,6 +31,10 @@ type StockRef struct {
 	// CTN" beside the 240 pieces it actually moved.
 	PackUnit   string
 	PackFactor float64
+	// What the delivery note said about dates. Ignored for goods that do not
+	// carry one.
+	BatchCode string
+	ExpiresOn *domain.Date
 }
 
 // StockActor is who caused one.

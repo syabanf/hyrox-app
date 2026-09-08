@@ -40,6 +40,13 @@ func (h *Handler) Mount(r *httpx.Router) {
 
 	// Units and packs: the conversion between what arrives on a pallet and
 	// what leaves in a hand.
+	// Dated stock: what is on the shelf, and how long it has left.
+	r.Get("/api/admin/inventory/batches", h.listBatches, view)
+	r.Get("/api/admin/inventory/expiry", h.expiryReport, view)
+	// Writing off expired goods is a stock adjustment, so it takes the same
+	// grant as one — not the milder one that only counts.
+	r.Post("/api/admin/inventory/batches/{id}/write-off", h.writeOffBatch, count)
+
 	r.Get("/api/admin/inventory/units", h.listUnits, view)
 	r.Put("/api/admin/inventory/units", h.saveUnit, manage)
 	r.Get("/api/admin/inventory/items/{id}/packs", h.listPacks, view)
@@ -183,9 +190,13 @@ type itemRequest struct {
 	Unit        string  `json:"unit"`
 	Kind        string  `json:"kind"`
 	TrackStock  *bool   `json:"trackStock"`
-	Barcode     *string `json:"barcode"`
-	ImageURL    *string `json:"imageUrl"`
-	Active      *bool   `json:"active"`
+	// Dated goods. Off unless asked for: most of a catalogue has no date on
+	// it, and demanding one would make every receipt a form nobody can fill.
+	TrackBatches      *bool   `json:"trackBatches"`
+	ExpiryWarningDays *int    `json:"expiryWarningDays"`
+	Barcode           *string `json:"barcode"`
+	ImageURL          *string `json:"imageUrl"`
+	Active            *bool   `json:"active"`
 }
 
 func (i *itemRequest) Validate() error {
@@ -215,8 +226,15 @@ func (i itemRequest) toInput() ItemInput {
 	return ItemInput{
 		SKU: i.SKU, Name: i.Name, Description: i.Description, CategoryID: i.CategoryID,
 		Unit: unit, Kind: kind,
-		TrackStock: i.TrackStock == nil || *i.TrackStock,
-		Barcode:    i.Barcode, ImageURL: i.ImageURL,
+		TrackStock:   i.TrackStock == nil || *i.TrackStock,
+		TrackBatches: i.TrackBatches != nil && *i.TrackBatches,
+		ExpiryWarningDays: func() int {
+			if i.ExpiryWarningDays == nil {
+				return 30
+			}
+			return *i.ExpiryWarningDays
+		}(),
+		Barcode: i.Barcode, ImageURL: i.ImageURL,
 		Active: i.Active == nil || *i.Active,
 	}
 }
@@ -326,7 +344,11 @@ type adjustRequest struct {
 	BranchID string  `json:"branchId"`
 	Qty      float64 `json:"qty"`
 	Reason   string  `json:"reason"`
-	Note     *string `json:"note"`
+	// For dated stock being added by hand. Stock leaving does not name a
+	// batch: FEFO decides, the same as it does for a sale.
+	BatchCode string  `json:"batchCode"`
+	ExpiresOn *string `json:"expiresOn"`
+	Note      *string `json:"note"`
 }
 
 func (a *adjustRequest) Validate() error {
@@ -339,6 +361,11 @@ func (a *adjustRequest) Validate() error {
 	if strings.TrimSpace(a.Reason) == "" {
 		return httpx.Invalid("An adjustment needs a reason.")
 	}
+	if a.ExpiresOn != nil {
+		if _, err := domain.ParseDate(*a.ExpiresOn); err != nil {
+			return httpx.Invalid("expiresOn must be a date as YYYY-MM-DD.")
+		}
+	}
 	return nil
 }
 
@@ -350,7 +377,8 @@ func (h *Handler) adjust(w http.ResponseWriter, r *http.Request) {
 	}
 	movement, err := h.service.Adjust(r.Context(), AdjustInput{
 		ItemID: body.ItemID, BranchID: body.BranchID, Qty: quantity(body.Qty),
-		Reason: strings.TrimSpace(body.Reason), Note: body.Note,
+		Reason: strings.TrimSpace(body.Reason), BatchCode: body.BatchCode,
+		ExpiresOn: parseOptionalDate(body.ExpiresOn), Note: body.Note,
 	}, actorFrom(r))
 	if err != nil {
 		httpx.Fail(w, r, err)

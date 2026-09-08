@@ -95,12 +95,14 @@ func (r *Repository) DeleteCategory(ctx context.Context, id string) error {
 // ── Items ────────────────────────────────────────────────────────────────────
 
 const itemColumns = `id, sku, name, description, category_id, unit, kind, unit_cost_idr,
-	track_stock, barcode, image_url, active, created_at, updated_at`
+	track_stock, track_batches, expiry_warning_days, barcode, image_url, active,
+	created_at, updated_at`
 
 func scanItem(row pgx.Row) (domain.InventoryItem, error) {
 	var i domain.InventoryItem
 	err := row.Scan(&i.ID, &i.SKU, &i.Name, &i.Description, &i.CategoryID, &i.Unit, &i.Kind,
-		&i.UnitCostIDR, &i.TrackStock, &i.Barcode, &i.ImageURL, &i.Active, &i.CreatedAt, &i.UpdatedAt)
+		&i.UnitCostIDR, &i.TrackStock, &i.TrackBatches, &i.ExpiryWarningDays, &i.Barcode,
+		&i.ImageURL, &i.Active, &i.CreatedAt, &i.UpdatedAt)
 	return i, err
 }
 
@@ -177,10 +179,11 @@ func (r *Repository) Item(ctx context.Context, id string, forUpdate bool) (domai
 func (r *Repository) InsertItem(ctx context.Context, i domain.InventoryItem) (domain.InventoryItem, error) {
 	created, err := scanItem(r.db.QueryRow(ctx, `
 		INSERT INTO inventory.items (id, sku, name, description, category_id, unit, kind,
-			unit_cost_idr, track_stock, barcode, image_url, active)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING `+itemColumns,
+			unit_cost_idr, track_stock, track_batches, expiry_warning_days, barcode,
+			image_url, active)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING `+itemColumns,
 		i.ID, i.SKU, i.Name, i.Description, i.CategoryID, i.Unit, i.Kind, i.UnitCostIDR,
-		i.TrackStock, i.Barcode, i.ImageURL, i.Active))
+		i.TrackStock, i.TrackBatches, i.ExpiryWarningDays, i.Barcode, i.ImageURL, i.Active))
 	if database.IsUniqueViolation(err) {
 		return domain.InventoryItem{}, httpx.Conflict("DUPLICATE", "That SKU is already in the catalogue.")
 	}
@@ -196,11 +199,12 @@ func (r *Repository) InsertItem(ctx context.Context, i domain.InventoryItem) (do
 func (r *Repository) UpdateItem(ctx context.Context, i domain.InventoryItem) (domain.InventoryItem, error) {
 	updated, err := scanItem(r.db.QueryRow(ctx, `
 		UPDATE inventory.items SET sku = $2, name = $3, description = $4, category_id = $5,
-			unit = $6, kind = $7, track_stock = $8, barcode = $9, image_url = $10,
-			active = $11, updated_at = now()
+			unit = $6, kind = $7, track_stock = $8, track_batches = $9,
+			expiry_warning_days = $10, barcode = $11, image_url = $12,
+			active = $13, updated_at = now()
 		WHERE id = $1 RETURNING `+itemColumns,
 		i.ID, i.SKU, i.Name, i.Description, i.CategoryID, i.Unit, i.Kind,
-		i.TrackStock, i.Barcode, i.ImageURL, i.Active))
+		i.TrackStock, i.TrackBatches, i.ExpiryWarningDays, i.Barcode, i.ImageURL, i.Active))
 	if database.IsNoRows(err) {
 		return domain.InventoryItem{}, httpx.NotFound("item")
 	}
@@ -322,6 +326,7 @@ func (r *Repository) Levels(ctx context.Context, filter LevelFilter) ([]LevelRow
 		if err := rows.Scan(
 			&row.Item.ID, &row.Item.SKU, &row.Item.Name, &row.Item.Description, &row.Item.CategoryID,
 			&row.Item.Unit, &row.Item.Kind, &row.Item.UnitCostIDR, &row.Item.TrackStock,
+			&row.Item.TrackBatches, &row.Item.ExpiryWarningDays,
 			&row.Item.Barcode, &row.Item.ImageURL, &row.Item.Active, &row.Item.CreatedAt, &row.Item.UpdatedAt,
 			&row.Level.ItemID, &row.Level.BranchID, &row.Level.QtyOnHand, &row.Level.QtyOnOrder,
 			&row.Level.QtyMinimum, &row.Level.QtyMaximum, &row.Level.BinLocation,

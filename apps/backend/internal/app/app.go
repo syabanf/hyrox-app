@@ -15,6 +15,7 @@ import (
 
 	"github.com/syabanf/nuhabit-backend/internal/modules/access"
 	"github.com/syabanf/nuhabit-backend/internal/modules/catalog"
+	"github.com/syabanf/nuhabit-backend/internal/modules/crm"
 	"github.com/syabanf/nuhabit-backend/internal/modules/engagement"
 	"github.com/syabanf/nuhabit-backend/internal/modules/hris"
 	"github.com/syabanf/nuhabit-backend/internal/modules/identity"
@@ -49,6 +50,7 @@ const (
 	ModuleHRIS       = "hris"
 	ModuleInventory  = "inventory"
 	ModulePurchasing = "purchasing"
+	ModuleCRM        = "crm"
 )
 
 // App is a wired-up process: an HTTP handler plus the background work that
@@ -73,6 +75,7 @@ type App struct {
 	HRIS       *hris.Service
 	Inventory  *inventory.Service
 	Purchasing *purchasing.Service
+	CRM        *crm.Service
 
 	clock clock.Clock
 }
@@ -123,6 +126,8 @@ func New(cfg config.Config, db *database.DB) *App {
 		ids, now, auditor, cfg.StudioLocation())
 	purchasingService := purchasing.NewService(db, purchasing.NewRepository(db),
 		purchasingStock{inventoryService}, catalogService, ids, now, auditor, cfg.StudioLocation())
+	crmService := crm.NewService(db, crm.NewRepository(db), identityService,
+		ids, now, auditor, cfg.StudioLocation())
 	trainingService := training.NewService(training.NewRepository(db), now)
 
 	reportingService := reporting.NewService(reporting.Deps{
@@ -184,6 +189,9 @@ func New(cfg config.Config, db *database.DB) *App {
 	if cfg.Modules.IsEnabled(ModulePurchasing) {
 		purchasing.NewHandler(purchasingService, guard).Mount(router)
 	}
+	if cfg.Modules.IsEnabled(ModuleCRM) {
+		crm.NewHandler(crmService, guard).Mount(router)
+	}
 
 	app := &App{
 		Config:     cfg,
@@ -201,6 +209,7 @@ func New(cfg config.Config, db *database.DB) *App {
 		HRIS:       hrisService,
 		Inventory:  inventoryService,
 		Purchasing: purchasingService,
+		CRM:        crmService,
 		clock:      now,
 	}
 
@@ -240,6 +249,14 @@ func (a *App) subscribeEvents() {
 		a.Dispatcher.Subscribe(outbox.TopicBookingConfirmed, a.Engagement.HandleBookingConfirmed)
 		a.Dispatcher.Subscribe(outbox.TopicWaitlistPromoted, a.Engagement.HandleWaitlistPromoted)
 		a.Dispatcher.Subscribe(outbox.TopicPaymentPaid, a.Engagement.HandlePaymentPaid)
+	}
+	// Loyalty listens to the same facts for a different reason: engagement
+	// decides what to tell the member, CRM decides what it was worth. Neither
+	// the publisher nor the other consumer knows either of them exists.
+	if a.Config.Modules.IsEnabled(ModuleCRM) {
+		a.Dispatcher.Subscribe(outbox.TopicBookingConfirmed, a.CRM.HandleBookingConfirmed)
+		a.Dispatcher.Subscribe(outbox.TopicPaymentPaid, a.CRM.HandlePaymentPaid)
+		a.Dispatcher.Subscribe(outbox.TopicVisitLogged, a.CRM.HandleVisitLogged)
 	}
 	// A topic nobody consumes in this deployment is recorded and retired
 	// rather than retried forever.

@@ -72,6 +72,10 @@ internal/
     access/           QR credentials, the gate pipeline, access logs
     incentives/       coach schemes, statements, payouts
     hris/             employees, shifts, attendance, leave, overtime
+    inventory/        stock per branch, the movement ledger, stock takes
+    purchasing/       suppliers, requests, orders, goods receipts, returns
+    crm/              loyalty tiers, XP rules and ledger, rewards
+    pos/              the till: products, sales, tenders, cashier shifts
     reporting/        dashboard, reports, member 360 (owns no tables)
   app/                wiring: the only place that knows every module exists
   seed/               the demo studio
@@ -131,6 +135,21 @@ stateless token verification so each service authenticates callers on its own.
 - **A public holiday is free, collective leave is not.** Indonesian *cuti
   bersama* comes out of the annual allowance and a national holiday does not;
   where both fall on one date the national one wins.
+- **Stock is a ledger, not a number.** Movements are append-only and a level
+  row is their running sum under a lock; a test recomputes one from the other.
+  There is exactly one code path that changes a quantity, so "you cannot take
+  out what is not there" is implemented once.
+- **Nobody signs a purchase alone.** Raising, approving and receiving are three
+  separate grants, and the approval chain is decided by amount alone. Once
+  anything has been delivered the order can no longer be cancelled.
+- **XP is not money.** It cannot be topped up, it never pays for a class, and
+  it lives in its own ledger. Points are earned from outbox events with the
+  message id as an idempotency key, so a redelivery awards nothing. Lifetime
+  points only ever grow, which is why redeeming a reward never costs a tier.
+- **A sale moves stock, points and cash together.** Completing one does all
+  three in a single transaction, so a paid sale that never moved stock is
+  impossible rather than merely unlikely. Only cash gives change, and only cash
+  counts towards the drawer.
 - **A leave allowance moves on approval, not on filing** — but pending days are
   reserved, so two requests cannot together overspend the year, and a database
   CHECK refuses it even if the application's arithmetic is bypassed.
@@ -150,7 +169,11 @@ cancellation, package coverage, duplicate payment callbacks, refunds, RBAC
 refusals per role, cross-member data access, voucher eligibility, the payout
 approval chain, delete guards, draft visibility, the append-only ledger, and
 the HR loop — lateness from the shift start, holidays excluded from leave, the
-allowance moving only on approval, and the database refusing to overspend it.
+allowance moving only on approval, and the database refusing to overspend it —
+and the ERP loop: stock never drifting from its ledger, the purchase approval
+chain refusing a manager who tries to sign for finance, over-delivery refused,
+points awarded exactly once however often an event is redelivered, and a
+counter sale moving stock and loyalty in the same transaction as the money.
 They skip themselves when `TEST_DATABASE_URL` is unset.
 
 ## Configuration
@@ -175,7 +198,9 @@ rules, the credit wallet with payments, vouchers, refunds and expiry, class
 scheduling with bookings, waitlist and attendance, QR gate access with offline
 reconciliation, coach incentives and payouts, the HRIS (employees, shift
 patterns, timesheets, leave with the Indonesian holiday rules, and overtime),
-and the cross-module reporting layer.
+the four ERP modules ported from nuhabiterp — stock with a per-branch movement
+ledger, purchasing with its approval chain and goods receipts, loyalty with
+tiers and rewards, and the counter till — and the cross-module reporting layer.
 
 Two modules are deliberately partial, each built out to exactly what the member
 app opens with:

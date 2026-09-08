@@ -2,8 +2,8 @@
 
 import type { EmployeeView, UpsertEmployeeInput } from '@nuhabit/contracts';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useMemo, useState, type ReactNode } from 'react';
-import { ErrorNote, Modal, SearchSelect } from './ui';
+import { useMemo, useState } from 'react';
+import { ErrorNote, Field, Modal, SearchSelect } from './ui';
 import { api, ApiError } from '../lib/api';
 
 /**
@@ -256,22 +256,3 @@ export function EmployeeModal({
   );
 }
 
-export function Field({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: ReactNode;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-muted">
-        {label}
-      </span>
-      {children}
-      {hint ? <span className="mt-1 block text-xs text-muted">{hint}</span> : null}
-    </label>
-  );
-}

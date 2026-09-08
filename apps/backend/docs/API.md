@@ -221,6 +221,106 @@ Three rules the numbers depend on:
 - **The allowance moves on approval, not on filing** — but pending days are
   reserved, so two requests cannot together overspend the year.
 
+### Stock (Gudang)
+
+Stock is held **per branch**, and movements are append-only: a miscount is
+corrected with an ADJUSTMENT that says so, never by editing history.
+
+| Method | Path | Permission |
+|---|---|---|
+| `GET` | `/api/admin/inventory/overview` | `inventory.view` — valuation, low stock, recent movements |
+| `GET` `POST` | `/api/admin/inventory/categories` | `inventory.view` / `inventory.manage` |
+| `PUT` `DELETE` | `/api/admin/inventory/categories/{id}` | `inventory.manage` |
+| `GET` | `/api/admin/inventory/items` | `inventory.view` — query: `query`, `categoryId`, `kind`, `activeOnly` |
+| `GET` | `/api/admin/inventory/items/{id}` | `inventory.view` — item, levels, movements |
+| `POST` `PUT` | `/api/admin/inventory/items[/{id}]` | `inventory.manage` |
+| `PUT` | `/api/admin/inventory/items/{id}/reorder` | `inventory.manage` — minimum, maximum, bin |
+| `GET` | `/api/admin/inventory/stock` | `inventory.view` — query: `branchId`, `categoryId`, `lowOnly` |
+| `GET` | `/api/admin/inventory/movements` | `inventory.view` — the ledger |
+| `POST` | `/api/admin/inventory/adjust` | `inventory.count` — signed `qty`, **`reason` required** |
+| `POST` | `/api/admin/inventory/transfer` | `inventory.count` — two movements, one act |
+| `GET` `POST` | `/api/admin/inventory/stock-takes` | `inventory.view` / `inventory.count` |
+| `POST` | `/api/admin/inventory/stock-takes/{id}/count` | `inventory.count` |
+| `POST` | `/api/admin/inventory/stock-takes/{id}/{apply\|cancel}` | `inventory.count` |
+
+Codes: `INSUFFICIENT_STOCK`, `NOT_TRACKED`, `ITEM_INACTIVE`, `INVALID_TRANSITION`.
+
+### Purchasing
+
+Request → order → receipt, each a different grant. The approval chain is
+decided by amount alone: every request needs a head's signature, finance joins
+above Rp 5m and a director above Rp 25m.
+
+| Method | Path | Permission |
+|---|---|---|
+| `GET` | `/api/admin/purchasing/overview` | `purchasing.view` |
+| `GET` `POST` | `/api/admin/purchasing/suppliers` | `purchasing.view` / `purchasing.manage` |
+| `GET` `PUT` `DELETE` | `/api/admin/purchasing/suppliers/{id}` | `purchasing.view` / `purchasing.manage` |
+| `GET` `POST` | `/api/admin/purchasing/suppliers/{id}/prices` | `purchasing.view` / `purchasing.manage` |
+| `GET` `POST` | `/api/admin/purchasing/requests` | `purchasing.view` / `purchasing.manage` |
+| `POST` `DELETE` | `/api/admin/purchasing/requests/{id}/lines[/{lineId}]` | `purchasing.manage` |
+| `POST` | `/api/admin/purchasing/requests/{id}/submit` | `purchasing.manage` |
+| `POST` | `/api/admin/purchasing/requests/{id}/{approve\|reject}` | `purchasing.approve` — signs whichever level is next, if the role reaches it |
+| `POST` | `/api/admin/purchasing/requests/{id}/convert` | `purchasing.manage` |
+| `GET` `POST` | `/api/admin/purchasing/orders` | `purchasing.view` / `purchasing.manage` |
+| `PUT` | `/api/admin/purchasing/orders/{id}/terms` | `purchasing.manage` |
+| `POST` `DELETE` | `/api/admin/purchasing/orders/{id}/lines[/{lineId}]` | `purchasing.manage` |
+| `POST` | `/api/admin/purchasing/orders/{id}/approve` | `purchasing.approve` |
+| `POST` | `/api/admin/purchasing/orders/{id}/{send\|cancel}` | `purchasing.manage` |
+| `GET` `POST` | `/api/admin/purchasing/receipts` | `purchasing.view` / `purchasing.receive` |
+| `POST` | `/api/admin/purchasing/receipts/{id}/lines` | `purchasing.receive` |
+| `POST` | `/api/admin/purchasing/receipts/{id}/post` | `purchasing.receive` — **this is where stock moves** |
+| `GET` `POST` | `/api/admin/purchasing/returns` | `purchasing.view` / `purchasing.receive` |
+| `POST` | `/api/admin/purchasing/returns/{id}/{lines\|post}` | `purchasing.receive` |
+
+Codes: `OVER_DELIVERED`, `OVER_RETURNED`, `ORDER_NOT_OPEN`, `NOT_DRAFT`,
+`SUPPLIER_NOT_ORDERABLE`, `ITEM_NOT_IN_CATALOGUE`, `ALREADY_APPROVED`.
+
+### Loyalty (CRM)
+
+XP is not money: it cannot be topped up and it never pays for a class. Points
+are earned from outbox events (a booking, a settled payment, a gate scan) with
+the message id as an idempotency key, so a redelivery awards nothing.
+
+| Method | Path | Permission |
+|---|---|---|
+| `GET` | `/api/admin/crm/overview` | `crm.view` |
+| `GET` | `/api/admin/crm/members` | `crm.view` — query: `tierCode`, `status` |
+| `GET` | `/api/admin/crm/members/{id}` | `crm.view` — profile, ledger, claims |
+| `POST` | `/api/admin/crm/members/{id}/adjust` | `crm.adjust` — **`reason` required** |
+| `POST` | `/api/admin/crm/members/{id}/redeem` | `crm.approve` |
+| `GET` | `/api/admin/crm/ledger` | `crm.view` |
+| `GET` `PUT` | `/api/admin/crm/tiers` | `crm.view` / `crm.manage` |
+| `GET` `PUT` | `/api/admin/crm/rules` | `crm.view` / `crm.manage` |
+| `GET` `PUT` | `/api/admin/crm/rewards` | `crm.view` / `crm.manage` |
+| `GET` | `/api/admin/crm/redemptions` | `crm.view` |
+| `POST` | `/api/admin/crm/redemptions/{id}/{approve\|fulfil\|cancel}` | `crm.approve` |
+| `GET` | `/api/me/loyalty` | *member token* — their own standing |
+
+Codes: `INSUFFICIENT_XP`, `TIER_TOO_LOW`, `OUT_OF_STOCK`, `PER_MEMBER_LIMIT`,
+`ALREADY_POSTED`, `PROFILE_SUSPENDED`.
+
+### The till (POS)
+
+| Method | Path | Permission |
+|---|---|---|
+| `GET` | `/api/admin/pos/overview` | `pos.view` — today, month, best sellers, open tills |
+| `GET` `PUT` | `/api/admin/pos/categories` | `pos.view` / `pos.manage` |
+| `GET` `PUT` | `/api/admin/pos/products` | `pos.view` / `pos.manage` |
+| `GET` `POST` | `/api/admin/pos/shifts` | `pos.view` / `pos.sell` |
+| `POST` | `/api/admin/pos/shifts/{id}/close` | `pos.sell` — counts the drawer |
+| `GET` `POST` | `/api/admin/pos/orders` | `pos.view` / `pos.sell` |
+| `PUT` | `/api/admin/pos/orders/{id}` | `pos.sell` — customer, discount, note |
+| `POST` `DELETE` | `/api/admin/pos/orders/{id}/lines[/{lineId}]` | `pos.sell` |
+| `POST` | `/api/admin/pos/orders/{id}/tender` | `pos.sell` — several tenders is a split payment |
+| `POST` | `/api/admin/pos/orders/{id}/complete` | `pos.sell` — **stock out, points on, sale closed** |
+| `POST` | `/api/admin/pos/orders/{id}/cancel` | `pos.sell` — unpaid sales only |
+| `POST` | `/api/admin/pos/orders/{id}/void` | `pos.void` — paid sales, **`reason` required** |
+
+Codes: `NO_OPEN_SHIFT`, `SHIFT_ALREADY_OPEN`, `ORDERS_STILL_OPEN`,
+`OVER_TENDERED`, `NOT_SETTLED`, `ALREADY_PAID`, `EMPTY_ORDER`,
+`PRODUCT_NOT_SELLABLE`, `INSUFFICIENT_STOCK`.
+
 ### Reports and configuration
 
 | Method | Path | Permission |
@@ -269,3 +369,11 @@ marking and credential cleanup, so calling it is only ever a convenience.
 | hris.view | Y | Y | Y | – | – | Y |
 | hris.attendance, hris.approve | Y | Y | Y | – | – | – |
 | hris.manage | Y | Y | – | – | – | – |
+| inventory.view | Y | Y | Y | Y | – | Y |
+| inventory.manage, inventory.count | Y | Y | Y | – | – | – |
+| purchasing.view, purchasing.approve | Y | Y | Y | – | – | Y |
+| purchasing.manage, purchasing.receive | Y | Y | Y | – | – | – |
+| pos.view, pos.sell | Y | Y | Y | Y | – | view only |
+| pos.manage, pos.void | Y | Y | Y | – | – | – |
+| crm.view | Y | Y | Y | Y | – | Y |
+| crm.manage, crm.approve, crm.adjust | Y | Y | – | – | – | – |

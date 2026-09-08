@@ -88,6 +88,7 @@ import {
 } from '@nuhabit/application';
 import type { MockDb } from '../db';
 import { createAthleteHandlers } from './athlete';
+import { createErpStubHandlers } from './erp';
 import { createHrisHandlers } from './hris';
 import { createWorkoutRaceHandlers } from './workout-race';
 import {
@@ -1712,6 +1713,9 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
     ...createWorkoutRaceHandlers(state),
     // ── HRIS: the people side ───────────────────────────────────────────────
     ...createHrisHandlers(state),
+    // ── Stock, purchasing, the till and loyalty ─────────────────────────────
+    // Not mocked on purpose; these say so rather than 404ing. See erp.ts.
+    ...createErpStubHandlers(),
   ];
 }
 

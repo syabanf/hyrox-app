@@ -190,6 +190,27 @@ export function Pager({
   );
 }
 
+/** A labelled form field with an optional explanation underneath. */
+export function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-muted">
+        {label}
+      </span>
+      {children}
+      {hint ? <span className="mt-1 block text-xs text-muted">{hint}</span> : null}
+    </label>
+  );
+}
+
 export function PageTitle({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-3">

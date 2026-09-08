@@ -14,7 +14,8 @@ they sit where they do, and what it actually takes to pull one out.
                                     │
         ┌──────────┬────────────┬───┴────┬───────────┬────────────┐
         ▼          ▼            ▼        ▼           ▼            ▼
-    identity    catalog      wallet  scheduling   access   incentives  hris
+    identity  catalog  wallet  scheduling  access  incentives  hris
+    inventory ─── purchasing        pos ─── crm
         │          │            │        │           │            │
         └──────────┴────────────┴────┬───┴───────────┴────────────┘
                                      ▼
@@ -73,6 +74,15 @@ The split follows what changes together and what must be atomic together.
   independently: leaving the company does not cancel a membership, and losing a
   login does not erase a timesheet. Modelling them as one row would make every
   one of those endings a special case.
+- **inventory** owns stock because a quantity that purchasing, the till and a
+  stock take all change needs exactly one place that decides whether a change
+  is legal. It is the only module two others write through rather than to.
+- **purchasing** and **pos** own documents, not quantities. Both reach
+  inventory through narrow ports — five methods and four — and the adapters in
+  `internal/app` are the complete list of what becomes a network hop.
+- **crm** owns loyalty, and deliberately not money. Points and credits are two
+  ledgers that never meet: a reward can hand over credits, credits can never
+  become points.
 - **reporting** owns nothing. It exists so that cross-module reads happen in
   one visible place rather than as joins that quietly grow between contexts.
 
@@ -165,6 +175,17 @@ bypassed:
 | A leave allowance is never overspent | `CHECK (annual_used <= annual_total)` |
 | A rejected leave request carries a reason | `CHECK` constraint |
 | One employee record per coach | Partial unique index on `coach_id` |
+| The stock ledger is append-only | `BEFORE UPDATE OR DELETE` trigger |
+| A stock movement's arithmetic holds | `CHECK (qty_after = qty_before + qty)` |
+| Stock never goes negative | `CHECK (qty_on_hand >= 0)` |
+| More cannot be received than ordered | `CHECK (qty_received <= qty_ordered)` |
+| More cannot be returned than accepted | `CHECK (qty_returned <= qty_accepted)` |
+| The XP ledger is append-only | Same trigger |
+| An event awards points at most once | Partial unique index on `idempotency_key` |
+| Current + spent XP equals lifetime | `CHECK` constraint |
+| A reward is not over-subscribed | `CHECK (stock_redeemed <= stock_total)` |
+| One open till per cashier per branch | Partial unique index on `status = 'OPEN'` |
+| Only a cash tender gives change | `CHECK (change_idr = 0 OR method = 'CASH')` |
 
 `TestAppendOnlyLedgerIsEnforcedByTheDatabase` asserts the first one by issuing
 raw SQL and expecting it to fail.

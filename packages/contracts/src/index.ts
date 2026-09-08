@@ -5,3 +5,4 @@ export * from './athlete';
 export * from './workout';
 export * from './race';
 export * from './hris';
+export * from './erp';

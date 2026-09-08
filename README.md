@@ -113,6 +113,7 @@ Excluded by request: Strava's paid features (subscriptions, training plans, Beac
 - **Coach Incentives**: schemes (default + per-coach overrides), monthly statements from completed sessions, payout state machine DRAFT → APPROVED → PAID (or VOID), audited.
 - **Access Logs**: offline CONFLICT rows can be approved (the booked class is deducted and checked in, audited) or rejected. A conflict with no matching booking cannot be approved - there is no open gym to charge.
 - **People (HRIS)**: staff directory, weekly shift patterns, the daily roster, timesheets, leave and overtime. See its own walkthrough below.
+- **Stock, Purchasing, Loyalty and the Till**: the four ERP modules, ported from nuhabiterp into our own stack. See their walkthrough below.
 
 ## Walkthrough - Coach incentives (pembagian insentif pelatih)
 
@@ -153,6 +154,74 @@ home addresses, bank accounts and next of kin.
 6. **Shifts & Calendar**: shift windows, their unpaid break and their grace
    period, plus the year's public holidays. The government moves these dates by
    decree, so the calendar is a table HR edits rather than a constant.
+
+## Walkthrough - the ERP modules
+
+Four modules ported from the nuhabiterp ERP. They run on the Go backend only —
+the offline demo says so rather than pretending, so start the API and point
+`NEXT_PUBLIC_API_BASE_URL` at it (the compose stack already does).
+
+**Stock (Gudang)** → **Stock Levels**. Held per branch, because "do we have
+protein bars" is not a question until it says where.
+
+1. One shelf is below its reorder point on a fresh install. The figure counts
+   stock already on order, so a purchase order already raised does not make the
+   screen ask for a second one.
+2. **Adjust** a quantity. A reason is required by the server, not just the
+   form: an unexplained change to a quantity is indistinguishable from theft.
+3. **Transfer** between branches. Two movements bound into one act, so the
+   total is unchanged and a transfer larger than the source has moves neither.
+4. **Stock Takes** → open a count, type what is on the shelf. The expected
+   figure is frozen when an item is counted. Applying writes one adjustment per
+   varied line and nothing at all for the lines that matched.
+5. **Stock Ledger** shows every one of those movements. It is append-only; the
+   database refuses an `UPDATE`.
+
+**Purchasing** → **Requests**. Nobody signs a purchase alone.
+
+6. Raise a request for something cheap and submit it: one signature, from a
+   branch manager. Raise one for Rp 35m and the chain grows to head → finance →
+   director, decided by the amount and nothing else.
+7. Sign as **Branch Manager**, then try to sign again: refused, because the
+   request is now waiting on finance. Sign as **Finance**, then as **Super
+   Admin**. A higher office may sign for a lower one; the reverse never.
+8. **Make an order** from the approved request, **Approve**, **Send**. Sending
+   tells stock the goods are coming, so the reorder screen stops asking.
+9. **Record a delivery**: accept 57 and reject 3 of an order for 100. Posting
+   it puts 57 into stock at the price on the order — watch the item's average
+   cost move — leaves the 3 out, and turns the order `PARTIALLY_RECEIVED`.
+   Try to receive 50 more of the 43 outstanding: refused.
+10. A partly received order can no longer be cancelled: stock has moved.
+
+**Loyalty (CRM)** → **Members**. Points are not credits.
+
+11. Settle a member top-up (Commercial → Payments) and watch points appear:
+    loyalty subscribes to the same outbox event engagement does, and neither
+    wallet nor scheduling knows it exists.
+12. **Adjust** points by hand — a reason is required — until the member reaches
+    Silver. **Redeem** a reward: the spendable balance falls, the lifetime
+    total does not, and the tier holds. A scheme that demotes people for using
+    it teaches them not to use it.
+13. Try a Gold-only reward as a Silver member: told the tier is too low rather
+    than told to save up for something they will never be allowed.
+14. **Rewards** → cancel a claim: the points and the stock both come back.
+
+**The till (POS)** → **Till**.
+
+15. **Open a till** — a sale with no shift behind it has nowhere to be counted,
+    and is refused. One till per cashier per branch.
+16. Ring up two items and name the member: their tier discount applies
+    automatically, and stays a fixed percentage however many lines are scanned.
+17. **Take payment**. A card cannot overpay — there is no change to give — but
+    cash can, and the change comes out of the cash tendered.
+18. **Complete sale**: the stock comes off the shelf, the points land, and the
+    sale closes, all in one transaction. Sell more than is on the shelf and the
+    whole thing is refused with the money uncounted.
+19. **Sales** → **Void** as a manager (the front desk cannot): the stock goes
+    back. An unpaid sale is cancelled instead; conflating the two would let the
+    counter erase a paid sale by calling it a cancellation.
+20. **Till Shifts** → close the till. The drawer counts cash and nothing else —
+    counting card takings would make every till look short by exactly them.
 
 ## Walkthrough - Part B (admin)
 

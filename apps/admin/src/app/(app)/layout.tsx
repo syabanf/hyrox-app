@@ -25,6 +25,19 @@ import {
   CalendarClock,
   Clock,
   IdCard,
+  Boxes,
+  Building2,
+  ClipboardCheck,
+  Gift,
+  Layers,
+  Medal,
+  Package,
+  Receipt,
+  ScrollText,
+  ShoppingCart,
+  Store,
+  Truck,
+  Warehouse,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -86,6 +99,40 @@ const NAV: NavGroup[] = [
       { href: '/engagement', label: 'Campaigns', icon: Megaphone, permission: 'engagement.view' },
       { href: '/engagement/races', label: 'Race Events', icon: Flag, permission: 'engagement.view' },
       { href: '/engagement/challenges', label: 'Challenges', icon: Trophy, permission: 'engagement.view' },
+    ],
+  },
+  {
+    label: 'Counter',
+    items: [
+      { href: '/counter', label: 'Till', icon: Store, permission: 'pos.sell' },
+      { href: '/counter/sales', label: 'Sales', icon: Receipt, permission: 'pos.view' },
+      { href: '/counter/products', label: 'Menu', icon: ShoppingCart, permission: 'pos.view' },
+      { href: '/counter/shifts', label: 'Till Shifts', icon: ClipboardCheck, permission: 'pos.view' },
+    ],
+  },
+  {
+    label: 'Stock',
+    items: [
+      { href: '/inventory', label: 'Stock Levels', icon: Warehouse, permission: 'inventory.view' },
+      { href: '/inventory/items', label: 'Catalogue', icon: Package, permission: 'inventory.view' },
+      { href: '/inventory/movements', label: 'Stock Ledger', icon: ScrollText, permission: 'inventory.view' },
+      { href: '/inventory/counts', label: 'Stock Takes', icon: Boxes, permission: 'inventory.view' },
+    ],
+  },
+  {
+    label: 'Purchasing',
+    items: [
+      { href: '/purchasing', label: 'Purchase Orders', icon: Truck, permission: 'purchasing.view' },
+      { href: '/purchasing/requests', label: 'Requests', icon: Layers, permission: 'purchasing.view' },
+      { href: '/purchasing/suppliers', label: 'Suppliers', icon: Building2, permission: 'purchasing.view' },
+    ],
+  },
+  {
+    label: 'Loyalty',
+    items: [
+      { href: '/loyalty', label: 'Members', icon: Medal, permission: 'crm.view' },
+      { href: '/loyalty/rewards', label: 'Rewards', icon: Gift, permission: 'crm.view' },
+      { href: '/loyalty/scheme', label: 'Tiers & Rules', icon: Trophy, permission: 'crm.view' },
     ],
   },
   {

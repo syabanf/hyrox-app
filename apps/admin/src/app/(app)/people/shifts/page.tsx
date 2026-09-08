@@ -8,6 +8,7 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import {
   ErrorNote,
+  Field,
   Modal,
   PageTitle,
   RowActions,
@@ -16,7 +17,6 @@ import {
 } from '../../../../components/ui';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { Field } from '../../../../components/people';
 
 export default function ShiftsPage() {
   const qc = useQueryClient();

@@ -47,6 +47,29 @@ export const PERMISSIONS = [
   'hris.manage',
   'hris.attendance',
   'hris.approve',
+  // Stock. Looking is broad — the front desk has to know whether a shirt is on
+  // the shelf — but changing a quantity is not.
+  'inventory.view',
+  'inventory.manage',
+  'inventory.count',
+  // Buying. Raising, approving and receiving are three separate grants,
+  // because one person doing all three is how invoices get paid for goods that
+  // never arrived.
+  'purchasing.view',
+  'purchasing.manage',
+  'purchasing.approve',
+  'purchasing.receive',
+  // The till. Selling is the counter's job; unwinding a paid sale is not.
+  'pos.view',
+  'pos.sell',
+  'pos.manage',
+  'pos.void',
+  // Loyalty. Handing out points by hand is its own grant, for the same reason
+  // adjusting somebody's credits is.
+  'crm.view',
+  'crm.manage',
+  'crm.approve',
+  'crm.adjust',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -74,6 +97,20 @@ export const ROLE_PERMISSIONS: Record<AdminRole, readonly Permission[]> = {
     'hris.view',
     'hris.attendance',
     'hris.approve',
+    'inventory.view',
+    'inventory.manage',
+    'inventory.count',
+    // A branch manager is the first signature on the chain, and the person who
+    // signs for goods arriving at their own branch.
+    'purchasing.view',
+    'purchasing.manage',
+    'purchasing.approve',
+    'purchasing.receive',
+    'pos.view',
+    'pos.sell',
+    'pos.manage',
+    'pos.void',
+    'crm.view',
   ],
   FRONT_DESK: [
     'dashboard.view',
@@ -86,6 +123,13 @@ export const ROLE_PERMISSIONS: Record<AdminRole, readonly Permission[]> = {
     'access.simulate',
     'commercial.view',
     'payments.view',
+    // They run the till and answer "have you got this in a medium", so they
+    // sell and they look. Voiding a paid sale needs a manager, and changing a
+    // stock figure is not a counter job.
+    'pos.view',
+    'pos.sell',
+    'inventory.view',
+    'crm.view',
   ],
   COACH: ['dashboard.view', 'operations.view', 'attendance.manage', 'members.view'],
   FINANCE: [
@@ -101,6 +145,13 @@ export const ROLE_PERMISSIONS: Record<AdminRole, readonly Permission[]> = {
     'incentives.view',
     'incentives.manage',
     'hris.view',
+    // Finance is the second signature on a purchase and the reason stock
+    // valuation exists, but never touches a quantity or a till.
+    'inventory.view',
+    'purchasing.view',
+    'purchasing.approve',
+    'pos.view',
+    'crm.view',
   ],
 };
 

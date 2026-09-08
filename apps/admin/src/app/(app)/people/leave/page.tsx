@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import {
   ErrorNote,
+  Field,
   Modal,
   PageTitle,
   RowActions,
@@ -16,7 +17,6 @@ import {
 } from '../../../../components/ui';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { Field } from '../../../../components/people';
 
 function studioDate(offsetDays = 0) {
   const d = new Date();

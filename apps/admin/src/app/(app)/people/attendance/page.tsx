@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import {
   ErrorNote,
+  Field,
   Modal,
   Pager,
   PageTitle,
@@ -14,7 +15,6 @@ import {
 } from '../../../../components/ui';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { Field } from '../../../../components/people';
 
 const PAGE_SIZE = 25;
 

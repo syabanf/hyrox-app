@@ -54,6 +54,42 @@ import type {
   UpsertVoucherInput,
 } from '@nuhabit/contracts';
 import type {
+  AdjustStockInput,
+  AdjustXPInput,
+  CashierShiftView,
+  CreatePurchaseOrderInput,
+  CreatePurchaseRequestInput,
+  GoodsReceiptView,
+  InventoryItemDetailView,
+  InventoryItemView,
+  InventoryOverviewView,
+  LoyaltyMemberDetailView,
+  LoyaltyProfileView,
+  LoyaltySummaryView,
+  POSOrderView,
+  POSOverviewView,
+  POSProductView,
+  PurchaseOrderLineInput,
+  PurchaseOrderView,
+  PurchaseRequestLineInput,
+  PurchaseRequestView,
+  PurchaseReturnView,
+  PurchasingSummaryView,
+  ReceiveLineInput,
+  RedemptionView,
+  ReorderPointInput,
+  StockRowView,
+  StockTakeView,
+  TenderInput,
+  TransferStockInput,
+  UpsertInventoryItemInput,
+  UpsertPOSProductInput,
+  UpsertRewardInput,
+  UpsertSupplierInput,
+  UpsertTierInput,
+  XPAwardView,
+} from '@nuhabit/contracts';
+import type {
   AssignShiftInput,
   AttendanceView,
   ClockInput,
@@ -111,6 +147,24 @@ import type {
 import type {
   AdminUser,
   AthleteSettings,
+  CashierShift,
+  GoodsReceipt,
+  InventoryCategory,
+  LoyaltyTier,
+  POSCategory,
+  POSOrder,
+  POSProduct,
+  PurchaseOrder,
+  PurchaseRequest,
+  PurchaseReturn,
+  Reward,
+  StockMovement,
+  StockTake,
+  StockTransfer,
+  Supplier,
+  SupplierPrice,
+  XPEntry,
+  XPRule,
   Attendance,
   AuditEvent,
   Booking,
@@ -447,6 +501,221 @@ export function createApiClient(options: ApiClientOptions) {
             post<IncentivePayoutView>(`/api/admin/incentives/payouts/${id}/${action}`, input),
         },
       },
+      /** Stock: what is on the shelves, and every movement that changed it. */
+      inventory: {
+        overview: (branchId?: string) =>
+          get<InventoryOverviewView>('/api/admin/inventory/overview', { branchId }),
+        categories: {
+          list: () => get<InventoryCategory[]>('/api/admin/inventory/categories'),
+          create: (input: { name: string; code: string; sortOrder?: number; active?: boolean }) =>
+            post<InventoryCategory>('/api/admin/inventory/categories', input),
+          update: (id: string, input: { name: string; code: string; sortOrder?: number; active?: boolean }) =>
+            put<InventoryCategory>(`/api/admin/inventory/categories/${id}`, input),
+          remove: (id: string) => del(`/api/admin/inventory/categories/${id}`),
+        },
+        items: {
+          list: (query?: { query?: string; categoryId?: string; kind?: string; activeOnly?: string; limit?: number }) =>
+            get<InventoryItemView[]>('/api/admin/inventory/items', query),
+          get: (id: string) => get<InventoryItemDetailView>(`/api/admin/inventory/items/${id}`),
+          create: (input: UpsertInventoryItemInput) =>
+            post<InventoryItemView>('/api/admin/inventory/items', input),
+          update: (id: string, input: UpsertInventoryItemInput) =>
+            put<InventoryItemView>(`/api/admin/inventory/items/${id}`, input),
+          setReorderPoint: (id: string, input: ReorderPointInput) =>
+            put<StockRowView['level']>(`/api/admin/inventory/items/${id}/reorder`, input),
+        },
+        stock: (query?: { branchId?: string; categoryId?: string; query?: string; lowOnly?: string; limit?: number }) =>
+          get<StockRowView[]>('/api/admin/inventory/stock', query),
+        movements: (query?: { itemId?: string; branchId?: string; kind?: string; referenceType?: string; referenceId?: string; limit?: number }) =>
+          get<StockMovement[]>('/api/admin/inventory/movements', query),
+        /** A quantity never changes without a reason attached. */
+        adjust: (input: AdjustStockInput) =>
+          post<StockMovement>('/api/admin/inventory/adjust', input),
+        transfer: (input: TransferStockInput) =>
+          post<StockTransfer>('/api/admin/inventory/transfer', input),
+        transfers: (query?: { itemId?: string; limit?: number }) =>
+          get<StockTransfer[]>('/api/admin/inventory/transfers', query),
+        stockTakes: {
+          list: (query?: { branchId?: string; status?: string; limit?: number }) =>
+            get<StockTake[]>('/api/admin/inventory/stock-takes', query),
+          get: (id: string) => get<StockTakeView>(`/api/admin/inventory/stock-takes/${id}`),
+          open: (input: { branchId: string; countedOn?: string; note?: string | null }) =>
+            post<StockTakeView>('/api/admin/inventory/stock-takes', input),
+          count: (id: string, input: { itemId: string; qtyCounted: number; note?: string | null }) =>
+            post<StockTakeView>(`/api/admin/inventory/stock-takes/${id}/count`, input),
+          removeLine: (id: string, lineId: string) =>
+            del(`/api/admin/inventory/stock-takes/${id}/lines/${lineId}`),
+          decide: (id: string, action: 'apply' | 'cancel') =>
+            post<StockTakeView>(`/api/admin/inventory/stock-takes/${id}/${action}`, {}),
+        },
+      },
+
+      /** Buying: request, order, receipt — three separate pairs of hands. */
+      purchasing: {
+        overview: (branchId?: string) =>
+          get<PurchasingSummaryView>('/api/admin/purchasing/overview', { branchId }),
+        suppliers: {
+          list: (query?: { query?: string; status?: string; limit?: number }) =>
+            get<Supplier[]>('/api/admin/purchasing/suppliers', query),
+          get: (id: string) => get<Supplier>(`/api/admin/purchasing/suppliers/${id}`),
+          create: (input: UpsertSupplierInput) =>
+            post<Supplier>('/api/admin/purchasing/suppliers', input),
+          update: (id: string, input: UpsertSupplierInput) =>
+            put<Supplier>(`/api/admin/purchasing/suppliers/${id}`, input),
+          remove: (id: string) => del(`/api/admin/purchasing/suppliers/${id}`),
+          prices: (id: string, itemId?: string) =>
+            get<SupplierPrice[]>(`/api/admin/purchasing/suppliers/${id}/prices`, { itemId }),
+          setPrice: (id: string, input: { itemId: string; unitPriceIdr: number; minOrderQty?: number; leadTimeDays?: number; effectiveFrom?: string }) =>
+            post<SupplierPrice>(`/api/admin/purchasing/suppliers/${id}/prices`, input),
+        },
+        requests: {
+          list: (query?: { branchId?: string; status?: string; priority?: string; limit?: number }) =>
+            get<PurchaseRequest[]>('/api/admin/purchasing/requests', query),
+          get: (id: string) => get<PurchaseRequestView>(`/api/admin/purchasing/requests/${id}`),
+          create: (input: CreatePurchaseRequestInput) =>
+            post<PurchaseRequestView>('/api/admin/purchasing/requests', input),
+          addLine: (id: string, input: PurchaseRequestLineInput) =>
+            post<PurchaseRequestView>(`/api/admin/purchasing/requests/${id}/lines`, input),
+          removeLine: (id: string, lineId: string) =>
+            del(`/api/admin/purchasing/requests/${id}/lines/${lineId}`),
+          submit: (id: string) =>
+            post<PurchaseRequestView>(`/api/admin/purchasing/requests/${id}/submit`, {}),
+          /** Signs whichever level the request is waiting on, if the role reaches it. */
+          approve: (id: string) =>
+            post<PurchaseRequestView>(`/api/admin/purchasing/requests/${id}/approve`, {}),
+          reject: (id: string, reason: string) =>
+            post<PurchaseRequestView>(`/api/admin/purchasing/requests/${id}/reject`, { reason }),
+          convert: (id: string, supplierId: string) =>
+            post<PurchaseOrderView>(`/api/admin/purchasing/requests/${id}/convert`, { supplierId }),
+        },
+        orders: {
+          list: (query?: { branchId?: string; supplierId?: string; status?: string; limit?: number }) =>
+            get<PurchaseOrder[]>('/api/admin/purchasing/orders', query),
+          get: (id: string) => get<PurchaseOrderView>(`/api/admin/purchasing/orders/${id}`),
+          create: (input: CreatePurchaseOrderInput) =>
+            post<PurchaseOrderView>('/api/admin/purchasing/orders', input),
+          setTerms: (id: string, input: { discountIdr: number; taxPercent: number; expectedOn?: string | null; terms?: string | null; shipTo?: string | null; note?: string | null }) =>
+            put<PurchaseOrderView>(`/api/admin/purchasing/orders/${id}/terms`, input),
+          addLine: (id: string, input: PurchaseOrderLineInput) =>
+            post<PurchaseOrderView>(`/api/admin/purchasing/orders/${id}/lines`, input),
+          removeLine: (id: string, lineId: string) =>
+            del(`/api/admin/purchasing/orders/${id}/lines/${lineId}`),
+          approve: (id: string) =>
+            post<PurchaseOrderView>(`/api/admin/purchasing/orders/${id}/approve`, {}),
+          send: (id: string) => post<PurchaseOrderView>(`/api/admin/purchasing/orders/${id}/send`, {}),
+          cancel: (id: string, reason: string) =>
+            post<PurchaseOrderView>(`/api/admin/purchasing/orders/${id}/cancel`, { reason }),
+        },
+        receipts: {
+          list: (query?: { orderId?: string; branchId?: string; status?: string; limit?: number }) =>
+            get<GoodsReceipt[]>('/api/admin/purchasing/receipts', query),
+          get: (id: string) => get<GoodsReceiptView>(`/api/admin/purchasing/receipts/${id}`),
+          open: (input: { orderId: string; deliveryNoteNumber?: string | null; note?: string | null }) =>
+            post<GoodsReceiptView>('/api/admin/purchasing/receipts', input),
+          addLine: (id: string, input: ReceiveLineInput) =>
+            post<GoodsReceiptView>(`/api/admin/purchasing/receipts/${id}/lines`, input),
+          removeLine: (id: string, lineId: string) =>
+            del(`/api/admin/purchasing/receipts/${id}/lines/${lineId}`),
+          /** Where the goods actually enter stock. */
+          post: (id: string) =>
+            post<GoodsReceiptView>(`/api/admin/purchasing/receipts/${id}/post`, {}),
+          cancel: (id: string) =>
+            post<GoodsReceiptView>(`/api/admin/purchasing/receipts/${id}/cancel`, {}),
+        },
+        returns: {
+          list: (query?: { receiptId?: string; status?: string; limit?: number }) =>
+            get<PurchaseReturn[]>('/api/admin/purchasing/returns', query),
+          get: (id: string) => get<PurchaseReturnView>(`/api/admin/purchasing/returns/${id}`),
+          open: (input: { receiptId: string; reasonType: string; reasonNote?: string | null }) =>
+            post<PurchaseReturnView>('/api/admin/purchasing/returns', input),
+          addLine: (id: string, input: { receiptItemId: string; qty: number; note?: string | null }) =>
+            post<PurchaseReturnView>(`/api/admin/purchasing/returns/${id}/lines`, input),
+          post: (id: string) => post<PurchaseReturnView>(`/api/admin/purchasing/returns/${id}/post`, {}),
+        },
+      },
+
+      /** Loyalty: points, tiers and what they buy. */
+      crm: {
+        overview: () => get<LoyaltySummaryView>('/api/admin/crm/overview'),
+        members: {
+          list: (query?: { tierCode?: string; status?: string; limit?: number }) =>
+            get<LoyaltyProfileView[]>('/api/admin/crm/members', query),
+          get: (id: string) => get<LoyaltyMemberDetailView>(`/api/admin/crm/members/${id}`),
+          /** Handing out points by hand always carries a reason. */
+          adjust: (id: string, input: AdjustXPInput) =>
+            post<XPAwardView>(`/api/admin/crm/members/${id}/adjust`, input),
+          redeem: (id: string, rewardId: string) =>
+            post<RedemptionView>(`/api/admin/crm/members/${id}/redeem`, { rewardId }),
+        },
+        ledger: (query?: { memberId?: string; direction?: string; limit?: number }) =>
+          get<XPEntry[]>('/api/admin/crm/ledger', query),
+        tiers: {
+          list: () => get<LoyaltyTier[]>('/api/admin/crm/tiers'),
+          save: (input: UpsertTierInput) => put<LoyaltyTier>('/api/admin/crm/tiers', input),
+        },
+        rules: {
+          list: (query?: { channel?: string; activeOnly?: string }) =>
+            get<XPRule[]>('/api/admin/crm/rules', query),
+          save: (input: Record<string, unknown>) => put<XPRule>('/api/admin/crm/rules', input),
+        },
+        rewards: {
+          list: (activeOnly = false) =>
+            get<Reward[]>('/api/admin/crm/rewards', { activeOnly: activeOnly ? 'true' : '' }),
+          save: (input: UpsertRewardInput) => put<Reward>('/api/admin/crm/rewards', input),
+        },
+        redemptions: {
+          list: (query?: { memberId?: string; rewardId?: string; status?: string; limit?: number }) =>
+            get<RedemptionView[]>('/api/admin/crm/redemptions', query),
+          decide: (id: string, action: 'approve' | 'fulfil' | 'cancel', note?: string) =>
+            post<RedemptionView>(`/api/admin/crm/redemptions/${id}/${action}`, { note: note ?? null }),
+        },
+      },
+
+      /** The till. */
+      pos: {
+        overview: (branchId?: string) => get<POSOverviewView>('/api/admin/pos/overview', { branchId }),
+        categories: {
+          list: () => get<POSCategory[]>('/api/admin/pos/categories'),
+          save: (input: { id?: string; name: string; sortOrder?: number; active?: boolean }) =>
+            put<POSCategory>('/api/admin/pos/categories', input),
+        },
+        products: {
+          list: (query?: { query?: string; categoryId?: string; sellableOnly?: string; branchId?: string; limit?: number }) =>
+            get<POSProductView[]>('/api/admin/pos/products', query),
+          save: (input: UpsertPOSProductInput) => put<POSProduct>('/api/admin/pos/products', input),
+        },
+        shifts: {
+          list: (query?: { branchId?: string; cashierId?: string; status?: string; limit?: number }) =>
+            get<CashierShift[]>('/api/admin/pos/shifts', query),
+          get: (id: string) => get<CashierShiftView>(`/api/admin/pos/shifts/${id}`),
+          open: (input: { branchId: string; openingCashIdr: number; note?: string | null }) =>
+            post<CashierShiftView>('/api/admin/pos/shifts', input),
+          close: (id: string, input: { countedCashIdr: number; note?: string | null }) =>
+            post<CashierShiftView>(`/api/admin/pos/shifts/${id}/close`, input),
+        },
+        orders: {
+          list: (query?: { branchId?: string; shiftId?: string; memberId?: string; status?: string; limit?: number }) =>
+            get<POSOrder[]>('/api/admin/pos/orders', query),
+          get: (id: string) => get<POSOrderView>(`/api/admin/pos/orders/${id}`),
+          open: (input: { branchId: string; memberId?: string | null; orderType?: string; note?: string | null }) =>
+            post<POSOrderView>('/api/admin/pos/orders', input),
+          setDetails: (id: string, input: { memberId?: string | null; setMember?: boolean; discountIdr: number; discountReason?: string | null; note?: string | null }) =>
+            put<POSOrderView>(`/api/admin/pos/orders/${id}`, input),
+          addLine: (id: string, input: { productId: string; qty: number; discountIdr?: number; note?: string | null }) =>
+            post<POSOrderView>(`/api/admin/pos/orders/${id}/lines`, input),
+          removeLine: (id: string, lineId: string) =>
+            del(`/api/admin/pos/orders/${id}/lines/${lineId}`),
+          tender: (id: string, input: TenderInput) =>
+            post<POSOrderView>(`/api/admin/pos/orders/${id}/tender`, input),
+          /** Where the stock moves, the points land and the sale closes. */
+          complete: (id: string) => post<POSOrderView>(`/api/admin/pos/orders/${id}/complete`, {}),
+          cancel: (id: string) => post<POSOrderView>(`/api/admin/pos/orders/${id}/cancel`, {}),
+          /** Unwinding a paid sale: puts the stock back, needs a reason. */
+          void: (id: string, reason: string) =>
+            post<POSOrderView>(`/api/admin/pos/orders/${id}/void`, { reason }),
+        },
+      },
+
       /**
        * The people side. Everything lives under /api/admin/hris because an
        * employee record carries a home address, a bank account and next of

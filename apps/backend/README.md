@@ -71,6 +71,7 @@ internal/
     scheduling/       class sessions, bookings, waitlist, attendance
     access/           QR credentials, the gate pipeline, access logs
     incentives/       coach schemes, statements, payouts
+    hris/             employees, shifts, attendance, leave, overtime
     reporting/        dashboard, reports, member 360 (owns no tables)
   app/                wiring: the only place that knows every module exists
   seed/               the demo studio
@@ -124,6 +125,15 @@ stateless token verification so each service authenticates callers on its own.
   window is refused.
 - **Coach payroll is frozen when approved.** A later attendance correction
   never changes an approved payout; void it and issue a new one.
+- **Staff lateness is counted from the shift start.** The tolerance decides
+  *whether* an arrival is late; the minutes are measured from the start time, so
+  twelve minutes into a shift with ten minutes' grace is twelve, not two.
+- **A public holiday is free, collective leave is not.** Indonesian *cuti
+  bersama* comes out of the annual allowance and a national holiday does not;
+  where both fall on one date the national one wins.
+- **A leave allowance moves on approval, not on filing** — but pending days are
+  reserved, so two requests cannot together overspend the year, and a database
+  CHECK refuses it even if the application's arithmetic is bypassed.
 
 Each of these has a test that fails if it stops being true.
 
@@ -138,7 +148,9 @@ The integration suite drives real HTTP against a real database and covers the
 core loop, single-use QR codes, capacity and waitlist promotion, late
 cancellation, package coverage, duplicate payment callbacks, refunds, RBAC
 refusals per role, cross-member data access, voucher eligibility, the payout
-approval chain, delete guards, draft visibility, and the append-only ledger.
+approval chain, delete guards, draft visibility, the append-only ledger, and
+the HR loop — lateness from the shift start, holidays excluded from leave, the
+allowance moving only on approval, and the database refusing to overspend it.
 They skip themselves when `TEST_DATABASE_URL` is unset.
 
 ## Configuration
@@ -161,8 +173,9 @@ matter most:
 Implemented and covered by tests: identity and sign-in, catalog and business
 rules, the credit wallet with payments, vouchers, refunds and expiry, class
 scheduling with bookings, waitlist and attendance, QR gate access with offline
-reconciliation, coach incentives and payouts, and the cross-module reporting
-layer.
+reconciliation, coach incentives and payouts, the HRIS (employees, shift
+patterns, timesheets, leave with the Indonesian holiday rules, and overtime),
+and the cross-module reporting layer.
 
 Two modules are deliberately partial, each built out to exactly what the member
 app opens with:

@@ -54,6 +54,18 @@ const (
 	UserRace     = "urc"
 	OTP          = "otp"
 	Outbox       = "obx"
+
+	// People on the payroll, as opposed to members and logins.
+	Employee         = "emp"
+	Department       = "dep"
+	Position         = "pos"
+	EmploymentStatus = "est"
+	Shift            = "shf"
+	EmployeeShift    = "esh"
+	Attendance       = "att"
+	Holiday          = "hol"
+	Leave            = "lve"
+	Overtime         = "ovt"
 )
 
 // Generator hands out identifiers. It is safe for concurrent use.

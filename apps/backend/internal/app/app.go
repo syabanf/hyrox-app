@@ -16,6 +16,7 @@ import (
 	"github.com/syabanf/nuhabit-backend/internal/modules/access"
 	"github.com/syabanf/nuhabit-backend/internal/modules/catalog"
 	"github.com/syabanf/nuhabit-backend/internal/modules/engagement"
+	"github.com/syabanf/nuhabit-backend/internal/modules/hris"
 	"github.com/syabanf/nuhabit-backend/internal/modules/identity"
 	"github.com/syabanf/nuhabit-backend/internal/modules/incentives"
 	"github.com/syabanf/nuhabit-backend/internal/modules/reporting"
@@ -43,6 +44,7 @@ const (
 	ModuleReporting  = "reporting"
 	ModuleEngagement = "engagement"
 	ModuleTraining   = "training"
+	ModuleHRIS       = "hris"
 )
 
 // App is a wired-up process: an HTTP handler plus the background work that
@@ -64,6 +66,7 @@ type App struct {
 	Reporting  *reporting.Service
 	Engagement *engagement.Service
 	Training   *training.Service
+	HRIS       *hris.Service
 
 	clock clock.Clock
 }
@@ -108,6 +111,8 @@ func New(cfg config.Config, db *database.DB) *App {
 		schedulingService, ids, now, auditor, cfg.StudioLocation())
 
 	engagementService := engagement.NewService(engagement.NewRepository(db), ids, now)
+	hrisService := hris.NewService(db, hris.NewRepository(db), catalogService,
+		ids, now, auditor, cfg.StudioLocation())
 	trainingService := training.NewService(training.NewRepository(db), now)
 
 	reportingService := reporting.NewService(reporting.Deps{
@@ -160,6 +165,9 @@ func New(cfg config.Config, db *database.DB) *App {
 	if cfg.Modules.IsEnabled(ModuleTraining) {
 		training.NewHandler(trainingService, guard).Mount(router)
 	}
+	if cfg.Modules.IsEnabled(ModuleHRIS) {
+		hris.NewHandler(hrisService, guard).Mount(router)
+	}
 
 	app := &App{
 		Config:     cfg,
@@ -174,6 +182,7 @@ func New(cfg config.Config, db *database.DB) *App {
 		Reporting:  reportingService,
 		Engagement: engagementService,
 		Training:   trainingService,
+		HRIS:       hrisService,
 		clock:      now,
 	}
 

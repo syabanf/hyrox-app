@@ -55,6 +55,12 @@ const (
 	PermGatesManage         Permission = "gates.manage"
 	PermUsersManage         Permission = "users.manage"
 	PermRulesUpdate         Permission = "rules.update"
+	// HRIS is staff administration: the people who run the studio rather than
+	// the members who train in it.
+	PermHRISView       Permission = "hris.view"
+	PermHRISManage     Permission = "hris.manage"
+	PermHRISAttendance Permission = "hris.attendance"
+	PermHRISApprove    Permission = "hris.approve"
 )
 
 // Permissions is the full list, in the order the admin panel expects.
@@ -67,6 +73,7 @@ var Permissions = []Permission{
 	PermEngagementView, PermCampaignsManage, PermReportsView, PermReportsFinancial,
 	PermIncentivesView, PermIncentivesManage, PermConfigView, PermBranchesManage,
 	PermGatesManage, PermUsersManage, PermRulesUpdate,
+	PermHRISView, PermHRISManage, PermHRISAttendance, PermHRISApprove,
 }
 
 // RolePermissions is the authorization matrix. Super Admin holds everything;
@@ -80,6 +87,7 @@ var RolePermissions = map[AdminRole][]Permission{
 		PermOperationsView, PermClassTypesManage, PermSessionsManage, PermCoachesManage,
 		PermBookingsManage, PermAttendanceManage, PermAccessView, PermAccessSimulate,
 		PermReportsView, PermIncentivesView, PermConfigView,
+		PermHRISView, PermHRISAttendance, PermHRISApprove,
 	},
 	RoleFrontDesk: {
 		PermDashboardView, PermMembersView, PermLedgerView, PermOperationsView,
@@ -93,6 +101,7 @@ var RolePermissions = map[AdminRole][]Permission{
 		PermDashboardView, PermMembersView, PermLedgerView, PermCommercialView,
 		PermPaymentsView, PermPaymentsSimulate, PermRefundsManage, PermReportsView,
 		PermReportsFinancial, PermIncentivesView, PermIncentivesManage,
+		PermHRISView,
 	},
 }
 

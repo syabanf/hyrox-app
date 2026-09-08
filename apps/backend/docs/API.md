@@ -170,6 +170,57 @@ gets `403 FORBIDDEN` — checked server-side, not only in the UI.
 | `POST` | `/api/admin/incentives/payouts` | `incentives.manage` — `{coachId, periodMonth}`, freezes the statement |
 | `POST` | `/api/admin/incentives/payouts/{id}/{approve\|pay\|void}` | `incentives.manage` — `pay` needs `paymentReference`, `void` needs `note` |
 
+### People (HRIS)
+
+The staff side: who works here, when they are expected, whether they turned up,
+and the leave they are owed. Employee records carry home addresses, bank
+accounts and next of kin, so there is no public or member-facing route here and
+the front desk is not admitted at all.
+
+| Method | Path | Permission |
+|---|---|---|
+| `GET` | `/api/admin/hris/overview` | `hris.view` — the HR dashboard |
+| `GET` | `/api/admin/hris/me` | *any staff token* — your own day |
+| `POST` | `/api/admin/hris/me/clock-in\|clock-out` | *any staff token* |
+| `GET` `POST` | `/api/admin/hris/departments` | `hris.view` / `hris.manage` |
+| `PUT` `DELETE` | `/api/admin/hris/departments/{id}` | `hris.manage` |
+| `GET` `POST` | `/api/admin/hris/positions` | `hris.view` / `hris.manage` |
+| `PUT` `DELETE` | `/api/admin/hris/positions/{id}` | `hris.manage` |
+| `GET` | `/api/admin/hris/employment-statuses` | `hris.view` |
+| `GET` | `/api/admin/hris/employees` | `hris.view` — query: `query`, `departmentId`, `branchId`, `activeOnly`, `limit` |
+| `GET` | `/api/admin/hris/employees/{id}` | `hris.view` — record, balance, pattern, timesheet, reports |
+| `POST` `PUT` | `/api/admin/hris/employees[/{id}]` | `hris.manage` — a whole record, not a patch |
+| `GET` `POST` | `/api/admin/hris/employees/{id}/schedule` | `hris.view` / `hris.manage` |
+| `DELETE` | `/api/admin/hris/employees/{id}/schedule/{rowId}` | `hris.manage` |
+| `GET` `PUT` | `/api/admin/hris/employees/{id}/balance` | `hris.view` / `hris.manage` |
+| `GET` `POST` | `/api/admin/hris/shifts` | `hris.view` / `hris.manage` |
+| `PUT` | `/api/admin/hris/shifts/{id}` | `hris.manage` |
+| `GET` | `/api/admin/hris/roster` | `hris.view` — query: `date`, `branchId` |
+| `GET` | `/api/admin/hris/attendance` | `hris.view` — query: `employeeId`, `from`, `to`, `status`, `limit` |
+| `POST` | `/api/admin/hris/attendance/clock-in\|clock-out` | `hris.attendance` |
+| `POST` | `/api/admin/hris/attendance/mark` | `hris.attendance` — record a day by hand |
+| `GET` `POST` | `/api/admin/hris/leaves` | `hris.view` / `hris.attendance` |
+| `POST` | `/api/admin/hris/leaves/{id}/{approve\|reject\|cancel}` | `hris.approve` |
+| `GET` `POST` | `/api/admin/hris/overtime` | `hris.view` / `hris.attendance` |
+| `POST` | `/api/admin/hris/overtime/{id}/{approve\|reject\|cancel}` | `hris.approve` |
+| `GET` `POST` | `/api/admin/hris/holidays` | `hris.view` / `hris.manage` |
+| `DELETE` | `/api/admin/hris/holidays/{id}` | `hris.manage` |
+
+Codes worth handling here: `ALREADY_CLOCKED_IN`, `ALREADY_CLOCKED_OUT`,
+`NOT_CLOCKED_IN`, `NOT_EMPLOYED`, `NO_WORKING_DAYS`, `OVERLAPS_EXISTING`,
+`INSUFFICIENT_BALANCE`, `INVALID_TRANSITION`.
+
+Three rules the numbers depend on:
+
+- **Lateness is measured from the shift start, not from the end of the
+  tolerance.** Twelve minutes into a shift with ten minutes' grace is twelve
+  minutes late, not two.
+- **A public holiday is free; collective leave is not.** `deductsLeave` on the
+  calendar is what separates them, and where both land on one date the national
+  holiday wins.
+- **The allowance moves on approval, not on filing** — but pending days are
+  reserved, so two requests cannot together overspend the year.
+
 ### Reports and configuration
 
 | Method | Path | Permission |
@@ -215,3 +266,6 @@ marking and credential cleanup, so calling it is only ever a convenience.
 | incentives.manage | Y | Y | – | – | – | Y |
 | branches, gates | Y | Y | – | – | – | – |
 | users.manage, rules.update | Y | – | – | – | – | – |
+| hris.view | Y | Y | Y | – | – | Y |
+| hris.attendance, hris.approve | Y | Y | Y | – | – | – |
+| hris.manage | Y | Y | – | – | – | – |

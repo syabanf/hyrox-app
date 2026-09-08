@@ -14,7 +14,7 @@ they sit where they do, and what it actually takes to pull one out.
                                     │
         ┌──────────┬────────────┬───┴────┬───────────┬────────────┐
         ▼          ▼            ▼        ▼           ▼            ▼
-    identity    catalog      wallet  scheduling   access     incentives
+    identity    catalog      wallet  scheduling   access   incentives  hris
         │          │            │        │           │            │
         └──────────┴────────────┴────┬───┴───────────┴────────────┘
                                      ▼
@@ -68,6 +68,11 @@ The split follows what changes together and what must be atomic together.
   else writes it.
 - **identity** owns accounts because sign-in is the one thing every other
   module trusts the result of.
+- **hris** owns employees because a person on the payroll is not a member and
+  not a login. The same human can be all three, and each of the three ends
+  independently: leaving the company does not cancel a membership, and losing a
+  login does not erase a timesheet. Modelling them as one row would make every
+  one of those endings a special case.
 - **reporting** owns nothing. It exists so that cross-module reads happen in
   one visible place rather than as joins that quietly grow between contexts.
 
@@ -156,6 +161,10 @@ bypassed:
 | One live payout per coach per period | Partial unique index excluding `VOID` |
 | Exactly one organization default incentive scheme | Partial unique index on `coach_id IS NULL` |
 | A paid payout has a payment reference | `CHECK` constraint |
+| One attendance row per employee per day | `UNIQUE (employee_id, date)` |
+| A leave allowance is never overspent | `CHECK (annual_used <= annual_total)` |
+| A rejected leave request carries a reason | `CHECK` constraint |
+| One employee record per coach | Partial unique index on `coach_id` |
 
 `TestAppendOnlyLedgerIsEnforcedByTheDatabase` asserts the first one by issuing
 raw SQL and expecting it to fail.
@@ -223,7 +232,10 @@ than to discover it in production. Every other seam is mechanical.
 4. Register it in `internal/app/app.go` behind a `Modules.IsEnabled` check and
    add its name to the constants.
 
-The `training` schema is already migrated and waiting for exactly this.
+`hris` is the most recent worked example: schema in `0010_hris.sql`, rules in
+`internal/domain/hris.go`, the module in `internal/modules/hris`, and four lines
+in `internal/app/app.go`. It reads no other schema and reaches catalog through a
+two-method port for branch and coach names.
 
 ## What is deliberately not here
 

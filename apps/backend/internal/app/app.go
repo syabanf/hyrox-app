@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/syabanf/nuhabit-backend/internal/media"
 	"github.com/syabanf/nuhabit-backend/internal/modules/access"
 	"github.com/syabanf/nuhabit-backend/internal/modules/catalog"
 	"github.com/syabanf/nuhabit-backend/internal/modules/crm"
@@ -162,6 +163,11 @@ func New(cfg config.Config, db *database.DB) *App {
 	)
 
 	development := !cfg.IsProduction()
+
+	// The demo's pictures. They are embedded in the binary and served from the
+	// API so both apps reach them on their own origin, and so a demo with no
+	// network still has faces on it.
+	router.Get("/api/media/{name}", media.Handler().ServeHTTP)
 
 	if cfg.Modules.IsEnabled(ModuleCatalog) {
 		catalog.NewHandler(catalogService, catalogUsage{schedulingService, walletService}, guard).Mount(router)

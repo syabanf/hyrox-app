@@ -12,6 +12,13 @@ export default function BookingsPage() {
   const { can } = usePermissions();
   const [bookOpen, setBookOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
+  // CANCELLED_OR_NO_SHOW is not a booking status; it is the pair the summary
+  // card counts as one number, so pressing it filters to both.
+  const matchesStatus = (status: string) =>
+    !statusFilter ||
+    (statusFilter === 'CANCELLED_OR_NO_SHOW'
+      ? status === 'CANCELLED' || status === 'NO_SHOW'
+      : status === statusFilter);
   const [memberQuery, setMemberQuery] = useState('');
   const [page, setPage] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +70,7 @@ export default function BookingsPage() {
 
   const all = rosterQueries.data ?? [];
   const rows = all
-    .filter((r) => !statusFilter || r.booking.status === statusFilter)
+    .filter((r) => matchesStatus(r.booking.status))
     .filter((r) => !memberQuery || r.memberName.toLowerCase().includes(memberQuery.toLowerCase()))
     .sort((a, b) => new Date(a.session.startsAt).getTime() - new Date(b.session.startsAt).getTime());
   const pageCount = Math.max(1, Math.ceil(rows.length / 10));
@@ -84,12 +91,30 @@ export default function BookingsPage() {
         }
       />
       <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Confirmed" value={all.filter((r) => r.booking.status === 'CONFIRMED').length} />
-        <StatCard label="Waitlist" value={all.filter((r) => r.booking.status === 'WAITLIST').length} />
-        <StatCard label="Checked in" value={all.filter((r) => r.booking.status === 'CHECKED_IN').length} />
+        {/* Each card filters the table to what it counts. */}
+        {(
+          [
+            ['Confirmed', 'CONFIRMED'],
+            ['Waitlist', 'WAITLIST'],
+            ['Checked in', 'CHECKED_IN'],
+          ] as const
+        ).map(([label, status]) => (
+          <StatCard
+            key={status}
+            label={label}
+            value={all.filter((r) => r.booking.status === status).length}
+            active={statusFilter === status}
+            onClick={() => setStatusFilter(statusFilter === status ? '' : status)}
+          />
+        ))}
+        {/* Two statuses behind one card, so it filters to the pair. */}
         <StatCard
           label="Cancelled / no-show"
           value={all.filter((r) => ['CANCELLED', 'NO_SHOW'].includes(r.booking.status)).length}
+          active={statusFilter === 'CANCELLED_OR_NO_SHOW'}
+          onClick={() =>
+            setStatusFilter(statusFilter === 'CANCELLED_OR_NO_SHOW' ? '' : 'CANCELLED_OR_NO_SHOW')
+          }
         />
       </div>
       <div className="mb-4 flex flex-wrap gap-2">

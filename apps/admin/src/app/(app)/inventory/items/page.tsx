@@ -18,6 +18,7 @@ import {
   SearchSelect,
   StatCard,
 } from '../../../../components/ui';
+import { Thumb } from '../../../../components/thumb';
 import { ExportButton, ImportButton } from '../../../../components/spreadsheet';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
@@ -156,10 +157,18 @@ export default function ItemsPage() {
                 {shown.map((item) => (
                   <tr key={item.id}>
                     <td>
-                      <Link href={`/inventory/items/${item.id}`} className="font-bold hover:text-brand">
-                        {item.name}
-                      </Link>
-                      <p className="text-xs text-muted">{item.sku}</p>
+                      <div className="flex items-center gap-3">
+                        <Thumb src={item.imageUrl} name={item.name} />
+                        <div className="min-w-0">
+                          <Link
+                            href={`/inventory/items/${item.id}`}
+                            className="font-bold hover:text-brand"
+                          >
+                            {item.name}
+                          </Link>
+                          <p className="text-xs text-muted">{item.sku}</p>
+                        </div>
+                      </div>
                     </td>
                     <td className="text-sm">{item.categoryName ?? <span className="text-muted">—</span>}</td>
                     <td>

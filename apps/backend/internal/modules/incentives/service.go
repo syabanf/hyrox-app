@@ -64,6 +64,9 @@ type Actor struct {
 type SchemeView struct {
 	Scheme    domain.IncentiveScheme `json:"scheme"`
 	CoachName *string                `json:"coachName"`
+	// ClassTypeNames names the class types the rates refer to, so the editor
+	// does not have to fetch the catalogue to render a rate table.
+	ClassTypeNames map[string]string `json:"classTypeNames,omitempty"`
 }
 
 func (s *Service) Schemes(ctx context.Context) ([]SchemeView, error) {
@@ -80,9 +83,27 @@ func (s *Service) Schemes(ctx context.Context) ([]SchemeView, error) {
 		names[c.ID] = c.Name
 	}
 
+	ids := make([]string, 0, len(schemes))
+	for _, scheme := range schemes {
+		ids = append(ids, scheme.ID)
+	}
+	rates, err := s.repo.Rates(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	classTypes, err := s.catalog.ClassTypes(ctx, false)
+	if err != nil {
+		return nil, err
+	}
+	classNames := map[string]string{}
+	for _, t := range classTypes {
+		classNames[t.ID] = t.Name
+	}
+
 	views := make([]SchemeView, 0, len(schemes))
 	for _, scheme := range schemes {
-		view := SchemeView{Scheme: scheme}
+		scheme.Rates = rates[scheme.ID]
+		view := SchemeView{Scheme: scheme, ClassTypeNames: classNames}
 		if scheme.CoachID != nil {
 			if name, ok := names[*scheme.CoachID]; ok {
 				view.CoachName = &name
@@ -101,7 +122,9 @@ type SchemeInput struct {
 	FullClassBonusIDR         int64
 	FullClassThresholdPercent int
 	NoShowPenaltyIDR          int64
-	Active                    bool
+	// Rates replaces the scheme's per-class-type rates wholesale.
+	Rates  []domain.SchemeRate
+	Active bool
 }
 
 func (s *Service) CreateScheme(ctx context.Context, in SchemeInput, actor Actor) (SchemeView, error) {
@@ -109,6 +132,10 @@ func (s *Service) CreateScheme(ctx context.Context, in SchemeInput, actor Actor)
 		if _, err := s.catalog.Coach(ctx, *in.CoachID); err != nil {
 			return SchemeView{}, err
 		}
+	}
+	rates, err := s.checkRates(ctx, in.Rates)
+	if err != nil {
+		return SchemeView{}, err
 	}
 	scheme := domain.IncentiveScheme{
 		ID:                        s.ids.New(id.Scheme),
@@ -124,6 +151,10 @@ func (s *Service) CreateScheme(ctx context.Context, in SchemeInput, actor Actor)
 	if err != nil {
 		return SchemeView{}, err
 	}
+	if err := s.saveRates(ctx, created.ID, rates); err != nil {
+		return SchemeView{}, err
+	}
+	created.Rates = rates
 	if err := s.auditor.Record(ctx, audit.Event{
 		EntityType: "incentive_scheme", EntityID: created.ID, Action: "create",
 		ActorID: actor.ID, ActorName: actor.Name,
@@ -138,6 +169,10 @@ func (s *Service) CreateScheme(ctx context.Context, in SchemeInput, actor Actor)
 // fallback to be paid by.
 func (s *Service) UpdateScheme(ctx context.Context, schemeID string, in SchemeInput, actor Actor) (SchemeView, error) {
 	current, err := s.repo.Scheme(ctx, schemeID)
+	if err != nil {
+		return SchemeView{}, err
+	}
+	rates, err := s.checkRates(ctx, in.Rates)
 	if err != nil {
 		return SchemeView{}, err
 	}
@@ -159,6 +194,10 @@ func (s *Service) UpdateScheme(ctx context.Context, schemeID string, in SchemeIn
 	if err != nil {
 		return SchemeView{}, err
 	}
+	if err := s.saveRates(ctx, updated.ID, rates); err != nil {
+		return SchemeView{}, err
+	}
+	updated.Rates = rates
 	if err := s.auditor.Record(ctx, audit.Event{
 		EntityType: "incentive_scheme", EntityID: schemeID, Action: "update",
 		ActorID: actor.ID, ActorName: actor.Name,
@@ -166,6 +205,46 @@ func (s *Service) UpdateScheme(ctx context.Context, schemeID string, in SchemeIn
 		return SchemeView{}, err
 	}
 	return SchemeView{Scheme: updated}, nil
+}
+
+// checkRates validates a scheme's per-class-type rates.
+//
+// It runs before the scheme is written, so a rate nobody can honour does not
+// leave a half-made scheme behind. A rate for a class type that does not exist
+// is refused rather than dropped: silently ignoring it would leave somebody
+// looking at an editor that forgets what they typed.
+func (s *Service) checkRates(ctx context.Context, rates []domain.SchemeRate) ([]domain.SchemeRate, error) {
+	classTypes, err := s.catalog.ClassTypes(ctx, false)
+	if err != nil {
+		return nil, err
+	}
+	known := map[string]bool{}
+	for _, t := range classTypes {
+		known[t.ID] = true
+	}
+
+	seen := map[string]bool{}
+	cleaned := make([]domain.SchemeRate, 0, len(rates))
+	for _, rate := range rates {
+		if !known[rate.ClassTypeID] {
+			return nil, httpx.Invalid("There is no class type %q to set a rate for.", rate.ClassTypeID)
+		}
+		if seen[rate.ClassTypeID] {
+			return nil, httpx.Invalid("That class type has two rates. It can only have one.")
+		}
+		if rate.SessionFeeIDR < 0 || rate.PerAttendeeIDR < 0 {
+			return nil, httpx.Invalid("A rate cannot be negative.")
+		}
+		seen[rate.ClassTypeID] = true
+		cleaned = append(cleaned, rate)
+	}
+	return cleaned, nil
+}
+
+func (s *Service) saveRates(ctx context.Context, schemeID string, rates []domain.SchemeRate) error {
+	return s.repo.ReplaceRates(ctx, schemeID, rates, func() string {
+		return s.ids.New(id.SchemeRate)
+	})
 }
 
 // StatementView is one coach's earnings for a period, with a payout attached
@@ -198,8 +277,21 @@ func (s *Service) Statements(ctx context.Context, periodMonth, branchID string) 
 	if err != nil {
 		return nil, err
 	}
+	// The rates come with the schemes, because a statement is computed from
+	// what each class pays, not from the scheme's headline figures.
+	schemeIDs := make([]string, 0, len(schemes))
+	for _, scheme := range schemes {
+		schemeIDs = append(schemeIDs, scheme.ID)
+	}
+	rates, err := s.repo.Rates(ctx, schemeIDs)
+	if err != nil {
+		return nil, err
+	}
+	defaultScheme.Rates = rates[defaultScheme.ID]
+
 	byCoach := map[string]domain.IncentiveScheme{}
 	for _, scheme := range schemes {
+		scheme.Rates = rates[scheme.ID]
 		if scheme.CoachID != nil {
 			byCoach[*scheme.CoachID] = scheme
 		}
@@ -485,4 +577,76 @@ func (s *Service) PayableIDR(ctx context.Context, periodMonth string) (int64, er
 		return 0, nil
 	}
 	return s.repo.PayableIDR(ctx, period.Start)
+}
+
+// ── What each coach is paid ──────────────────────────────────────────────────
+
+// CoachFee is one coach's pay terms as they actually apply.
+type CoachFee struct {
+	CoachID   string `json:"coachId"`
+	CoachName string `json:"coachName"`
+	BranchID  string `json:"branchId"`
+	// SchemeID is the scheme the coach is actually paid by, which is their own
+	// when they have an active one and the studio default otherwise.
+	SchemeID string `json:"schemeId"`
+	// OwnScheme distinguishes "this coach is on their own terms" from "this
+	// coach is on the studio's", which is the question somebody opening this
+	// screen is asking.
+	OwnScheme      bool  `json:"ownScheme"`
+	SessionFeeIDR  int64 `json:"sessionFeeIdr"`
+	PerAttendeeIDR int64 `json:"perAttendeeIdr"`
+	// ClassRates is how many class types they are paid a special rate for.
+	ClassRates int `json:"classRates"`
+}
+
+// CoachFees is what every coach is paid, resolved.
+//
+// It exists because the question "what do we pay this coach" was previously
+// answered by opening the schemes table and working out which row applied.
+func (s *Service) CoachFees(ctx context.Context) ([]CoachFee, error) {
+	defaultScheme, err := s.repo.DefaultScheme(ctx)
+	if err != nil {
+		return nil, err
+	}
+	schemes, err := s.repo.Schemes(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]string, 0, len(schemes))
+	for _, scheme := range schemes {
+		ids = append(ids, scheme.ID)
+	}
+	rates, err := s.repo.Rates(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	defaultScheme.Rates = rates[defaultScheme.ID]
+
+	byCoach := map[string]domain.IncentiveScheme{}
+	for _, scheme := range schemes {
+		scheme.Rates = rates[scheme.ID]
+		if scheme.CoachID != nil {
+			byCoach[*scheme.CoachID] = scheme
+		}
+	}
+
+	coaches, err := s.catalog.Coaches(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]CoachFee, 0, len(coaches))
+	for _, coach := range coaches {
+		scheme := defaultScheme
+		own := false
+		if override, ok := byCoach[coach.ID]; ok && override.Active {
+			scheme, own = override, true
+		}
+		out = append(out, CoachFee{
+			CoachID: coach.ID, CoachName: coach.Name, BranchID: coach.BranchID,
+			SchemeID: scheme.ID, OwnScheme: own,
+			SessionFeeIDR: scheme.SessionFeeIDR, PerAttendeeIDR: scheme.PerAttendeeIDR,
+			ClassRates: len(scheme.Rates),
+		})
+	}
+	return out, nil
 }

@@ -107,6 +107,57 @@ func (r *Repository) UpdateScheme(ctx context.Context, s domain.IncentiveScheme)
 	return updated, nil
 }
 
+// ── Per-class rates ──────────────────────────────────────────────────────────
+
+// Rates reads the per-class-type rates for a set of schemes, keyed by scheme.
+func (r *Repository) Rates(ctx context.Context, schemeIDs []string) (map[string][]domain.SchemeRate, error) {
+	out := map[string][]domain.SchemeRate{}
+	if len(schemeIDs) == 0 {
+		return out, nil
+	}
+	rows, err := r.db.Query(ctx, `
+		SELECT scheme_id, class_type_id, session_fee_idr, per_attendee_idr
+		FROM incentives.scheme_rates WHERE scheme_id = ANY($1)
+		ORDER BY class_type_id`, schemeIDs)
+	if err != nil {
+		return nil, fmt.Errorf("incentives: listing rates: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var schemeID string
+		var rate domain.SchemeRate
+		if err := rows.Scan(&schemeID, &rate.ClassTypeID, &rate.SessionFeeIDR, &rate.PerAttendeeIDR); err != nil {
+			return nil, fmt.Errorf("incentives: scanning rate: %w", err)
+		}
+		out[schemeID] = append(out[schemeID], rate)
+	}
+	return out, rows.Err()
+}
+
+// ReplaceRates swaps a scheme's rates for the set given.
+//
+// Replace rather than merge: the editor shows every rate at once, so what it
+// submits is the whole answer, and a rate somebody deleted has to actually go.
+func (r *Repository) ReplaceRates(ctx context.Context, schemeID string, rates []domain.SchemeRate, newID func() string) error {
+	return r.db.InTx(ctx, func(ctx context.Context) error {
+		if _, err := r.db.Exec(ctx,
+			`DELETE FROM incentives.scheme_rates WHERE scheme_id = $1`, schemeID); err != nil {
+			return fmt.Errorf("incentives: clearing rates: %w", err)
+		}
+		for _, rate := range rates {
+			if _, err := r.db.Exec(ctx, `
+				INSERT INTO incentives.scheme_rates
+					(id, scheme_id, class_type_id, session_fee_idr, per_attendee_idr)
+				VALUES ($1, $2, $3, $4, $5)`,
+				newID(), schemeID, rate.ClassTypeID, rate.SessionFeeIDR, rate.PerAttendeeIDR); err != nil {
+				return fmt.Errorf("incentives: inserting rate: %w", err)
+			}
+		}
+		return nil
+	})
+}
+
 // ── Payouts ──────────────────────────────────────────────────────────────────
 
 const payoutColumns = `id, coach_id, branch_id, period_start, period_end, statement, status,

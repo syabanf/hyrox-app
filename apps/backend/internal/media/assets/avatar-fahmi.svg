@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160" role="img" aria-label="Fahmi Syaban">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#00281A"/><stop offset="1" stop-color="#0C4A31"/>
+    </linearGradient>
+  </defs>
+  <rect width="160" height="160" rx="80" fill="url(#g)"/>
+  <text x="80" y="80" fill="#DAFF59" font-family="Outfit, Manrope, system-ui, sans-serif"
+        font-size="58" font-weight="800" text-anchor="middle" dominant-baseline="central">FS</text>
+</svg>

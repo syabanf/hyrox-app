@@ -3,6 +3,7 @@ import type {
   AdminSessionView,
   ApiErrorBody,
   AuthModeView,
+  CoachFeeView,
   TrainerCardView,
   TrainerProfileView,
   BookResultView,
@@ -623,6 +624,8 @@ export function createApiClient(options: ApiClientOptions) {
           update: (id: string, input: UpsertIncentiveSchemeInput) =>
             put<IncentiveSchemeView>(`/api/admin/incentives/schemes/${id}`, input),
         },
+        /** What each coach is actually paid, with the scheme resolved. */
+        coachFees: () => get<CoachFeeView[]>('/api/admin/incentives/coach-fees'),
         statements: (query: { period: string; branchId?: string }) =>
           get<CoachStatementView[]>('/api/admin/incentives/statements', query),
         payouts: {

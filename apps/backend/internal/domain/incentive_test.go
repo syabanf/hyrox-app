@@ -208,3 +208,97 @@ func TestPayoutTransitionsFollowTheApprovalChain(t *testing.T) {
 		t.Fatal("approve must target APPROVED")
 	}
 }
+
+// ── Per-class rates ──────────────────────────────────────────────────────────
+
+func TestRateForFallsBackToTheScheme(t *testing.T) {
+	scheme := IncentiveScheme{
+		SessionFeeIDR:  150_000,
+		PerAttendeeIDR: 10_000,
+		Rates: []SchemeRate{
+			{ClassTypeID: "clt_race", SessionFeeIDR: 300_000, PerAttendeeIDR: 15_000},
+		},
+	}
+
+	race := RateFor(scheme, "clt_race")
+	if race.SessionFeeIDR != 300_000 || race.PerAttendeeIDR != 15_000 {
+		t.Fatalf("the class with its own rate got %+v", race)
+	}
+
+	// Anything without a rate is paid at the scheme's own figures, so a studio
+	// that never sets one never has to look at this.
+	mobility := RateFor(scheme, "clt_mobility")
+	if mobility.SessionFeeIDR != 150_000 || mobility.PerAttendeeIDR != 10_000 {
+		t.Fatalf("a class with no rate got %+v, want the scheme's figures", mobility)
+	}
+}
+
+// A coach who teaches two class types is paid at each one's rate.
+func TestStatementPaysEachClassAtItsOwnRate(t *testing.T) {
+	period := StatementPeriod{
+		Start: time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC),
+		End:   time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC),
+	}
+	sessions := []ClassSession{
+		{
+			ID: "ses_race", CoachID: "coa_1", ClassTypeID: "clt_race",
+			Status: SessionCompleted, Capacity: 10,
+			StartsAt: time.Date(2026, 3, 5, 6, 0, 0, 0, time.UTC),
+		},
+		{
+			ID: "ses_mobility", CoachID: "coa_1", ClassTypeID: "clt_mobility",
+			Status: SessionCompleted, Capacity: 10,
+			StartsAt: time.Date(2026, 3, 6, 6, 0, 0, 0, time.UTC),
+		},
+	}
+	attendees := func(n int) []Booking {
+		out := make([]Booking, n)
+		for i := range out {
+			out[i] = Booking{Status: BookingCompleted}
+		}
+		return out
+	}
+
+	statement := ComputeCoachStatement(StatementInput{
+		CoachID:  "coa_1",
+		Sessions: sessions,
+		BookingsBySession: map[string][]Booking{
+			"ses_race":     attendees(4),
+			"ses_mobility": attendees(4),
+		},
+		ClassTypeNames: map[string]string{"clt_race": "Race Simulation", "clt_mobility": "Mobility"},
+		Scheme: IncentiveScheme{
+			SessionFeeIDR:             150_000,
+			PerAttendeeIDR:            10_000,
+			FullClassThresholdPercent: 80,
+			Rates: []SchemeRate{
+				{ClassTypeID: "clt_race", SessionFeeIDR: 300_000, PerAttendeeIDR: 15_000},
+			},
+		},
+		Period: period,
+	})
+
+	if len(statement.Lines) != 2 {
+		t.Fatalf("got %d lines, want 2", len(statement.Lines))
+	}
+	byID := map[string]CoachStatementLine{}
+	for _, line := range statement.Lines {
+		byID[line.SessionID] = line
+	}
+
+	// 300.000 + 4 x 15.000
+	if got := byID["ses_race"].TotalIDR; got != 360_000 {
+		t.Fatalf("the race simulation paid %d, want 360000", got)
+	}
+	// 150.000 + 4 x 10.000, at the scheme's own figures
+	if got := byID["ses_mobility"].TotalIDR; got != 190_000 {
+		t.Fatalf("the mobility class paid %d, want 190000", got)
+	}
+	if statement.Totals.TotalIDR != 550_000 {
+		t.Fatalf("the month totals %d, want 550000", statement.Totals.TotalIDR)
+	}
+	// The line reports the fee it was actually paid, not the scheme's.
+	if got := byID["ses_race"].SessionFeeIDR; got != 300_000 {
+		t.Fatalf("the race line reports a %d session fee", got)
+	}
+}

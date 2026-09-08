@@ -1,12 +1,12 @@
 'use client';
 
 import type { Coach } from '@nuhabit/domain';
-import { Spinner, StatusBadge } from '@nuhabit/ui';
+import { Spinner, StatusBadge, formatIdr } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { CalendarPlus, Pencil, Trash2 } from 'lucide-react';
+import { Banknote, CalendarPlus, Pencil, Trash2 } from 'lucide-react';
 import { CreateSessionModal } from '../../../../components/create-session';
 import { ErrorNote, Modal, PageTitle, RowActions, SearchSelect, StatCard } from '../../../../components/ui';
 
@@ -20,6 +20,15 @@ export default function CoachesPage() {
   const [query, setQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
   const { data: coaches, isLoading } = useQuery({ queryKey: ['coaches'], queryFn: api.admin.coaches.list });
+  // What each coach is paid, shown beside them. It needs the incentives grant,
+  // so a Branch Manager sees the roster without the payroll.
+  const { data: fees } = useQuery({
+    queryKey: ['coach-fees'],
+    queryFn: api.admin.incentives.coachFees,
+    enabled: can('incentives.view'),
+    retry: false,
+  });
+  const feeOf = (coachId: string) => (fees ?? []).find((f) => f.coachId === coachId);
   const { data: branches } = useQuery({ queryKey: ['branches'], queryFn: api.catalog.branches });
 
   const remove = useMutation({
@@ -87,6 +96,31 @@ export default function CoachesPage() {
             </div>
             <p className="text-sm text-brand">{c.specialization}</p>
             <p className="mt-1 text-sm text-muted">{c.bio}</p>
+            {(() => {
+              const fee = feeOf(c.id);
+              if (!fee) return null;
+              return (
+                <p className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs">
+                  <span className="font-black text-brand">{formatIdr(fee.sessionFeeIdr)}</span>
+                  <span className="text-muted">per class</span>
+                  <span className="text-muted">
+                    · {formatIdr(fee.perAttendeeIdr)} per attendee
+                  </span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase ${
+                      fee.ownScheme ? 'bg-brand/10 text-brand' : 'bg-line text-muted'
+                    }`}
+                  >
+                    {fee.ownScheme ? 'Own fee' : 'Studio default'}
+                  </span>
+                  {fee.classRates > 0 ? (
+                    <span className="text-muted">
+                      · {fee.classRates} class rate{fee.classRates === 1 ? '' : 's'}
+                    </span>
+                  ) : null}
+                </p>
+              );
+            })()}
             <div className="mt-2 flex items-center justify-between">
               <p className="text-xs font-bold uppercase tracking-wide text-muted">
                 {(branches ?? []).find((b) => b.id === c.branchId)?.name ?? c.branchId}
@@ -95,6 +129,17 @@ export default function CoachesPage() {
                 <RowActions
                   items={[
                     { label: 'Edit', icon: Pencil, onClick: () => setEditing(c) },
+                    ...(can('incentives.manage')
+                      ? [
+                          {
+                            label: 'Set fee',
+                            icon: Banknote,
+                            onClick: () => {
+                              location.href = '/admin/operations/incentives';
+                            },
+                          },
+                        ]
+                      : []),
                     ...(can('sessions.manage')
                       ? [
                           {

@@ -1431,6 +1431,29 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
       return HttpResponse.json(getSchemes(deps()).map((s) => incentiveSchemeView(db(), s)));
     }),
 
+    // What each coach is actually paid, with the scheme that applies resolved.
+    http.get('*/api/admin/incentives/coach-fees', ({ request }) => {
+      const auth = requireAdmin(db(), request, 'incentives.view');
+      if (!auth.ok) return auth.response;
+      const schemes = getSchemes(deps());
+      const fallback = schemes.find((s) => s.coachId === null) ?? null;
+      const fees = db().coaches.map((coach) => {
+        const own = schemes.find((s) => s.coachId === coach.id && s.active) ?? null;
+        const scheme = own ?? fallback;
+        return {
+          coachId: coach.id,
+          coachName: coach.name,
+          branchId: coach.branchId,
+          schemeId: scheme?.id ?? '',
+          ownScheme: own !== null,
+          sessionFeeIdr: scheme?.sessionFeeIdr ?? 0,
+          perAttendeeIdr: scheme?.perAttendeeIdr ?? 0,
+          classRates: scheme?.rates.length ?? 0,
+        };
+      });
+      return HttpResponse.json(fees);
+    }),
+
     http.post('*/api/admin/incentives/schemes', async ({ request }) => {
       const auth = requireAdmin(db(), request, 'incentives.manage');
       if (!auth.ok) return auth.response;

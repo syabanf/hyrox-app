@@ -19,9 +19,23 @@ export default function MembersPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [page, setPage] = useState(0);
   const { data, isLoading } = useQuery({
+    // NOT_ACTIVE is not a member status; it is what the "suspended / inactive"
+    // card counts as one number, so it is applied here rather than sent to a
+    // server that would rightly not recognise it.
     queryKey: ['members', query, status],
-    queryFn: () => api.admin.members.list({ query: query || undefined, status: status || undefined }),
+    queryFn: () =>
+      api.admin.members.list({
+        query: query || undefined,
+        status: status && status !== 'NOT_ACTIVE' ? status : undefined,
+      }),
   });
+
+  const rows =
+    status === 'NOT_ACTIVE'
+      ? (data ?? []).filter((m) => m.member.status !== 'ACTIVE')
+      : (data ?? []);
+  const pageCount = Math.max(1, Math.ceil(rows.length / 10));
+  const safePage = Math.min(page, pageCount - 1);
 
   return (
     <div>
@@ -37,14 +51,24 @@ export default function MembersPage() {
         }
       />
       <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Members" value={(data ?? []).length} />
+        {/* Each card filters the table to what it counts. */}
+        <StatCard
+          label="Members"
+          value={(data ?? []).length}
+          active={status === ''}
+          onClick={() => setStatus('')}
+        />
         <StatCard
           label="Active"
           value={(data ?? []).filter((m) => m.member.status === 'ACTIVE').length}
+          active={status === 'ACTIVE'}
+          onClick={() => setStatus(status === 'ACTIVE' ? '' : 'ACTIVE')}
         />
         <StatCard
           label="Suspended / inactive"
           value={(data ?? []).filter((m) => m.member.status !== 'ACTIVE').length}
+          active={status === 'NOT_ACTIVE'}
+          onClick={() => setStatus(status === 'NOT_ACTIVE' ? '' : 'NOT_ACTIVE')}
         />
         <StatCard
           label="Credits held"
@@ -93,11 +117,8 @@ export default function MembersPage() {
               </tr>
             </thead>
             <tbody>
-              {(data ?? [])
-                .slice(
-                  Math.min(page, Math.max(0, Math.ceil((data ?? []).length / 10) - 1)) * 10,
-                  Math.min(page, Math.max(0, Math.ceil((data ?? []).length / 10) - 1)) * 10 + 10,
-                )
+              {rows
+                .slice(safePage * 10, safePage * 10 + 10)
                 .map((m) => (
                 <tr key={m.member.id}>
                   <td>
@@ -131,11 +152,7 @@ export default function MembersPage() {
               ))}
             </tbody>
           </table>
-          <Pager
-            page={Math.min(page, Math.max(0, Math.ceil((data ?? []).length / 10) - 1))}
-            pageCount={Math.max(1, Math.ceil((data ?? []).length / 10))}
-            onPage={setPage}
-          />
+          <Pager page={safePage} pageCount={pageCount} onPage={setPage} />
         </div>
       )}
       {createOpen ? <CreateMemberModal onClose={() => setCreateOpen(false)} /> : null}

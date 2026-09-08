@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" role="img" aria-label="Protein Bar">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3A1D3F"/><stop offset="1" stop-color="#5E2F66"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" rx="28" fill="#F3ECE2"/>
+  <rect x="112" y="70" width="176" height="230" rx="24" fill="url(#g)"/>
+  <rect x="112" y="70" width="176" height="56" rx="24" fill="#B9E63F" opacity="0.85"/>
+  <text x="200" y="348" fill="#00281A" font-family="Outfit, Manrope, system-ui, sans-serif"
+        font-size="26" font-weight="800" text-anchor="middle">Protein Bar</text>
+</svg>

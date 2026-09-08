@@ -4,6 +4,7 @@ import type {
   CoachStatement,
   IncentivePayout,
   IncentiveScheme,
+  SchemeRate,
   PayoutAction,
   Result,
   StatementPeriod,
@@ -60,6 +61,8 @@ export interface UpsertSchemeInput {
   fullClassBonusIdr: number;
   fullClassThresholdPercent: number;
   noShowPenaltyIdr: number;
+  /** Per-class-type rates, replaced wholesale on every save. */
+  rates?: SchemeRate[];
   active: boolean;
 }
 
@@ -93,6 +96,7 @@ export function upsertScheme(
     fullClassBonusIdr: input.fullClassBonusIdr,
     fullClassThresholdPercent: input.fullClassThresholdPercent,
     noShowPenaltyIdr: input.noShowPenaltyIdr,
+    rates: input.rates ?? [],
     active: input.active,
     updatedAt: now,
   };

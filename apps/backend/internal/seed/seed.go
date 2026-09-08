@@ -53,6 +53,7 @@ type Summary struct {
 	Tiers       int
 	POSProducts int
 	Activities  int
+	Pictures    int
 }
 
 // Run loads the demo studio in one transaction: a half-seeded database is
@@ -113,6 +114,10 @@ func (s *Seeder) Run(ctx context.Context) (Summary, error) {
 			return err
 		}
 		if summary.POSProducts, err = s.seedPOS(ctx); err != nil {
+			return err
+		}
+		// Last, because it fills in pictures for rows the other seeders made.
+		if summary.Pictures, err = s.seedMedia(ctx); err != nil {
 			return err
 		}
 		return nil
@@ -377,6 +382,38 @@ func (s *Seeder) seedIncentiveScheme(ctx context.Context) error {
 		ON CONFLICT (id) DO NOTHING`)
 	if err != nil {
 		return fmt.Errorf("seed: default incentive scheme: %w", err)
+	}
+
+	// One coach on their own terms, so the demo shows what a per-coach fee
+	// looks like: Rizky runs the race simulations, which are ninety minutes
+	// and a lot of setup, and is paid accordingly for those specifically.
+	_, err = s.db.Exec(ctx, `
+		INSERT INTO incentives.schemes (id, coach_id, session_fee_idr, per_attendee_idr,
+			full_class_bonus_idr, full_class_threshold_percent, no_show_penalty_idr, active)
+		VALUES ('sch_rizky', 'coa_rizky', 200000, 18000, 75000, 80, 0, true)
+		ON CONFLICT (id) DO NOTHING`)
+	if err != nil {
+		return fmt.Errorf("seed: coach incentive scheme: %w", err)
+	}
+
+	rates := []struct {
+		id, scheme, classType string
+		sessionFee, perHead   int64
+	}{
+		{"scr_rizky_sim", "sch_rizky", "clt_simulation", 400_000, 25_000},
+		{"scr_rizky_engine", "sch_rizky", "clt_engine", 180_000, 15_000},
+		// The studio pays more for a simulation whoever runs it.
+		{"scr_default_sim", "sch_default", "clt_simulation", 275_000, 20_000},
+	}
+	for _, rate := range rates {
+		_, err := s.db.Exec(ctx, `
+			INSERT INTO incentives.scheme_rates
+				(id, scheme_id, class_type_id, session_fee_idr, per_attendee_idr)
+			VALUES ($1, $2, $3, $4, $5) ON CONFLICT (scheme_id, class_type_id) DO NOTHING`,
+			rate.id, rate.scheme, rate.classType, rate.sessionFee, rate.perHead)
+		if err != nil {
+			return fmt.Errorf("seed: class rate %s: %w", rate.id, err)
+		}
 	}
 	return nil
 }

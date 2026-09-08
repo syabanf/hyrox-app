@@ -325,6 +325,22 @@ export interface IncentiveSchemeView {
   scheme: IncentiveScheme;
   /** null for the organization default. */
   coachName: string | null;
+  /** Names for the class types the rates refer to, keyed by id. */
+  classTypeNames?: Record<string, string>;
+}
+
+/** What one coach is actually paid, with the scheme that applies resolved. */
+export interface CoachFeeView {
+  coachId: string;
+  coachName: string;
+  branchId: string;
+  schemeId: string;
+  /** True when the coach is on their own terms rather than the studio's. */
+  ownScheme: boolean;
+  sessionFeeIdr: number;
+  perAttendeeIdr: number;
+  /** How many class types they are paid a special rate for. */
+  classRates: number;
 }
 export interface IncentivePayoutView {
   payout: IncentivePayout;

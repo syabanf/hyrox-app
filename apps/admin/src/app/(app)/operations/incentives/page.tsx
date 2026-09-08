@@ -8,7 +8,7 @@ import type {
 import type { CoachStatementLine, IncentiveScheme, PayoutStatus } from '@nuhabit/domain';
 import { Spinner, StatusBadge, formatDay, formatDayTime, formatIdr } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Ban, Banknote, Check, ChevronDown, ChevronRight, Pencil } from 'lucide-react';
+import { Ban, Banknote, Check, ChevronDown, ChevronRight, Pencil, Trash2 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
@@ -650,6 +650,13 @@ interface RateDraft {
   noShowPenaltyIdr: string;
 }
 
+/** One class type paid at its own rate. */
+interface ClassRateDraft {
+  classTypeId: string;
+  sessionFeeIdr: string;
+  perAttendeeIdr: string;
+}
+
 const toDraft = (s: IncentiveScheme | null): RateDraft => ({
   sessionFeeIdr: String(s?.sessionFeeIdr ?? 150_000),
   perAttendeeIdr: String(s?.perAttendeeIdr ?? 10_000),
@@ -658,17 +665,133 @@ const toDraft = (s: IncentiveScheme | null): RateDraft => ({
   noShowPenaltyIdr: String(s?.noShowPenaltyIdr ?? 0),
 });
 
-const fromDraft = (d: RateDraft) => ({
+const toClassRates = (s: IncentiveScheme | null): ClassRateDraft[] =>
+  (s?.rates ?? []).map((r) => ({
+    classTypeId: r.classTypeId,
+    sessionFeeIdr: String(r.sessionFeeIdr),
+    perAttendeeIdr: String(r.perAttendeeIdr),
+  }));
+
+const fromDraft = (d: RateDraft, classRates: ClassRateDraft[] = []) => ({
   sessionFeeIdr: Number(d.sessionFeeIdr),
   perAttendeeIdr: Number(d.perAttendeeIdr),
   fullClassBonusIdr: Number(d.fullClassBonusIdr),
   fullClassThresholdPercent: Number(d.fullClassThresholdPercent),
   noShowPenaltyIdr: Number(d.noShowPenaltyIdr),
+  rates: classRates
+    .filter((r) => r.classTypeId !== '')
+    .map((r) => ({
+      classTypeId: r.classTypeId,
+      sessionFeeIdr: Number(r.sessionFeeIdr || 0),
+      perAttendeeIdr: Number(r.perAttendeeIdr || 0),
+    })),
 });
 
-const draftValid = (d: RateDraft) =>
+const draftValid = (d: RateDraft, classRates: ClassRateDraft[] = []) =>
   Object.values(d).every((v) => v.trim() !== '' && Number.isInteger(Number(v)) && Number(v) >= 0) &&
-  Number(d.fullClassThresholdPercent) <= 100;
+  Number(d.fullClassThresholdPercent) <= 100 &&
+  // A row with no class type chosen is a half-filled line, not a rate.
+  classRates.every(
+    (r) =>
+      r.classTypeId !== '' &&
+      Number.isInteger(Number(r.sessionFeeIdr)) &&
+      Number(r.sessionFeeIdr) >= 0 &&
+      Number.isInteger(Number(r.perAttendeeIdr)) &&
+      Number(r.perAttendeeIdr) >= 0,
+  ) &&
+  // The server refuses two rates for one class; say so before it does.
+  new Set(classRates.map((r) => r.classTypeId)).size === classRates.length;
+
+/**
+ * Per-class rates.
+ *
+ * A studio pays the same for every class until it does not: a ninety-minute
+ * race simulation is not a forty-five-minute mobility class, and paying one
+ * figure for both is how you lose whoever runs the long one.
+ */
+function ClassRateFields({
+  rates,
+  classTypes,
+  onChange,
+  disabled,
+}: {
+  rates: ClassRateDraft[];
+  classTypes: { id: string; name: string }[];
+  onChange: (next: ClassRateDraft[]) => void;
+  disabled?: boolean;
+}) {
+  const taken = new Set(rates.map((r) => r.classTypeId));
+  return (
+    <div className="flex flex-col gap-2">
+      <div>
+        <p className="a-label !mb-0">Rates by class type</p>
+        <p className="text-xs text-muted">
+          Optional. A class type listed here is paid at its own figures; everything else uses the
+          fee above.
+        </p>
+      </div>
+      {rates.map((rate, i) => (
+        <div key={i} className="grid gap-2 sm:grid-cols-[1fr_auto_auto_auto] sm:items-end">
+          <div>
+            <SearchSelect
+              value={rate.classTypeId}
+              onChange={(v) =>
+                onChange(rates.map((r, j) => (i === j ? { ...r, classTypeId: v } : r)))
+              }
+              placeholder="Search class type…"
+              options={classTypes
+                .filter((t) => t.id === rate.classTypeId || !taken.has(t.id))
+                .map((t) => ({ value: t.id, label: t.name }))}
+            />
+          </div>
+          <div className="w-32">
+            <label className="a-label">Session fee</label>
+            <input
+              className="a-input"
+              inputMode="numeric"
+              disabled={disabled}
+              value={rate.sessionFeeIdr}
+              onChange={(e) =>
+                onChange(rates.map((r, j) => (i === j ? { ...r, sessionFeeIdr: e.target.value } : r)))
+              }
+            />
+          </div>
+          <div className="w-32">
+            <label className="a-label">Per attendee</label>
+            <input
+              className="a-input"
+              inputMode="numeric"
+              disabled={disabled}
+              value={rate.perAttendeeIdr}
+              onChange={(e) =>
+                onChange(
+                  rates.map((r, j) => (i === j ? { ...r, perAttendeeIdr: e.target.value } : r)),
+                )
+              }
+            />
+          </div>
+          <button
+            className="a-btn-danger !px-3"
+            disabled={disabled}
+            onClick={() => onChange(rates.filter((_, j) => j !== i))}
+            title="Remove this rate"
+          >
+            <Trash2 size={15} />
+          </button>
+        </div>
+      ))}
+      <button
+        className="a-btn-ghost self-start !px-3 !py-1.5 text-xs"
+        disabled={disabled || rates.length >= classTypes.length}
+        onClick={() =>
+          onChange([...rates, { classTypeId: '', sessionFeeIdr: '0', perAttendeeIdr: '0' }])
+        }
+      >
+        + Add a class rate
+      </button>
+    </div>
+  );
+}
 
 function RateFields({
   draft,
@@ -708,6 +831,11 @@ function SchemesTab() {
     queryFn: api.admin.incentives.schemes.list,
   });
   const { data: coaches } = useQuery({ queryKey: ['coaches'], queryFn: api.admin.coaches.list });
+  const { data: classTypes } = useQuery({
+    queryKey: ['class-types'],
+    queryFn: api.admin.classTypes.list,
+  });
+  const classTypeOptions = (classTypes ?? []).map((t) => ({ id: t.id, name: t.name }));
 
   if (isLoading || !data) return <Spinner label="Loading schemes…" />;
   const defaultView = data.find((v) => v.scheme.coachId === null) ?? null;
@@ -724,7 +852,11 @@ function SchemesTab() {
           Read-only - HQ and Finance manage incentive schemes (enforced by the server).
         </p>
       ) : null}
-      <DefaultSchemeCard scheme={defaultView?.scheme ?? null} canEdit={manage} />
+      <DefaultSchemeCard
+        scheme={defaultView?.scheme ?? null}
+        classTypes={classTypeOptions}
+        canEdit={manage}
+      />
       <div className="a-card !p-0">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-4">
           <div>
@@ -748,6 +880,7 @@ function SchemesTab() {
               <th className="text-right">Bonus</th>
               <th className="text-right">Threshold</th>
               <th className="text-right">No-show penalty</th>
+              <th className="text-right">Class rates</th>
               <th>Status</th>
               <th>Updated</th>
               <th className="text-right">Actions</th>
@@ -763,6 +896,9 @@ function SchemesTab() {
                 <td className="text-right">{v.scheme.fullClassThresholdPercent}%</td>
                 <td className="text-right">
                   {v.scheme.noShowPenaltyIdr > 0 ? formatIdr(v.scheme.noShowPenaltyIdr) : '-'}
+                </td>
+                <td className="text-right">
+                  {v.scheme.rates.length > 0 ? v.scheme.rates.length : '-'}
                 </td>
                 <td>
                   <StatusBadge status={v.scheme.active ? 'ACTIVE' : 'INACTIVE'} />
@@ -796,6 +932,7 @@ function SchemesTab() {
               (c) => editTarget !== 'new' || !overrides.some((o) => o.scheme.coachId === c.id),
             )
             .map((c) => ({ value: c.id, label: c.name }))}
+          classTypes={classTypeOptions}
           defaults={defaultView?.scheme ?? null}
           onClose={() => setEditTarget(null)}
           onDone={done}
@@ -807,19 +944,22 @@ function SchemesTab() {
 
 function DefaultSchemeCard({
   scheme,
+  classTypes,
   canEdit,
 }: {
   scheme: IncentiveScheme | null;
+  classTypes: { id: string; name: string }[];
   canEdit: boolean;
 }) {
   const qc = useQueryClient();
   const [draft, setDraft] = useState<RateDraft>(toDraft(scheme));
+  const [classRates, setClassRates] = useState<ClassRateDraft[]>(toClassRates(scheme));
   const [dirty, setDirty] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const save = useMutation({
     mutationFn: () => {
-      const body = { coachId: null, ...fromDraft(draft), active: true };
+      const body = { coachId: null, ...fromDraft(draft, classRates), active: true };
       return scheme
         ? api.admin.incentives.schemes.update(scheme.id, body)
         : api.admin.incentives.schemes.create(body);
@@ -850,12 +990,22 @@ function DefaultSchemeCard({
           setSaved(false);
         }}
       />
+      <ClassRateFields
+        rates={classRates}
+        classTypes={classTypes}
+        disabled={!canEdit}
+        onChange={(next) => {
+          setClassRates(next);
+          setDirty(true);
+          setSaved(false);
+        }}
+      />
       <ErrorNote message={error} />
       {canEdit ? (
         <div className="flex items-center gap-3">
           <button
             className="a-btn"
-            disabled={!dirty || !draftValid(draft) || save.isPending}
+            disabled={!dirty || !draftValid(draft, classRates) || save.isPending}
             onClick={() => save.mutate()}
           >
             Save default scheme
@@ -873,23 +1023,28 @@ function DefaultSchemeCard({
 function OverrideModal({
   view,
   coaches,
+  classTypes,
   defaults,
   onClose,
   onDone,
 }: {
   view: IncentiveSchemeView | null;
   coaches: { value: string; label: string }[];
+  classTypes: { id: string; name: string }[];
   defaults: IncentiveScheme | null;
   onClose: () => void;
   onDone: () => void;
 }) {
   const [coachId, setCoachId] = useState(view?.scheme.coachId ?? '');
   const [draft, setDraft] = useState<RateDraft>(toDraft(view?.scheme ?? defaults));
+  const [classRates, setClassRates] = useState<ClassRateDraft[]>(
+    toClassRates(view?.scheme ?? null),
+  );
   const [active, setActive] = useState(view?.scheme.active ?? true);
   const [error, setError] = useState<string | null>(null);
   const mutation = useMutation({
     mutationFn: () => {
-      const body = { coachId, ...fromDraft(draft), active };
+      const body = { coachId, ...fromDraft(draft, classRates), active };
       return view
         ? api.admin.incentives.schemes.update(view.scheme.id, body)
         : api.admin.incentives.schemes.create(body);
@@ -918,6 +1073,7 @@ function OverrideModal({
           </div>
         ) : null}
         <RateFields draft={draft} onChange={setDraft} />
+        <ClassRateFields rates={classRates} classTypes={classTypes} onChange={setClassRates} />
         <label className="flex items-center gap-2 text-sm font-bold">
           <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
           Active - inactive overrides fall back to the default scheme
@@ -925,7 +1081,7 @@ function OverrideModal({
         <ErrorNote message={error} />
         <button
           className="a-btn"
-          disabled={mutation.isPending || !coachId || !draftValid(draft)}
+          disabled={mutation.isPending || !coachId || !draftValid(draft, classRates)}
           onClick={() => mutation.mutate()}
         >
           {view ? 'Save changes' : 'Create override'}

@@ -76,13 +76,29 @@ export default function SessionsPage() {
         }
       />
       <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {/* Each card filters the table to what it counts. */}
         <StatCard
           label="Upcoming"
           value={(sessions ?? []).filter((v) => new Date(v.session.startsAt).getTime() > Date.now() && ['PUBLISHED', 'FULL', 'DRAFT'].includes(v.session.status)).length}
+          active={statusFilter === '' && !showPast}
+          onClick={() => {
+            setStatusFilter('');
+            setShowPast(false);
+            setPage(0);
+          }}
         />
-        <StatCard label="Published" value={(sessions ?? []).filter((v) => v.session.status === 'PUBLISHED').length} />
-        <StatCard label="Full" value={(sessions ?? []).filter((v) => v.session.status === 'FULL').length} />
-        <StatCard label="Draft" value={(sessions ?? []).filter((v) => v.session.status === 'DRAFT').length} />
+        {(['PUBLISHED', 'FULL', 'DRAFT'] as const).map((status) => (
+          <StatCard
+            key={status}
+            label={status === 'DRAFT' ? 'Draft' : status === 'FULL' ? 'Full' : 'Published'}
+            value={(sessions ?? []).filter((v) => v.session.status === status).length}
+            active={statusFilter === status}
+            onClick={() => {
+              setStatusFilter(statusFilter === status ? '' : status);
+              setPage(0);
+            }}
+          />
+        ))}
       </div>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <input

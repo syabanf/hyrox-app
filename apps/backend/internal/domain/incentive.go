@@ -22,9 +22,39 @@ type IncentiveScheme struct {
 	FullClassBonusIDR         int64 `json:"fullClassBonusIdr"`
 	FullClassThresholdPercent int   `json:"fullClassThresholdPercent"`
 	// NoShowPenaltyIDR is deducted per no-show; a line never goes below zero.
-	NoShowPenaltyIDR int64     `json:"noShowPenaltyIdr"`
-	Active           bool      `json:"active"`
-	UpdatedAt        time.Time `json:"updatedAt"`
+	NoShowPenaltyIDR int64 `json:"noShowPenaltyIdr"`
+	// Rates override the session fee and per-attendee rate for named class
+	// types. A class type without a rate is paid at the scheme's own figures.
+	Rates     []SchemeRate `json:"rates"`
+	Active    bool         `json:"active"`
+	UpdatedAt time.Time    `json:"updatedAt"`
+}
+
+// SchemeRate is what one class type pays under a scheme.
+//
+// The two figures that vary by class are the ones here: a longer, harder class
+// is worth more to deliver, and a class where every attendee needs watching is
+// worth more per head. The bonus, its threshold and the no-show penalty stay
+// with the scheme — they are studio policy, not per-class pricing.
+type SchemeRate struct {
+	ClassTypeID    string `json:"classTypeId"`
+	SessionFeeIDR  int64  `json:"sessionFeeIdr"`
+	PerAttendeeIDR int64  `json:"perAttendeeIdr"`
+}
+
+// RateFor is what a scheme pays for one class type: its own rate if there is
+// one, otherwise the scheme's figures.
+func RateFor(scheme IncentiveScheme, classTypeID string) SchemeRate {
+	for _, rate := range scheme.Rates {
+		if rate.ClassTypeID == classTypeID {
+			return rate
+		}
+	}
+	return SchemeRate{
+		ClassTypeID:    classTypeID,
+		SessionFeeIDR:  scheme.SessionFeeIDR,
+		PerAttendeeIDR: scheme.PerAttendeeIDR,
+	}
 }
 
 // ResolveScheme picks the coach's own scheme when it exists and is active,
@@ -114,7 +144,7 @@ type StatementInput struct {
 
 // ComputeCoachStatement is the payroll math for one coach over one period.
 //
-//	line = sessionFee + attended x perAttendee
+//	line = rate.sessionFee + attended x rate.perAttendee
 //	     + (attended >= threshold% of capacity ? fullClassBonus : 0)
 //	     - noShows x noShowPenalty          -> clamped at 0
 //
@@ -152,7 +182,10 @@ func ComputeCoachStatement(in StatementInput) CoachStatement {
 			}
 		}
 
-		attendeeIDR := int64(attended) * in.Scheme.PerAttendeeIDR
+		// What this class pays: the coach's rate for this class type, or the
+		// scheme's own figures when it has none.
+		rate := RateFor(in.Scheme, session.ClassTypeID)
+		attendeeIDR := int64(attended) * rate.PerAttendeeIDR
 		bonusIDR := int64(0)
 		if session.Capacity > 0 {
 			fillPercent := float64(attended) / float64(session.Capacity) * 100
@@ -162,7 +195,7 @@ func ComputeCoachStatement(in StatementInput) CoachStatement {
 		}
 		penaltyIDR := int64(noShows) * in.Scheme.NoShowPenaltyIDR
 
-		total := in.Scheme.SessionFeeIDR + attendeeIDR + bonusIDR - penaltyIDR
+		total := rate.SessionFeeIDR + attendeeIDR + bonusIDR - penaltyIDR
 		if total < 0 {
 			total = 0
 		}
@@ -179,7 +212,7 @@ func ComputeCoachStatement(in StatementInput) CoachStatement {
 			Booked:        booked,
 			Attended:      attended,
 			NoShows:       noShows,
-			SessionFeeIDR: in.Scheme.SessionFeeIDR,
+			SessionFeeIDR: rate.SessionFeeIDR,
 			AttendeeIDR:   attendeeIDR,
 			BonusIDR:      bonusIDR,
 			PenaltyIDR:    penaltyIDR,

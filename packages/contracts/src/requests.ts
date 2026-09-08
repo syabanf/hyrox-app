@@ -232,6 +232,15 @@ export const UpsertIncentiveSchemeSchema = z.object({
   fullClassThresholdPercent: z.number().int().min(0).max(100),
   noShowPenaltyIdr: z.number().int().min(0),
   active: z.boolean().default(true),
+  rates: z
+    .array(
+      z.object({
+        classTypeId: z.string(),
+        sessionFeeIdr: z.number().int().min(0),
+        perAttendeeIdr: z.number().int().min(0),
+      }),
+    )
+    .default([]),
 });
 
 export const CreatePayoutSchema = z.object({

@@ -17,6 +17,7 @@ import {
   SearchSelect,
   StatCard,
 } from '../../../../components/ui';
+import { Thumb } from '../../../../components/thumb';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
 
@@ -115,12 +116,17 @@ export default function CatalogPage() {
                 {rows.map((product) => (
                   <tr key={product.id}>
                     <td>
+                      <div className="flex items-center gap-3">
+                        <Thumb src={product.imageUrl} name={product.name} />
+                        <div className="min-w-0">
                       <p className="font-bold">{product.name}</p>
                       <p className="text-xs text-muted">
                         {product.sku}
                         {product.barcode ? ` · ${product.barcode}` : ''}
                         {product.bonusXp > 0 ? ` · +${product.bonusXp} bonus points` : ''}
                       </p>
+                        </div>
+                      </div>
                     </td>
                     <td className="text-sm">
                       {product.packFactor > 1 ? (

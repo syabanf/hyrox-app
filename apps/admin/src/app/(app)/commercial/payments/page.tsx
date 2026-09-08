@@ -28,8 +28,15 @@ export default function PaymentsPage() {
   });
 
   const q = query.trim().toLowerCase();
+  // FAILED_OR_EXPIRED is not a payment status; it is the pair the summary card
+  // counts as one number, so pressing that card filters to both.
+  const matchesStatus = (status: string) =>
+    !statusFilter ||
+    (statusFilter === 'FAILED_OR_EXPIRED'
+      ? status === 'FAILED' || status === 'EXPIRED'
+      : status === statusFilter);
   const rows = (data ?? [])
-    .filter((p) => !statusFilter || p.payment.status === statusFilter)
+    .filter((p) => matchesStatus(p.payment.status))
     .filter(
       (p) =>
         !q ||
@@ -51,12 +58,34 @@ export default function PaymentsPage() {
         subtitle="Top-ups via mock Xendit - PAYMENT ≠ CREDIT LEDGER; a paid payment produces the TOP_UP entry"
       />
       <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Collected" value={formatIdr(paidTotal)} hint="Paid payments" />
-        <StatCard label="Pending" value={(data ?? []).filter((p) => p.payment.status === 'PENDING').length} />
-        <StatCard label="Refunded" value={(data ?? []).filter((p) => p.payment.status === 'REFUNDED').length} />
+        {/* Each card filters the table to what it counts. */}
+        <StatCard
+          label="Collected"
+          value={formatIdr(paidTotal)}
+          hint="Paid payments"
+          active={statusFilter === 'PAID'}
+          onClick={() => setStatusFilter(statusFilter === 'PAID' ? '' : 'PAID')}
+        />
+        <StatCard
+          label="Pending"
+          value={(data ?? []).filter((p) => p.payment.status === 'PENDING').length}
+          active={statusFilter === 'PENDING'}
+          onClick={() => setStatusFilter(statusFilter === 'PENDING' ? '' : 'PENDING')}
+        />
+        <StatCard
+          label="Refunded"
+          value={(data ?? []).filter((p) => p.payment.status === 'REFUNDED').length}
+          active={statusFilter === 'REFUNDED'}
+          onClick={() => setStatusFilter(statusFilter === 'REFUNDED' ? '' : 'REFUNDED')}
+        />
+        {/* Two statuses behind one card, so it filters to the pair. */}
         <StatCard
           label="Failed / expired"
           value={(data ?? []).filter((p) => ['FAILED', 'EXPIRED'].includes(p.payment.status)).length}
+          active={statusFilter === 'FAILED_OR_EXPIRED'}
+          onClick={() =>
+            setStatusFilter(statusFilter === 'FAILED_OR_EXPIRED' ? '' : 'FAILED_OR_EXPIRED')
+          }
         />
       </div>
       <div className="mb-4 flex flex-wrap gap-2">

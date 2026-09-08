@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" width="960" height="540" role="img" aria-label="Welcome back">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3A1D3F"/><stop offset="1" stop-color="#5E2F66"/>
+    </linearGradient>
+    <linearGradient id="foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.45"/>
+    </linearGradient>
+    <pattern id="p" width="120" height="80" patternUnits="userSpaceOnUse" patternTransform="rotate(-12)">
+      <ellipse cx="60" cy="40" rx="46" ry="17" fill="#DAFF59" opacity="0.10"/>
+      <ellipse cx="0" cy="10" rx="46" ry="17" fill="#FFFFFF" opacity="0.06"/>
+    </pattern>
+  </defs>
+  <rect width="960" height="540" fill="url(#g)"/>
+  <rect width="960" height="540" fill="url(#p)"/>
+  <rect y="240" width="960" height="300" fill="url(#foot)"/>
+</svg>

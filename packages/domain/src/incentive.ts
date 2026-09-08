@@ -9,6 +9,13 @@ import { msOf } from './shared/time';
  * they deliver. Independent of the member credit ledger. `coachId: null` is
  * the organization default; a coach-specific row overrides it.
  */
+/** What one class type pays under a scheme. */
+export interface SchemeRate {
+  classTypeId: string;
+  sessionFeeIdr: number;
+  perAttendeeIdr: number;
+}
+
 export interface IncentiveScheme {
   id: string;
   coachId: string | null;
@@ -22,6 +29,11 @@ export interface IncentiveScheme {
   fullClassThresholdPercent: number;
   /** Deducted per no-show; may be 0. Never drives a line below zero. */
   noShowPenaltyIdr: number;
+  /**
+   * Per-class-type overrides of the two figures that vary by class. A class
+   * type with no rate here is paid at the scheme's own figures.
+   */
+  rates: SchemeRate[];
   active: boolean;
   updatedAt: IsoDate;
 }
@@ -32,6 +44,17 @@ export function resolveScheme(
   coachOverride: IncentiveScheme | null,
 ): IncentiveScheme {
   return coachOverride && coachOverride.active ? coachOverride : defaultScheme;
+}
+
+/** What a scheme pays for one class type: its rate, or the scheme's figures. */
+export function rateFor(scheme: IncentiveScheme, classTypeId: string): SchemeRate {
+  return (
+    (scheme.rates ?? []).find((r) => r.classTypeId === classTypeId) ?? {
+      classTypeId,
+      sessionFeeIdr: scheme.sessionFeeIdr,
+      perAttendeeIdr: scheme.perAttendeeIdr,
+    }
+  );
 }
 
 export interface StatementPeriod {
@@ -134,8 +157,11 @@ export function computeCoachStatement(args: {
       const attended = bookings.filter((b) => ATTENDED.includes(b.status)).length;
       const noShows = bookings.filter((b) => b.status === 'NO_SHOW').length;
       const fillPercent = session.capacity > 0 ? (attended / session.capacity) * 100 : 0;
-      const sessionFeeIdr = scheme.sessionFeeIdr;
-      const attendeeIdr = attended * scheme.perAttendeeIdr;
+      // What this class pays: the coach's rate for this class type, or the
+      // scheme's own figures when it has none.
+      const rate = rateFor(scheme, session.classTypeId);
+      const sessionFeeIdr = rate.sessionFeeIdr;
+      const attendeeIdr = attended * rate.perAttendeeIdr;
       const bonusIdr =
         session.capacity > 0 && fillPercent >= scheme.fullClassThresholdPercent
           ? scheme.fullClassBonusIdr

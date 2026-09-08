@@ -22,6 +22,9 @@ func (h *Handler) Mount(r *httpx.Router) {
 	admin := func(p domain.Permission) httpx.Middleware { return h.guard.RequireAdmin(string(p)) }
 
 	r.Get("/api/admin/incentives/schemes", h.listSchemes, admin(domain.PermIncentivesView))
+	// What each coach is actually paid, resolved. The Coaches screen shows
+	// it beside the coach rather than making somebody read the schemes table.
+	r.Get("/api/admin/incentives/coach-fees", h.coachFees, admin(domain.PermIncentivesView))
 	r.Post("/api/admin/incentives/schemes", h.createScheme, admin(domain.PermIncentivesManage))
 	r.Put("/api/admin/incentives/schemes/{id}", h.updateScheme, admin(domain.PermIncentivesManage))
 
@@ -52,7 +55,10 @@ type schemeRequest struct {
 	FullClassBonusIDR         int64   `json:"fullClassBonusIdr"`
 	FullClassThresholdPercent int     `json:"fullClassThresholdPercent"`
 	NoShowPenaltyIDR          int64   `json:"noShowPenaltyIdr"`
-	Active                    *bool   `json:"active"`
+	// Rates replaces the per-class-type rates wholesale: the editor shows them
+	// all at once, so what it submits is the whole answer.
+	Rates  []domain.SchemeRate `json:"rates"`
+	Active *bool               `json:"active"`
 }
 
 func (s *schemeRequest) Validate() error {
@@ -73,6 +79,7 @@ func (s schemeRequest) toInput() SchemeInput {
 		FullClassBonusIDR:         s.FullClassBonusIDR,
 		FullClassThresholdPercent: s.FullClassThresholdPercent,
 		NoShowPenaltyIDR:          s.NoShowPenaltyIDR,
+		Rates:                     s.Rates,
 		Active:                    s.Active == nil || *s.Active,
 	}
 }
@@ -183,4 +190,13 @@ func (h *Handler) actPayout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.OK(w, view)
+}
+
+func (h *Handler) coachFees(w http.ResponseWriter, r *http.Request) {
+	fees, err := h.service.CoachFees(r.Context())
+	if err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	httpx.OK(w, fees)
 }

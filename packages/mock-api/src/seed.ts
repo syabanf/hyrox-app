@@ -912,6 +912,7 @@ export function createSeedDb(nowIso: string): MockDb {
       fullClassBonusIdr: 100_000,
       fullClassThresholdPercent: 80,
       noShowPenaltyIdr: 0,
+      rates: [],
       active: true,
       updatedAt: daysAgo(45),
     },
@@ -924,11 +925,13 @@ export function createSeedDb(nowIso: string): MockDb {
       fullClassBonusIdr: 150_000,
       fullClassThresholdPercent: 80,
       noShowPenaltyIdr: 0,
+      rates: [],
       active: true,
       updatedAt: daysAgo(30),
     },
     {
-      // Race coach: easier bonus threshold, but no-shows cost.
+      // Race coach: easier bonus threshold, but no-shows cost, and the race
+      // simulations they run pay more than the rest of what they teach.
       id: 'inc_coa_3',
       coachId: 'coa_3',
       sessionFeeIdr: 175_000,
@@ -936,6 +939,7 @@ export function createSeedDb(nowIso: string): MockDb {
       fullClassBonusIdr: 100_000,
       fullClassThresholdPercent: 75,
       noShowPenaltyIdr: 25_000,
+      rates: [{ classTypeId: 'cls_sim', sessionFeeIdr: 350_000, perAttendeeIdr: 18_000 }],
       active: true,
       updatedAt: daysAgo(20),
     },

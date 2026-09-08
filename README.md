@@ -66,6 +66,15 @@ pnpm turbo typecheck test build && pnpm lint
 
 PWA check: `pnpm --filter @nuhabit/member build && pnpm --filter @nuhabit/member preview` (service worker + manifest are production-build only).
 
+## Demo images
+
+The seed's pictures — member and staff avatars, race cards, shelf photos —
+are generated SVGs committed under `apps/backend/internal/media/assets`,
+embedded in the API binary and served from `/api/media/...`. No CDN, no
+network: the demo has faces on it offline. Regenerate them with
+`go run ./internal/media/gen` from `apps/backend`; a change to a picture
+should be a change to its file name, because they are cached hard.
+
 ## Demo accounts
 
 - **Member app**: opens straight on Home as `demo@nuhabit.id` (Fahmi Syaban) with no OTP step. The login screen (any 6-digit OTP works, e.g. `123456`) only appears after **Sign out**; from there you can sign in as another member or register a fresh one.

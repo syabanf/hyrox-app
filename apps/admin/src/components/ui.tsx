@@ -230,7 +230,58 @@ export function PageTitle({ title, subtitle, actions }: { title: string; subtitl
  * so a row of these reads as a row of numbers — the eye lands on the figures
  * and the icons stay decoration.
  */
+/**
+ * One number, with the thing it measures.
+ *
+ * Give it `onClick` and it becomes a filter: the card that says how many
+ * drafts there are is the obvious place to press to see them, and a figure
+ * you cannot act on is a figure somebody reads twice and then ignores.
+ * `active` is what the pressed card looks like.
+ */
 export function StatCard({
+  label,
+  value,
+  hint,
+  tone,
+  icon: Icon,
+  onClick,
+  active,
+}: {
+  label: string;
+  value: ReactNode;
+  hint?: string;
+  tone?: 'brand' | 'danger';
+  icon?: LucideIcon;
+  onClick?: () => void;
+  active?: boolean;
+}) {
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-pressed={active}
+        className={`a-card relative text-left transition hover:border-brand/25 ${
+          active ? 'ring-2 ring-brand ring-offset-2 ring-offset-beige' : ''
+        }`}
+      >
+        <StatBody label={label} value={value} hint={hint} tone={tone} icon={Icon} />
+        {active ? (
+          <span className="mt-2 block text-[11px] font-bold uppercase tracking-wider text-brand">
+            Filtering · press to clear
+          </span>
+        ) : null}
+      </button>
+    );
+  }
+  return (
+    <div className="a-card relative">
+      <StatBody label={label} value={value} hint={hint} tone={tone} icon={Icon} />
+    </div>
+  );
+}
+
+function StatBody({
   label,
   value,
   hint,
@@ -244,7 +295,7 @@ export function StatCard({
   icon?: LucideIcon;
 }) {
   return (
-    <div className="a-card relative">
+    <>
       {Icon ? (
         <span
           className={`absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full ${
@@ -270,7 +321,7 @@ export function StatCard({
         {value}
       </p>
       {hint ? <p className="mt-1.5 text-xs text-muted">{hint}</p> : null}
-    </div>
+    </>
   );
 }
 

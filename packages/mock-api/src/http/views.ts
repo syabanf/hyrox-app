@@ -210,6 +210,8 @@ export function incentiveSchemeView(db: MockDb, scheme: IncentiveScheme): Incent
     coachName: scheme.coachId
       ? (db.coaches.find((c) => c.id === scheme.coachId)?.name ?? scheme.coachId)
       : null,
+    // The rate editor renders class names, not ids.
+    classTypeNames: Object.fromEntries(db.classTypes.map((t) => [t.id, t.name])),
   };
 }
 

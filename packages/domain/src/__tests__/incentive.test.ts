@@ -21,6 +21,7 @@ const defaultScheme: IncentiveScheme = {
   fullClassBonusIdr: 100_000,
   fullClassThresholdPercent: 80,
   noShowPenaltyIdr: 0,
+  rates: [],
   active: true,
   updatedAt: NOW,
 };

@@ -38,6 +38,7 @@ const (
 	Campaign     = "cmp"
 	Audit        = "aud"
 	Scheme       = "sch"
+	SchemeRate   = "scr"
 	Payout       = "pyo"
 	Activity     = "act"
 	Comment      = "cmt"

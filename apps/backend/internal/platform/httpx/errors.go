@@ -88,6 +88,14 @@ func AsError(err error) *Error {
 	return ErrInternal.Wrap(err)
 }
 
+// IsNotFound reports whether an error is (or wraps) a 404. Callers use it to
+// turn "no such row" into something other than a 404 — a sign-in, for
+// instance, must not answer differently for an unknown account.
+func IsNotFound(err error) bool {
+	var appErr *Error
+	return errors.As(err, &appErr) && appErr.Status == http.StatusNotFound
+}
+
 func capitalize(s string) string {
 	if s == "" {
 		return s

@@ -8,7 +8,18 @@ interface AdminAuthState {
   token: string | null;
   user: AdminUser | null;
   permissions: Permission[];
-  setSession: (token: string, user: AdminUser, permissions: readonly Permission[]) => void;
+  /**
+   * The password was chosen by somebody else — a new starter, or a reset — so
+   * the panel keeps the user on the change-password screen until it is gone.
+   */
+  mustChangePassword: boolean;
+  setSession: (
+    token: string,
+    user: AdminUser,
+    permissions: readonly Permission[],
+    mustChangePassword?: boolean,
+  ) => void;
+  passwordChanged: () => void;
   clear: () => void;
 }
 
@@ -18,8 +29,11 @@ export const useAdminAuth = create<AdminAuthState>()(
       token: null,
       user: null,
       permissions: [],
-      setSession: (token, user, permissions) => set({ token, user, permissions: [...permissions] }),
-      clear: () => set({ token: null, user: null, permissions: [] }),
+      mustChangePassword: false,
+      setSession: (token, user, permissions, mustChangePassword = false) =>
+        set({ token, user, permissions: [...permissions], mustChangePassword }),
+      passwordChanged: () => set({ mustChangePassword: false }),
+      clear: () => set({ token: null, user: null, permissions: [], mustChangePassword: false }),
     }),
     { name: 'nuhabit.admin.session' },
   ),

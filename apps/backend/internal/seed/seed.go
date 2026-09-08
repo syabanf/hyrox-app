@@ -4,7 +4,8 @@
 //
 // It is idempotent. Every insert is ON CONFLICT DO NOTHING, so running it
 // twice changes nothing and running it against a live database cannot
-// overwrite real data.
+// overwrite real data. The single exception is the demo password, which is
+// filled in on a staff account that has none — never over one already set.
 package seed
 
 import (
@@ -13,17 +14,28 @@ import (
 	"time"
 
 	"github.com/syabanf/nuhabit-backend/internal/domain"
+	"github.com/syabanf/nuhabit-backend/internal/platform/auth"
 	"github.com/syabanf/nuhabit-backend/internal/platform/clock"
 	"github.com/syabanf/nuhabit-backend/internal/platform/database"
 )
 
 // Seeder writes the demo dataset.
 type Seeder struct {
-	db    *database.DB
-	clock clock.Clock
+	db        *database.DB
+	clock     clock.Clock
+	passwords *auth.Passwords
 }
 
-func New(db *database.DB, c clock.Clock) *Seeder { return &Seeder{db: db, clock: c} }
+// New builds a seeder. iterations is the PBKDF2 cost for the demo staff
+// passwords; a test run that reseeds for every case passes something small.
+func New(db *database.DB, c clock.Clock, iterations int) *Seeder {
+	return &Seeder{db: db, clock: c, passwords: auth.NewPasswords(iterations)}
+}
+
+// DemoPassword signs in every seeded staff account. It exists so a demo has
+// one thing to remember, and it is never written by anything but the seeder —
+// which refuses to run against production without an explicit override.
+const DemoPassword = "nuhabit-demo-2026"
 
 // Summary reports what the seed produced.
 type Summary struct {
@@ -265,11 +277,23 @@ func (s *Seeder) seedAdminUsers(ctx context.Context) (int, error) {
 		{id: "adm_coach", name: "Kevin Hartono", email: "kevin@nuhabit.id", role: "COACH", branch: strPtr("brn_senopati")},
 		{id: "adm_finance", name: "Sinta Halim", email: "sinta@nuhabit.id", role: "FINANCE"},
 	}
+	// Every demo account gets the same password. Hashed once and reused: the
+	// salt is per-hash, not per-account, and hashing six times over is a
+	// second of test setup for nothing.
+	hash, err := s.passwords.Hash(DemoPassword)
+	if err != nil {
+		return 0, fmt.Errorf("seed: hashing the demo password: %w", err)
+	}
 	for _, u := range users {
 		_, err := s.db.Exec(ctx, `
-			INSERT INTO identity.admin_users (id, name, email, role, branch_id)
-			VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO NOTHING`,
-			u.id, u.name, u.email, u.role, u.branch)
+			INSERT INTO identity.admin_users
+				(id, name, email, role, branch_id, password_hash, password_set_at)
+			VALUES ($1, $2, $3, $4, $5, $6, now())
+			ON CONFLICT (id) DO UPDATE
+				SET password_hash = excluded.password_hash,
+				    password_set_at = excluded.password_set_at
+				WHERE identity.admin_users.password_hash IS NULL`,
+			u.id, u.name, u.email, u.role, u.branch, hash)
 		if err != nil {
 			return 0, fmt.Errorf("seed: admin user %s: %w", u.id, err)
 		}

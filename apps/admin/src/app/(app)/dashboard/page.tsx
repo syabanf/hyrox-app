@@ -32,8 +32,20 @@ export default function DashboardPage() {
     refetchInterval: 10_000,
   });
   const { data: branches } = useQuery({ queryKey: ['branches'], queryFn: api.catalog.branches });
-  const { data: sales } = useQuery({ queryKey: ['dash-sales'], queryFn: () => api.admin.reports.sales(14) });
-  const { data: visits } = useQuery({ queryKey: ['dash-visits'], queryFn: () => api.admin.reports.visits(14) });
+  // The two trend charts are only drawn for somebody who may see reports, so
+  // they are only fetched for them either: the server would refuse, and a
+  // 403 on every dashboard load is noise nobody can act on.
+  const seesReports = can('reports.view');
+  const { data: sales } = useQuery({
+    queryKey: ['dash-sales'],
+    queryFn: () => api.admin.reports.sales(14),
+    enabled: seesReports,
+  });
+  const { data: visits } = useQuery({
+    queryKey: ['dash-visits'],
+    queryFn: () => api.admin.reports.visits(14),
+    enabled: seesReports,
+  });
   const { data: latestLogs } = useQuery({
     queryKey: ['dash-logs'],
     queryFn: () => api.admin.accessLogs.list({ limit: 5 }),

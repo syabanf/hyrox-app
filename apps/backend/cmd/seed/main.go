@@ -51,7 +51,7 @@ func run() error {
 		return err
 	}
 
-	summary, err := seed.New(db, clock.Real{}).Run(ctx)
+	summary, err := seed.New(db, clock.Real{}, cfg.Auth.PasswordIterations).Run(ctx)
 	if err != nil {
 		return err
 	}
@@ -70,6 +70,10 @@ func run() error {
 		"loyaltyTiers", summary.Tiers,
 		"posProducts", summary.POSProducts,
 	)
+	// Printed rather than left to be guessed: an unfindable demo password ends
+	// up written into a README that outlives the demo.
+	slog.Info("staff can sign in at /admin",
+		"email", "alya@nuhabit.id", "password", seed.DemoPassword)
 	return nil
 }
 

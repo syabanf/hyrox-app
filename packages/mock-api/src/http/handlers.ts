@@ -87,6 +87,7 @@ import {
   upsertScheme,
 } from '@nuhabit/application';
 import type { MockDb } from '../db';
+import { DEMO_PASSWORD } from '../seed';
 import { createAthleteHandlers } from './athlete';
 import { createErpStubHandlers } from './erp';
 import { createHrisHandlers } from './hris';
@@ -177,17 +178,42 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
     // ── Auth: admin ─────────────────────────────────────────────────────────
     http.get('*/api/admin/auth/users', () => HttpResponse.json(db().adminUsers)),
 
+    // The mock is the offline demo, so it reports demo mode and accepts both
+    // ways in: a role card, or an email with the seeded demo password.
+    http.get('*/api/admin/auth/mode', () =>
+      HttpResponse.json({ demoRoster: true, accountsWithoutPassword: 0, minPasswordLength: 10 }),
+    ),
+
     http.post('*/api/admin/auth/login', async ({ request }) => {
       const body = await parseBody(request, AdminLoginSchema);
       if (!body.ok) return body.response;
-      const user = deps().adminUsers.byId(body.data.userId);
-      if (!user) return jsonError(404, 'USER_NOT_FOUND', 'Unknown admin user.');
+
+      const user = body.data.userId
+        ? deps().adminUsers.byId(body.data.userId)
+        : (db().adminUsers.find(
+            (u) => u.email.toLowerCase() === (body.data.email ?? '').trim().toLowerCase(),
+          ) ?? null);
+
+      // One answer for a wrong password and an unknown address alike: the
+      // real server does the same, and the demo should not teach otherwise.
+      const wrongPassword = !body.data.userId && body.data.password !== DEMO_PASSWORD;
+      if (!user || wrongPassword) {
+        return jsonError(401, 'UNAUTHORIZED', 'That email address and password do not match.');
+      }
       return HttpResponse.json({
         token: `admin:${user.id}`,
         user,
         permissions: ROLE_PERMISSIONS[user.role],
+        mustChangePassword: false,
       });
     }),
+
+    // The offline demo has one password, held in code rather than in the mock
+    // database, so a change is accepted and then forgotten. Passwords are the
+    // one thing the mock deliberately does not pretend to keep.
+    http.post('*/api/admin/auth/password', () => HttpResponse.json({ changed: true })),
+    http.put('*/api/admin/users/:id/password', () => HttpResponse.json({ set: true })),
+    http.put('*/api/admin/users/:id/supervisor-pin', () => HttpResponse.json({ set: true })),
 
     // ── Member: me / profile / wallet ───────────────────────────────────────
     http.get('*/api/me', ({ request }) => {

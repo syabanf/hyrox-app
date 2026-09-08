@@ -37,6 +37,12 @@ func (h *Handler) Mount(r *httpx.Router) {
 		r.Get("/api/admin/auth/users", h.listAdminUsers, h.guard.RequireAdmin(string(domain.PermConfigView)))
 	}
 	r.Post("/api/admin/auth/login", h.adminLogin)
+	// What the login screen is allowed to offer. Public, because it is read
+	// before anybody has a token.
+	r.Get("/api/admin/auth/mode", h.authMode)
+	// Changing your own password needs a session, not a permission: everybody
+	// has one to change.
+	r.Post("/api/admin/auth/password", h.changeOwnPassword, h.guard.RequireAnyAdmin)
 
 	// Member self-service.
 	r.Get("/api/me/profile", h.getProfile, h.guard.RequireMember)
@@ -53,6 +59,9 @@ func (h *Handler) Mount(r *httpx.Router) {
 	// A supervisor's PIN for authorising at a till. Managing logins is the
 	// grant, because a PIN is a credential like any other.
 	r.Put("/api/admin/users/{id}/supervisor-pin", h.setSupervisorPIN,
+		admin(domain.PermUsersManage))
+	// Handing somebody a password, for a new starter or a lockout.
+	r.Put("/api/admin/users/{id}/password", h.setAdminPassword,
 		admin(domain.PermUsersManage))
 }
 
@@ -201,13 +210,18 @@ func (h *Handler) listAdminUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 type adminLoginRequest struct {
-	UserID string `json:"userId"`
-	Email  string `json:"email"`
+	// UserID is the demo role picker; email and password are the real login.
+	UserID   string `json:"userId"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 func (a *adminLoginRequest) Validate() error {
-	if a.UserID == "" && a.Email == "" {
-		return httpx.Invalid("A user id or email address is required.")
+	if a.UserID == "" && strings.TrimSpace(a.Email) == "" {
+		return httpx.Invalid("Enter your email address and password.")
+	}
+	if a.UserID == "" && a.Password == "" {
+		return httpx.Invalid("Enter your password.")
 	}
 	return nil
 }
@@ -218,12 +232,59 @@ func (h *Handler) adminLogin(w http.ResponseWriter, r *http.Request) {
 		httpx.Fail(w, r, err)
 		return
 	}
-	session, err := h.service.AdminLogin(r.Context(), body.UserID, body.Email)
+	session, err := h.service.AdminLogin(r.Context(), body.UserID, body.Email, body.Password)
 	if err != nil {
 		httpx.Fail(w, r, err)
 		return
 	}
 	httpx.OK(w, session)
+}
+
+func (h *Handler) authMode(w http.ResponseWriter, r *http.Request) {
+	mode, err := h.service.AuthMode(r.Context())
+	if err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	httpx.OK(w, mode)
+}
+
+// ── Passwords ────────────────────────────────────────────────────────────────
+
+type setPasswordBody struct {
+	Password string `json:"password"`
+}
+
+func (h *Handler) setAdminPassword(w http.ResponseWriter, r *http.Request) {
+	body, err := httpx.Decode[setPasswordBody](r)
+	if err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	if err := h.service.SetAdminPassword(r.Context(), httpx.Param(r, "id"), body.Password, actorFrom(r)); err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	httpx.OK(w, map[string]bool{"set": true})
+}
+
+type changePasswordBody struct {
+	CurrentPassword string `json:"currentPassword"`
+	NewPassword     string `json:"newPassword"`
+}
+
+func (h *Handler) changeOwnPassword(w http.ResponseWriter, r *http.Request) {
+	body, err := httpx.Decode[changePasswordBody](r)
+	if err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	principal, _ := auth.Admin(r.Context())
+	if err := h.service.ChangeOwnPassword(r.Context(), principal.ID, body.CurrentPassword, body.NewPassword); err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	httpx.OK(w, map[string]bool{"changed": true})
 }
 
 // ── Member profile ───────────────────────────────────────────────────────────

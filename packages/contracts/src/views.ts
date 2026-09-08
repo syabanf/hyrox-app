@@ -47,6 +47,17 @@ export interface AdminSessionView {
   token: string;
   user: AdminUser;
   permissions: Permission[];
+  /** The password was chosen by somebody else and has to be replaced now. */
+  mustChangePassword: boolean;
+}
+
+/** What the login screen is allowed to offer, read before anyone has a token. */
+export interface AuthModeView {
+  /** The staff roster is public and the role cards sign in without a password. */
+  demoRoster: boolean;
+  /** Staff who have no password yet, and so cannot sign in. */
+  accountsWithoutPassword: number;
+  minPasswordLength: number;
 }
 export interface AdminUserView extends AdminUser {
   roleLabel: AdminRole;

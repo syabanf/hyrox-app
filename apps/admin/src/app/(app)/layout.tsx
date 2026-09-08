@@ -12,6 +12,7 @@ import {
   Trophy,
   Video,
   LayoutDashboard,
+  KeyRound,
   LogOut,
   Megaphone,
   RotateCcw,
@@ -58,7 +59,7 @@ import {
   usePageActionSlot,
   usePageHeader,
 } from '../../components/page-header';
-import { api } from '../../lib/api';
+import { api, usingRealBackend } from '../../lib/api';
 import { useAdminAuth, usePermissions } from '../../lib/auth';
 
 interface NavItem {
@@ -184,18 +185,24 @@ const NAV: NavGroup[] = [
 export default function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, token, clear } = useAdminAuth();
+  const { user, token, mustChangePassword, clear } = useAdminAuth();
   const { can } = usePermissions();
   const [navOpen, setNavOpen] = useState(false);
 
   useEffect(() => {
-    if (!token) router.replace('/login');
-  }, [token, router]);
+    if (!token) {
+      router.replace('/login');
+    } else if (mustChangePassword) {
+      // A password somebody else chose gets no further than this. The panel
+      // is not usable until it has been replaced.
+      router.replace('/account/password');
+    }
+  }, [token, mustChangePassword, router]);
   // Close the mobile drawer whenever navigation happens.
   useEffect(() => {
     setNavOpen(false);
   }, [pathname]);
-  if (!token || !user) return null;
+  if (!token || !user || mustChangePassword) return null;
 
   const logout = () => {
     clear();
@@ -228,7 +235,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         navOpen={navOpen}
         setNavOpen={setNavOpen}
         onLogout={logout}
-        onReset={() => void resetDemo()}
+        onReset={usingRealBackend ? undefined : () => void resetDemo()}
       >
         {children}
       </Shell>
@@ -263,7 +270,8 @@ function Shell({
   navOpen: boolean;
   setNavOpen: (open: boolean) => void;
   onLogout: () => void;
-  onReset: () => void;
+  /** Absent against the real backend: there is no seed to rebuild. */
+  onReset?: () => void;
   children: ReactNode;
 }) {
   const header = usePageHeader();
@@ -306,7 +314,7 @@ function Shell({
       {/* Mobile bar. The rail becomes a drawer below the large breakpoint. */}
       <header className="fixed inset-x-0 top-0 z-30 flex items-center justify-between bg-beige/90 px-4 py-3 backdrop-blur lg:hidden">
         <Link href="/dashboard" className="flex items-center gap-2.5">
-          <img src="/admin/brand/nuhabit-logo.png" alt="NüHabit" className="h-[22px] w-auto" />
+          <img src="/admin/brand/nuhabit-logo-black.png" alt="NüHabit" className="h-[22px] w-auto" />
         </Link>
         <button
           onClick={() => setNavOpen(!navOpen)}
@@ -333,15 +341,13 @@ function Shell({
             }`}
             title="NüHabit Admin"
           >
+            {/* The wordmark, cropped to a square by its container when the
+                rail is collapsed. There is no separate square mark in the
+                brand folder, and asking for one 404s on every page load. */}
             <img
-              src="/admin/brand/nuhabit-mark-white.png"
+              src="/admin/brand/nuhabit-logo-white.png"
               alt="NüHabit"
-              className="h-6 w-6 shrink-0 object-contain"
-              onError={(e) => {
-                // The square mark is optional artwork; the wordmark always
-                // exists, so fall back to it rather than showing a broken box.
-                (e.currentTarget as HTMLImageElement).src = '/admin/brand/nuhabit-logo-white.png';
-              }}
+              className="h-5 w-6 shrink-0 object-cover object-left"
             />
             {!collapsed ? (
               <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/45">
@@ -393,6 +399,16 @@ function Shell({
         <div className={`pb-4 ${collapsed ? 'px-3' : 'px-3'}`}>
           {/* Who is signed in lives in the top bar, once. Repeating it here
               costs the rail a row and tells nobody anything new. */}
+          <Link
+            href="/account/password"
+            title={collapsed ? 'Change password' : undefined}
+            className={`mb-1 flex w-full items-center gap-3 rounded-2xl py-2.5 text-sm font-bold text-white/50 transition hover:bg-white/[0.07] hover:text-white ${
+              collapsed ? 'justify-center px-2' : 'px-3'
+            }`}
+          >
+            <KeyRound size={17} className="shrink-0" />
+            {!collapsed ? 'Change password' : null}
+          </Link>
           <button
             onClick={onLogout}
             title={collapsed ? 'Sign out' : undefined}
@@ -403,16 +419,20 @@ function Shell({
             <LogOut size={17} className="shrink-0" />
             {!collapsed ? 'Sign out' : null}
           </button>
-          <button
-            onClick={onReset}
-            title={collapsed ? 'Reset demo data' : undefined}
-            className={`mb-2 flex w-full items-center gap-3 rounded-2xl py-2.5 text-sm font-bold text-white/50 transition hover:bg-white/[0.07] hover:text-white ${
-              collapsed ? 'justify-center px-2' : 'px-3'
-            }`}
-          >
-            <RotateCcw size={17} className="shrink-0" />
-            {!collapsed ? 'Reset demo' : null}
-          </button>
+          {/* Only the offline demo has a seed to rebuild. Against the real
+              backend there is nothing behind this button, so it is not shown. */}
+          {onReset ? (
+            <button
+              onClick={onReset}
+              title={collapsed ? 'Reset demo data' : undefined}
+              className={`mb-2 flex w-full items-center gap-3 rounded-2xl py-2.5 text-sm font-bold text-white/50 transition hover:bg-white/[0.07] hover:text-white ${
+                collapsed ? 'justify-center px-2' : 'px-3'
+              }`}
+            >
+              <RotateCcw size={17} className="shrink-0" />
+              {!collapsed ? 'Reset demo' : null}
+            </button>
+          ) : null}
           <button
             onClick={toggleRail}
             className={`hidden w-full items-center gap-3 rounded-2xl bg-white/[0.07] py-2.5 text-sm font-bold text-white/60 transition hover:bg-white/10 hover:text-white lg:flex ${

@@ -11,6 +11,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"strconv"
 	"strings"
 	"time"
 
@@ -34,16 +35,25 @@ const maxOTPAttempts = 5
 
 // Service implements the identity use cases.
 type Service struct {
-	repo    *Repository
-	ids     id.Generator
-	clock   clock.Clock
-	issuer  *auth.Issuer
-	auditor audit.Recorder
-	cfg     config.Auth
+	repo      *Repository
+	ids       id.Generator
+	clock     clock.Clock
+	issuer    *auth.Issuer
+	passwords *auth.Passwords
+	auditor   audit.Recorder
+	cfg       config.Auth
 }
 
 func NewService(repo *Repository, ids id.Generator, c clock.Clock, issuer *auth.Issuer, auditor audit.Recorder, cfg config.Auth) *Service {
-	return &Service{repo: repo, ids: ids, clock: c, issuer: issuer, auditor: auditor, cfg: cfg}
+	return &Service{
+		repo:      repo,
+		ids:       ids,
+		clock:     c,
+		issuer:    issuer,
+		passwords: auth.NewPasswords(cfg.PasswordIterations),
+		auditor:   auditor,
+		cfg:       cfg,
+	}
 }
 
 // ── Member sign-in ───────────────────────────────────────────────────────────
@@ -425,6 +435,10 @@ type AdminSession struct {
 	User        domain.AdminUser    `json:"user"`
 	Permissions []domain.Permission `json:"permissions"`
 	Expires     time.Time           `json:"expiresAt"`
+	// MustChangePassword is set when the password was handed over by somebody
+	// else. The panel keeps the user on the change-password screen until they
+	// have replaced it.
+	MustChangePassword bool `json:"mustChangePassword"`
 }
 
 func (s *Service) AdminUsers(ctx context.Context) ([]domain.AdminUser, error) {
@@ -433,29 +447,94 @@ func (s *Service) AdminUsers(ctx context.Context) ([]domain.AdminUser, error) {
 
 // AdminLogin signs a staff user in.
 //
-// Demo mode accepts the user id alone, which is what the role-picker screen
-// sends. With demo mode off, an email and a matching password are required —
-// the password check belongs here, wired to whatever directory the studio uses.
-func (s *Service) AdminLogin(ctx context.Context, userID, email string) (AdminSession, error) {
-	var user domain.AdminUser
-	var err error
-
-	switch {
-	case userID != "":
+// The normal path is an email address and a password. Demo mode adds a second
+// path — a user id and nothing else — which is what the role-picker cards on
+// the login screen send; it is refused outright anywhere demo mode is off, so
+// a production deployment has exactly one way in.
+func (s *Service) AdminLogin(ctx context.Context, userID, email, password string) (AdminSession, error) {
+	if userID != "" {
 		if !s.cfg.DemoOTP {
 			return AdminSession{}, httpx.ErrUnauthorized.
-				WithMessage("Sign in with your email address.")
+				WithMessage("Sign in with your email address and password.")
 		}
-		user, err = s.repo.AdminUser(ctx, userID)
-	case email != "":
-		user, err = s.repo.AdminUserByEmail(ctx, email)
-	default:
-		return AdminSession{}, httpx.Invalid("An email address is required.")
+		user, err := s.repo.AdminUser(ctx, userID)
+		if err != nil {
+			return AdminSession{}, err
+		}
+		return s.adminSession(ctx, user, false)
 	}
+
+	email = strings.TrimSpace(email)
+	if email == "" || password == "" {
+		return AdminSession{}, httpx.Invalid("Enter your email address and password.")
+	}
+
+	creds, err := s.repo.CredentialsByEmail(ctx, email)
 	if err != nil {
+		if httpx.IsNotFound(err) {
+			// A distinct "no such account" would turn the login form into a
+			// staff directory, so an unknown email fails exactly like a wrong
+			// password. The hash is still computed, so the two paths take a
+			// comparable amount of time.
+			s.passwords.Matches(password, decoyHash)
+			return AdminSession{}, errBadCredentials
+		}
 		return AdminSession{}, err
 	}
 
+	now := s.clock.Now()
+	if creds.LockedUntil != nil && now.Before(*creds.LockedUntil) {
+		return AdminSession{}, httpx.ErrRateLimited.WithMessage(
+			"Too many incorrect passwords. Try again in %d minutes, or ask for a reset.",
+			int(creds.LockedUntil.Sub(now).Minutes())+1)
+	}
+
+	if creds.PasswordHash == "" || !s.passwords.Matches(password, creds.PasswordHash) {
+		if err := s.recordFailure(ctx, creds, now); err != nil {
+			return AdminSession{}, err
+		}
+		return AdminSession{}, errBadCredentials
+	}
+
+	// The cost of hashing goes up over the years; people whose password
+	// predates the rise get moved up on the way past, without being asked.
+	if s.passwords.NeedsRehash(creds.PasswordHash) {
+		if hash, err := s.passwords.Hash(password); err == nil {
+			_ = s.repo.SetPassword(ctx, creds.ID, hash, creds.MustChangePassword, now)
+		}
+	}
+	if err := s.repo.RecordLogin(ctx, creds.ID, now); err != nil {
+		return AdminSession{}, err
+	}
+	return s.adminSession(ctx, creds.AdminUser, creds.MustChangePassword)
+}
+
+// errBadCredentials is the single answer to a wrong email and a wrong
+// password alike.
+var errBadCredentials = httpx.ErrUnauthorized.WithMessage("That email address and password do not match.")
+
+// decoyHash gives the unknown-account path the same work to do as the real
+// one. The password it encodes is random and nobody knows it.
+var decoyHash = "pbkdf2-sha256$" + strconv.Itoa(auth.DefaultPasswordIterations) +
+	"$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
+func (s *Service) recordFailure(ctx context.Context, creds Credentials, now time.Time) error {
+	attempts := s.cfg.LoginAttempts
+	if attempts < 1 {
+		attempts = 10
+	}
+	// The lock is applied on the attempt that reaches the limit, so the count
+	// and the door never disagree.
+	var lockUntil *time.Time
+	if creds.FailedLogins+1 >= attempts {
+		until := now.Add(s.cfg.LockoutFor)
+		lockUntil = &until
+	}
+	_, err := s.repo.RecordFailedLogin(ctx, creds.ID, lockUntil)
+	return err
+}
+
+func (s *Service) adminSession(ctx context.Context, user domain.AdminUser, mustChange bool) (AdminSession, error) {
 	branchID := ""
 	if user.BranchID != nil {
 		branchID = *user.BranchID
@@ -469,12 +548,121 @@ func (s *Service) AdminLogin(ctx context.Context, userID, email string) (AdminSe
 	if err != nil {
 		return AdminSession{}, err
 	}
+	if err := s.auditor.Record(ctx, audit.Event{
+		EntityType: "admin_user", EntityID: user.ID, Action: "login",
+		NewValue: audit.Str(string(user.Role)), ActorID: user.ID, ActorName: user.Name,
+	}); err != nil {
+		return AdminSession{}, err
+	}
 	return AdminSession{
-		Token:       token,
-		User:        user,
-		Permissions: domain.PermissionsFor(user.Role),
-		Expires:     expires,
+		Token:              token,
+		User:               user,
+		Permissions:        domain.PermissionsFor(user.Role),
+		Expires:            expires,
+		MustChangePassword: mustChange,
 	}, nil
+}
+
+// AuthMode tells the login screen what it is allowed to offer.
+type AuthMode struct {
+	// DemoRoster is true when the staff list is public and the role cards can
+	// sign somebody in without a password.
+	DemoRoster bool `json:"demoRoster"`
+	// AccountsWithoutPassword is how many staff cannot sign in yet.
+	AccountsWithoutPassword int `json:"accountsWithoutPassword"`
+	// MinPasswordLength is published so the form and the server agree.
+	MinPasswordLength int `json:"minPasswordLength"`
+}
+
+func (s *Service) AuthMode(ctx context.Context) (AuthMode, error) {
+	mode := AuthMode{DemoRoster: s.cfg.DemoOTP, MinPasswordLength: minPasswordLength}
+	if s.cfg.DemoOTP {
+		count, err := s.repo.AccountsWithoutPassword(ctx)
+		if err != nil {
+			return AuthMode{}, err
+		}
+		mode.AccountsWithoutPassword = count
+	}
+	return mode, nil
+}
+
+// ── Passwords ────────────────────────────────────────────────────────────────
+
+// minPasswordLength is a floor, not a policy. Composition rules ("one capital,
+// one symbol") push people towards Passw0rd! and a sticky note; length is the
+// part that actually costs an attacker something.
+const minPasswordLength = 10
+
+func checkPasswordPolicy(password string) error {
+	if len([]rune(password)) < minPasswordLength {
+		return httpx.Invalid("A password is at least %d characters.", minPasswordLength)
+	}
+	if len(password) > 200 {
+		return httpx.Invalid("That password is longer than 200 characters.")
+	}
+	if strings.TrimSpace(password) == "" {
+		return httpx.Invalid("A password cannot be only spaces.")
+	}
+	return nil
+}
+
+// SetAdminPassword is somebody with user management handing out a password —
+// a new starter, or a reset for a person locked out.
+//
+// The password is marked for replacement at first use, because whoever typed
+// it in knows it, and a credential two people know is not a credential.
+func (s *Service) SetAdminPassword(ctx context.Context, userID, password string, actor Actor) error {
+	user, err := s.repo.AdminUser(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if err := checkPasswordPolicy(password); err != nil {
+		return err
+	}
+	hash, err := s.passwords.Hash(password)
+	if err != nil {
+		return err
+	}
+	if err := s.repo.SetPassword(ctx, userID, hash, true, s.clock.Now()); err != nil {
+		return err
+	}
+	return s.auditor.Record(ctx, audit.Event{
+		EntityType: "admin_user", EntityID: userID, Action: "password_reset",
+		NewValue: audit.Str(user.Email), ActorID: actor.ID, ActorName: actor.Name,
+	})
+}
+
+// ChangeOwnPassword is a signed-in user replacing their own.
+//
+// The current password is required even though the session already proves who
+// they are: it is what stops a walked-away laptop from becoming a permanent
+// takeover. An account whose password was handed to it is the one exception —
+// there is no current password worth proving.
+func (s *Service) ChangeOwnPassword(ctx context.Context, userID, current, next string) error {
+	creds, err := s.repo.Credentials(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if creds.PasswordHash != "" && !s.passwords.Matches(current, creds.PasswordHash) {
+		return httpx.ErrUnauthorized.WithMessage("That is not your current password.")
+	}
+	if err := checkPasswordPolicy(next); err != nil {
+		return err
+	}
+	if creds.PasswordHash != "" && s.passwords.Matches(next, creds.PasswordHash) {
+		return httpx.Invalid("Choose a password you have not used here before.")
+	}
+	hash, err := s.passwords.Hash(next)
+	if err != nil {
+		return err
+	}
+	if err := s.repo.SetPassword(ctx, userID, hash, false, s.clock.Now()); err != nil {
+		return err
+	}
+	return s.auditor.Record(ctx, audit.Event{
+		EntityType: "admin_user", EntityID: userID, Action: "password_change",
+		ActorID: userID, ActorName: creds.Name,
+	})
 }
 
 // AdminUserInput creates or edits a staff account.

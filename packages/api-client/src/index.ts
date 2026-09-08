@@ -2,6 +2,7 @@ import type {
   AccessLogView,
   AdminSessionView,
   ApiErrorBody,
+  AuthModeView,
   BookResultView,
   BookingView,
   CancelResultView,
@@ -76,7 +77,6 @@ import type {
   GiftCardView,
   IssueGiftCardInput,
   ItemPackView,
-  LeaveReviewInput,
   OpenDeliveryInput,
   LoyaltyMemberDetailView,
   MemberBadgeView,
@@ -207,7 +207,6 @@ import type {
   SupplierPrice,
   XPEntry,
   XPRule,
-  Attendance,
   AuditEvent,
   Booking,
   Branch,
@@ -392,7 +391,13 @@ export function createApiClient(options: ApiClientOptions) {
       register: (input: RegisterMemberInput) =>
         post<MemberSessionView>('/api/auth/register', input),
       adminUsers: () => get<AdminSessionView['user'][]>('/api/admin/auth/users'),
-      adminLogin: (userId: string) => post<AdminSessionView>('/api/admin/auth/login', { userId }),
+      /** What the login screen may offer: read before anybody has a token. */
+      adminAuthMode: () => get<AuthModeView>('/api/admin/auth/mode'),
+      adminLogin: (input: { userId?: string; email?: string; password?: string }) =>
+        post<AdminSessionView>('/api/admin/auth/login', input),
+      /** Replacing your own password. */
+      changePassword: (currentPassword: string, newPassword: string) =>
+        post<{ changed: boolean }>('/api/admin/auth/password', { currentPassword, newPassword }),
     },
     me: {
       get: () => get<MeView>('/api/me'),
@@ -510,6 +515,12 @@ export function createApiClient(options: ApiClientOptions) {
         update: (id: string, input: Partial<UpsertAdminUserInput>) =>
           patch<AdminUser>(`/api/admin/users/${id}`, input),
         remove: (id: string) => del(`/api/admin/users/${id}`),
+        /** Hand somebody a password; they must replace it at first use. */
+        setPassword: (id: string, password: string) =>
+          put<{ set: boolean }>(`/api/admin/users/${id}/password`, { password }),
+        /** A PIN for authorising a void at a till. Empty takes it away. */
+        setSupervisorPin: (id: string, pin: string) =>
+          put<{ set: boolean }>(`/api/admin/users/${id}/supervisor-pin`, { pin }),
       },
       segments: {
         preview: (input: SegmentPreviewInput) =>

@@ -446,3 +446,113 @@ func (r *Repository) SupervisorsWithPIN(ctx context.Context) ([]SupervisorCandid
 	}
 	return out, rows.Err()
 }
+
+// ── Passwords ────────────────────────────────────────────────────────────────
+
+// Credentials is a staff account plus everything the sign-in check needs.
+type Credentials struct {
+	domain.AdminUser
+	PasswordHash       string
+	MustChangePassword bool
+	FailedLogins       int
+	LockedUntil        *time.Time
+}
+
+const credentialColumns = adminColumns +
+	`, coalesce(password_hash, ''), must_change_password, failed_logins, locked_until`
+
+func scanCredentials(row pgx.Row) (Credentials, error) {
+	var c Credentials
+	err := row.Scan(&c.ID, &c.Name, &c.Email, &c.Role, &c.BranchID,
+		&c.PasswordHash, &c.MustChangePassword, &c.FailedLogins, &c.LockedUntil)
+	return c, err
+}
+
+// CredentialsByEmail reads the account somebody is trying to sign in as.
+func (r *Repository) CredentialsByEmail(ctx context.Context, email string) (Credentials, error) {
+	c, err := scanCredentials(r.db.QueryRow(ctx,
+		`SELECT `+credentialColumns+` FROM identity.admin_users WHERE lower(email) = lower($1)`,
+		strings.TrimSpace(email)))
+	if database.IsNoRows(err) {
+		return Credentials{}, httpx.NotFound("user")
+	}
+	if err != nil {
+		return Credentials{}, fmt.Errorf("identity: reading credentials: %w", err)
+	}
+	return c, nil
+}
+
+// Credentials reads the account by id, for a signed-in user changing their own
+// password.
+func (r *Repository) Credentials(ctx context.Context, userID string) (Credentials, error) {
+	c, err := scanCredentials(r.db.QueryRow(ctx,
+		`SELECT `+credentialColumns+` FROM identity.admin_users WHERE id = $1`, userID))
+	if database.IsNoRows(err) {
+		return Credentials{}, httpx.NotFound("user")
+	}
+	if err != nil {
+		return Credentials{}, fmt.Errorf("identity: reading credentials: %w", err)
+	}
+	return c, nil
+}
+
+// SetPassword stores a new hash and clears whatever the old password had
+// accumulated: a reset that left the account locked would be no reset at all.
+func (r *Repository) SetPassword(ctx context.Context, userID, hash string, mustChange bool, at time.Time) error {
+	tag, err := r.db.Exec(ctx, `
+		UPDATE identity.admin_users
+		SET password_hash = $2, password_set_at = $4, must_change_password = $3,
+		    failed_logins = 0, locked_until = NULL, updated_at = now()
+		WHERE id = $1`, userID, hash, mustChange, at)
+	if err != nil {
+		return fmt.Errorf("identity: setting password: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return httpx.NotFound("user")
+	}
+	return nil
+}
+
+// RecordFailedLogin counts a wrong password and returns the running total, so
+// the caller can decide whether that was the one too many.
+func (r *Repository) RecordFailedLogin(ctx context.Context, userID string, lockUntil *time.Time) (int, error) {
+	var failed int
+	err := r.db.QueryRow(ctx, `
+		UPDATE identity.admin_users
+		SET failed_logins = failed_logins + 1,
+		    locked_until = coalesce($2, locked_until)
+		WHERE id = $1
+		RETURNING failed_logins`, userID, lockUntil).Scan(&failed)
+	if database.IsNoRows(err) {
+		return 0, httpx.NotFound("user")
+	}
+	if err != nil {
+		return 0, fmt.Errorf("identity: recording failed login: %w", err)
+	}
+	return failed, nil
+}
+
+// RecordLogin marks a successful sign-in and wipes the failure count.
+func (r *Repository) RecordLogin(ctx context.Context, userID string, at time.Time) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE identity.admin_users
+		SET last_login_at = $2, failed_logins = 0, locked_until = NULL
+		WHERE id = $1`, userID, at)
+	if err != nil {
+		return fmt.Errorf("identity: recording login: %w", err)
+	}
+	return nil
+}
+
+// AccountsWithoutPassword counts the staff who cannot sign in yet. The panel
+// shows it to whoever manages logins, because an account with no password is
+// somebody who will ring the front desk on Monday.
+func (r *Repository) AccountsWithoutPassword(ctx context.Context) (int, error) {
+	var count int
+	err := r.db.QueryRow(ctx,
+		`SELECT count(*) FROM identity.admin_users WHERE password_hash IS NULL`).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("identity: counting accounts without a password: %w", err)
+	}
+	return count, nil
+}

@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/syabanf/nuhabit-backend/internal/platform/auth"
 )
 
 // Config is the whole configuration surface of any nuhabit binary.
@@ -57,6 +59,14 @@ type Auth struct {
 	OTPLength int
 	// DemoOTP accepts any well-formed code, for demo and test environments.
 	DemoOTP bool
+	// PasswordIterations is the PBKDF2 cost for staff passwords. It is
+	// configurable so it can be raised as hardware gets faster, and lowered in
+	// test runs that hash a whole demo roster on every setup.
+	PasswordIterations int
+	// LoginAttempts is how many wrong passwords an account tolerates before it
+	// locks, and LockoutFor is how long it stays shut.
+	LoginAttempts int
+	LockoutFor    time.Duration
 }
 
 type Payments struct {
@@ -133,6 +143,10 @@ func Load() (Config, error) {
 			OTPTTL:    duration("AUTH_OTP_TTL", 5*time.Minute),
 			OTPLength: number("AUTH_OTP_LENGTH", 6),
 			DemoOTP:   boolean("AUTH_DEMO_OTP", true),
+
+			PasswordIterations: number("AUTH_PASSWORD_ITERATIONS", auth.DefaultPasswordIterations),
+			LoginAttempts:      number("AUTH_LOGIN_ATTEMPTS", 10),
+			LockoutFor:         duration("AUTH_LOCKOUT_FOR", 15*time.Minute),
 		},
 		Payments: Payments{
 			Provider:       env("PAYMENTS_PROVIDER", "mock"),

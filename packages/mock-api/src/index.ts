@@ -48,4 +48,5 @@ export function createMockApi(options: CreateMockApiOptions = {}): MockApi {
 }
 
 export { SEED_VERSION, createEmptyDb, createSeedDb, createDeps };
+export { DEMO_PASSWORD } from './seed';
 export type { MockDb, MockApiState };

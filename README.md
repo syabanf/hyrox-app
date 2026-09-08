@@ -4,7 +4,7 @@ Monorepo implementing the **NüHabit Studio Operating System** blueprint - membe
 
 **REGISTER → TOP UP → BOOK → CHECK-IN (QR) → CREDIT DEDUCTION → ATTEND**
 
-The apps run either way. Point them at the backend (`VITE_API_BASE_URL` / `NEXT_PUBLIC_API_BASE_URL`) and they talk to it over HTTP; leave it unset and each app answers its own requests in-process from a bundled seed, so the demo still runs with no database behind it. Same contracts either way.
+The admin panel talks to the Go backend: it calls `/api` on its own origin, which nginx routes in production and the dev server proxies in development (`API_PROXY_TARGET`, default `http://localhost:8080`). `NEXT_PUBLIC_OFFLINE_DEMO=1` takes the server out of the picture and answers every request in-process from a bundled seed instead — a demo with no database behind it, minus the four ERP modules, which say so rather than pretending. The member PWA still defaults to that in-process mock; point `VITE_API_BASE_URL` at the backend to switch it over. Same contracts either way.
 
 ## Apps & packages
 
@@ -43,15 +43,20 @@ Or run the pieces from source:
 
 ```bash
 pnpm install
-pnpm dev            # both apps via turbo, on the in-process mock
+pnpm dev            # both apps via turbo
 pnpm dev:member     # http://localhost:5173
-pnpm dev:admin      # http://localhost:3000
+pnpm dev:admin      # http://localhost:3000 (proxies /api to the backend)
 pnpm dev:backend    # http://localhost:8080 (needs PostgreSQL: make -C apps/backend db)
 ```
 
-Demo sign-in: the member app signs itself in as `demo@nuhabit.id`; staff pick a
-role card (`adm_super`, `adm_hq`, `adm_branch`, `adm_desk`, `adm_coach`,
-`adm_finance`).
+Start the backend before the admin panel, or seed and start both:
+`make -C apps/backend db && go run ./apps/backend/cmd/seed`.
+
+Sign in at <http://localhost:3000/admin> with any seeded staff email and the
+password the seeder prints: `alya@nuhabit.id` / `nuhabit-demo-2026`. With demo
+mode on (`AUTH_DEMO_OTP`, the default outside production) the login screen also
+offers role cards that sign in without a password. The member app signs itself
+in as `demo@nuhabit.id`.
 
 Verification suite:
 
@@ -64,7 +69,13 @@ PWA check: `pnpm --filter @nuhabit/member build && pnpm --filter @nuhabit/member
 ## Demo accounts
 
 - **Member app**: opens straight on Home as `demo@nuhabit.id` (Fahmi Syaban) with no OTP step. The login screen (any 6-digit OTP works, e.g. `123456`) only appears after **Sign out**; from there you can sign in as another member or register a fresh one.
-- **Admin**: one-click login cards, one per role (Super Admin, HQ Admin, Branch Manager, Front Desk, Coach, Finance). RBAC is enforced by the mock server - a Front Desk token gets a real `403` on finance endpoints, not just hidden buttons.
+- **Admin**: six seeded staff, one per role (Super Admin, HQ Admin, Branch
+  Manager, Front Desk, Coach, Finance), all with the password
+  `nuhabit-demo-2026` and all reachable from the login screen's demo role cards
+  while demo mode is on. RBAC is enforced by the server - a Front Desk token
+  gets a real `403` on finance endpoints, not just hidden buttons. A Super
+  Admin can set somebody a password from **Config → Users → Password & PIN**;
+  a password set by somebody else has to be replaced at the next sign-in.
 - **Voucher codes**: `WELCOME10` (10%, new members), `HYROX100` (Rp100k, 10/20-packs).
 
 > Note: the two apps run on different origins, so each has its own copy of the mock DB (seeded identically, persisted per-origin in localStorage). Use the in-app dev tools to reset.
@@ -158,8 +169,8 @@ home addresses, bank accounts and next of kin.
 ## Walkthrough - the ERP modules
 
 Four modules ported from the nuhabiterp ERP. They run on the Go backend only —
-the offline demo says so rather than pretending, so start the API and point
-`NEXT_PUBLIC_API_BASE_URL` at it (the compose stack already does).
+the offline demo (`NEXT_PUBLIC_OFFLINE_DEMO=1`) says so rather than pretending,
+so leave it off and start the API.
 
 **Stock (Gudang)** → **Stock Levels**. Held per branch, because "do we have
 protein bars" is not a question until it says where.

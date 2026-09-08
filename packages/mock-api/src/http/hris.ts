@@ -9,7 +9,6 @@ import type {
 } from '@nuhabit/domain';
 import { WEEKDAYS } from '@nuhabit/domain';
 import { http, HttpResponse } from 'msw';
-import type { MockDb } from '../db';
 import {
   addDays,
   computeLateness,

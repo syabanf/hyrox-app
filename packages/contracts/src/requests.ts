@@ -25,7 +25,28 @@ export const RegisterMemberSchema = z.object({
   termsAccepted: z.literal(true),
 });
 
-export const AdminLoginSchema = z.object({ userId: z.string() });
+/**
+ * Staff sign-in. Either an email and a password, or - only where the server
+ * says demo mode is on - a user id straight off a role card.
+ */
+export const AdminLoginSchema = z
+  .object({
+    userId: z.string().optional(),
+    email: z.string().optional(),
+    password: z.string().optional(),
+  })
+  .refine((v) => Boolean(v.userId) || (Boolean(v.email) && Boolean(v.password)), {
+    message: 'Enter your email address and password.',
+  });
+
+/** An administrator handing somebody a password. */
+export const SetPasswordSchema = z.object({ password: z.string().min(10) });
+
+/** Somebody replacing their own. */
+export const ChangePasswordSchema = z.object({
+  currentPassword: z.string(),
+  newPassword: z.string().min(10),
+});
 
 // ── Profile ─────────────────────────────────────────────────────────────────
 export const UpdateProfileSchema = z.object({
@@ -293,6 +314,8 @@ export type OtpRequest = z.infer<typeof OtpRequestSchema>;
 export type OtpVerify = z.infer<typeof OtpVerifySchema>;
 export type RegisterMemberInput = z.infer<typeof RegisterMemberSchema>;
 export type AdminLoginInput = z.infer<typeof AdminLoginSchema>;
+export type SetPasswordInput = z.infer<typeof SetPasswordSchema>;
+export type ChangePasswordInput = z.infer<typeof ChangePasswordSchema>;
 export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>;
 export type TopUpRequest = z.infer<typeof TopUpRequestSchema>;
 export type ValidateVoucherInput = z.infer<typeof ValidateVoucherSchema>;

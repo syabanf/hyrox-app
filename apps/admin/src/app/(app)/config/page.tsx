@@ -7,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../lib/api';
 import { usePermissions } from '../../../lib/auth';
-import { Pencil, Trash2 } from 'lucide-react';
+import { KeyRound, Pencil, Trash2 } from 'lucide-react';
 import { ErrorNote, Modal, PageTitle, RowActions, SearchSelect } from '../../../components/ui';
 
 const TABS = ['Business Rules', 'Branches & Gates', 'Users', 'Roles', 'Audit Trail'] as const;
@@ -391,6 +391,7 @@ function UsersTab() {
   const qc = useQueryClient();
   const { can } = usePermissions();
   const [editing, setEditing] = useState<AdminUser | 'new' | null>(null);
+  const [credentialsFor, setCredentialsFor] = useState<AdminUser | null>(null);
   const [query, setQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
   const { data: users, isLoading } = useQuery({ queryKey: ['admin-users'], queryFn: api.auth.adminUsers });
@@ -462,6 +463,11 @@ function UsersTab() {
                       items={[
                         { label: 'Edit', icon: Pencil, onClick: () => setEditing(u) },
                         {
+                          label: 'Password & PIN',
+                          icon: KeyRound,
+                          onClick: () => setCredentialsFor(u),
+                        },
+                        {
                           label: 'Delete',
                           icon: Trash2,
                           tone: 'danger' as const,
@@ -478,6 +484,9 @@ function UsersTab() {
           </tbody>
         </table>
       </div>
+      {credentialsFor ? (
+        <CredentialsModal user={credentialsFor} onClose={() => setCredentialsFor(null)} />
+      ) : null}
       {editing ? (
         <UserModal
           user={editing === 'new' ? null : editing}
@@ -635,5 +644,118 @@ function AuditTab() {
         </tbody>
       </table>
     </div>
+  );
+}
+
+/**
+ * Somebody's credentials: the password they sign in with, and the PIN they
+ * type at a till to authorise somebody else's void.
+ *
+ * The two live together because they are the same question asked twice — what
+ * proves this is you — and apart because they answer for different things. A
+ * password is the whole of a login; a PIN only says a manager is standing
+ * here, and is offered only to roles that could authorise anything.
+ */
+function CredentialsModal({ user, onClose }: { user: AdminUser; onClose: () => void }) {
+  const [password, setPassword] = useState('');
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<string | null>(null);
+
+  const canAuthorise = ROLE_PERMISSIONS[user.role].includes('pos.void');
+
+  const setPasswordFor = useMutation({
+    mutationFn: () => api.admin.users.setPassword(user.id, password),
+    onSuccess: () => {
+      setError(null);
+      setPassword('');
+      setDone(`${user.name} can sign in with that password once, then has to choose their own.`);
+    },
+    onError: (e) => setError(e instanceof ApiError ? e.message : 'Could not set the password.'),
+  });
+
+  // The PIN travels as an argument rather than off state: "Remove it" clears
+  // the field and saves in the same click, and a mutation reading state would
+  // still be holding the digits that were just wiped.
+  const setPinFor = useMutation({
+    mutationFn: (value: string) => api.admin.users.setSupervisorPin(user.id, value),
+    onSuccess: (_result, value) => {
+      setError(null);
+      setDone(value === '' ? `${user.name} can no longer authorise at a till.` : 'PIN saved.');
+      setPin('');
+    },
+    onError: (e) => setError(e instanceof ApiError ? e.message : 'Could not set the PIN.'),
+  });
+
+  return (
+    <Modal title={`Credentials - ${user.name}`} onClose={onClose}>
+      <div className="flex flex-col gap-5">
+        <ErrorNote message={error} />
+        {done ? (
+          <p className="rounded-lg bg-brand/10 px-3 py-2 text-sm font-bold text-brand">{done}</p>
+        ) : null}
+
+        <div className="flex flex-col gap-2">
+          <label className="block">
+            <span className="a-label">New password</span>
+            <input
+              className="a-input"
+              type="password"
+              autoComplete="new-password"
+              placeholder="At least 10 characters"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </label>
+          <p className="text-xs text-muted">
+            You will know this password, so {user.name.split(' ')[0]} is made to replace it at the
+            next sign-in.
+          </p>
+          <button
+            className="a-btn self-start"
+            disabled={password.length < 10 || setPasswordFor.isPending}
+            onClick={() => setPasswordFor.mutate()}
+          >
+            Set the password
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-2 border-t border-line pt-5">
+          <label className="block">
+            <span className="a-label">Supervisor PIN</span>
+            <input
+              className="a-input"
+              inputMode="numeric"
+              maxLength={6}
+              placeholder="4 to 6 digits"
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+              disabled={!canAuthorise}
+            />
+          </label>
+          <p className="text-xs text-muted">
+            {canAuthorise
+              ? 'Typed at the till to authorise a void, without handing over a login.'
+              : `${user.role.replaceAll('_', ' ').toLowerCase()} cannot authorise at a till, so a PIN would do nothing.`}
+          </p>
+          <div className="flex gap-2">
+            <button
+              className="a-btn self-start"
+              disabled={!canAuthorise || pin.length < 4 || setPinFor.isPending}
+              onClick={() => setPinFor.mutate(pin)}
+            >
+              Save the PIN
+            </button>
+            <button
+              className="a-btn-ghost self-start"
+              disabled={!canAuthorise || setPinFor.isPending}
+              onClick={() => setPinFor.mutate('')}
+            >
+              Remove it
+            </button>
+          </div>
+        </div>
+      </div>
+    </Modal>
   );
 }

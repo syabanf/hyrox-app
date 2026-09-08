@@ -8,6 +8,9 @@ export const ROUTES = {
   register: `${API_BASE}/auth/register`,
   adminUsers: `${API_BASE}/admin/auth/users`,
   adminLogin: `${API_BASE}/admin/auth/login`,
+  adminAuthMode: `${API_BASE}/admin/auth/mode`,
+  adminChangePassword: `${API_BASE}/admin/auth/password`,
+  adminUserPassword: (id: string) => `${API_BASE}/admin/users/${id}/password`,
   // member
   me: `${API_BASE}/me`,
   wallet: `${API_BASE}/me/wallet`,

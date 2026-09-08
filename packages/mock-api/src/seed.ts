@@ -29,6 +29,12 @@ import { createEmptyDb } from './db';
 import { seedHris } from './hris-seed';
 
 /**
+ * The password every seeded staff account signs in with, offline and against
+ * the real backend alike - the Go seeder uses the same string.
+ */
+export const DEMO_PASSWORD = 'nuhabit-demo-2026';
+
+/**
  * Deterministic demo dataset (faker seed 42), anchored to boot time so the
  * schedule always spans "last week … next week" relative to today.
  */

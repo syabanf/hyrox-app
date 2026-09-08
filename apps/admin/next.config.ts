@@ -12,6 +12,21 @@ const nextConfig: NextConfig = {
       { source: '/', destination: '/admin', basePath: false as const, permanent: false },
     ];
   },
+  // The panel calls /api on its own origin, so the browser never makes a
+  // cross-origin request and CORS never enters the picture. In production
+  // nginx routes /api to the Go backend before Next ever sees it; in
+  // development this rewrite does the same job, so `pnpm dev` talks to a
+  // local backend with nothing else to configure.
+  async rewrites() {
+    const target = process.env.API_PROXY_TARGET ?? 'http://localhost:8080';
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${target}/api/:path*`,
+        basePath: false as const,
+      },
+    ];
+  },
   transpilePackages: [
     '@nuhabit/domain',
     '@nuhabit/application',

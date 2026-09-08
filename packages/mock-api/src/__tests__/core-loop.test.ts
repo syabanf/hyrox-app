@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createMockServer } from '../msw/node';
+import { DEMO_PASSWORD } from '../seed';
 
 const { api, server } = createMockServer();
 const BASE = 'http://localhost';
@@ -172,6 +173,35 @@ describe('end-to-end core loop through the mock API', () => {
     });
     expect(replay.data.decision).toBe('DENIED');
     expect(replay.data.reason).toBe('TOKEN_CONSUMED');
+  });
+
+  // The offline demo takes the same two ways in as the real server: an email
+  // with the demo password, or a role card.
+  it('signs staff in by email and password, and refuses a wrong one', async () => {
+    const ok = await call('POST', '/api/admin/auth/login', {
+      body: { email: 'ALYA@nuhabit.id', password: DEMO_PASSWORD },
+    });
+    expect(ok.status).toBe(200);
+    expect(ok.data.user.id).toBe('adm_super');
+    expect(ok.data.mustChangePassword).toBe(false);
+
+    const wrong = await call('POST', '/api/admin/auth/login', {
+      body: { email: 'alya@nuhabit.id', password: 'not-it' },
+    });
+    const unknown = await call('POST', '/api/admin/auth/login', {
+      body: { email: 'nobody@nuhabit.id', password: 'not-it' },
+    });
+    expect(wrong.status).toBe(401);
+    // The two failures must be indistinguishable, or the form is a directory.
+    expect(unknown.status).toBe(401);
+    expect(unknown.data.error.message).toBe(wrong.data.error.message);
+  });
+
+  it('reports demo mode to the login screen', async () => {
+    const mode = await call('GET', '/api/admin/auth/mode');
+    expect(mode.status).toBe(200);
+    expect(mode.data.demoRoster).toBe(true);
+    expect(mode.data.minPasswordLength).toBe(10);
   });
 
   it('waitlists when a session is full, and cancellation auto-promotes', async () => {

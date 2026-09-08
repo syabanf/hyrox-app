@@ -8,7 +8,6 @@ import type {
   Batch,
   CampaignRecipient,
   CampaignReport,
-  ContactPreference,
   Conversation,
   Delivery,
   DeliveryItem,

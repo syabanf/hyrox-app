@@ -49,6 +49,9 @@ func newHarness(t *testing.T) *harness {
 	t.Setenv("DATABASE_URL", dsn)
 	t.Setenv("AUTH_SECRET", "integration-test-secret")
 	t.Setenv("AUTH_DEMO_OTP", "true")
+	// A real PBKDF2 cost would add half a second of seeding to every test.
+	// The hashing itself is covered by the auth package's own tests.
+	t.Setenv("AUTH_PASSWORD_ITERATIONS", "1000")
 	t.Setenv("APP_ENV", "test")
 	// The Instagram webhook refuses everything unless it is configured, so
 	// the harness configures it — the signature check is the thing under test,
@@ -70,7 +73,7 @@ func newHarness(t *testing.T) *harness {
 		t.Fatalf("migrating: %v", err)
 	}
 	truncateAll(t, db)
-	if _, err := seed.New(db, clock.Real{}).Run(ctx); err != nil {
+	if _, err := seed.New(db, clock.Real{}, cfg.Auth.PasswordIterations).Run(ctx); err != nil {
 		t.Fatalf("seeding: %v", err)
 	}
 

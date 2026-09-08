@@ -83,6 +83,7 @@ func truncateAll(t *testing.T, db *database.DB) {
 			incentives.payouts, incentives.schemes,
 			engagement.challenge_joins, engagement.challenges,
 			engagement.member_notifications, engagement.campaigns,
+			pos.payments, pos.order_items, pos.orders, pos.shifts, pos.products, pos.categories,
 			crm.redemptions, crm.xp_ledger, crm.rewards, crm.member_profiles,
 			crm.xp_rules, crm.tiers,
 			purchasing.purchase_return_items, purchasing.purchase_returns,

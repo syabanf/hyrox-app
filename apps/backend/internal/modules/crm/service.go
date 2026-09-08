@@ -826,3 +826,69 @@ func (s *Service) DecideRedemption(ctx context.Context, redemptionID string,
 	}
 	return RedemptionView{}, httpx.NotFound("redemption")
 }
+
+// ── The till's view of loyalty ───────────────────────────────────────────────
+
+// TierDiscountPercent is what a member's standing takes off a sale. Somebody
+// with no profile yet is simply at the bottom, which is worth nothing.
+func (s *Service) TierDiscountPercent(ctx context.Context, memberID string) (float64, error) {
+	profile, found, err := s.repo.ProfileByMember(ctx, memberID)
+	if err != nil {
+		return 0, err
+	}
+	if !found {
+		return 0, nil
+	}
+	tiers, err := s.repo.Tiers(ctx)
+	if err != nil {
+		return 0, err
+	}
+	for _, tier := range tiers {
+		if tier.Code == profile.TierCode {
+			return tier.DiscountPercent, nil
+		}
+	}
+	return 0, nil
+}
+
+// AwardSale posts the points for a completed sale.
+//
+// The key is the sale's own id, so completing it twice could never award the
+// points twice even if something upstream allowed the attempt.
+func (s *Service) AwardSale(ctx context.Context, memberID, branchID, orderID string,
+	amountIDR float64, items int, bonusXP int, idempotencyKey string) (int, error) {
+
+	result, err := s.Award(ctx, AwardInput{
+		MemberID: memberID, Channel: domain.XPFromPOS, Type: "SALE",
+		BranchID: branchID, AmountIDR: amountIDR, Items: items,
+		IdempotencyKey: idempotencyKey,
+		ReferenceType:  "POS_ORDER", ReferenceID: orderID,
+		Description: "Bought at the counter",
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	earned := 0
+	if result.Entry != nil {
+		earned = result.Entry.XPDelta
+	}
+	// A product can be worth extra points on top of what the spend earns. It
+	// is a second entry with its own key so the two are separable later.
+	if bonusXP > 0 && !result.Duplicate {
+		bonus, err := s.Award(ctx, AwardInput{
+			MemberID: memberID, Channel: domain.XPFromPOS, Type: "SALE_BONUS",
+			BranchID: branchID, Items: bonusXP,
+			IdempotencyKey: idempotencyKey + ":bonus",
+			ReferenceType:  "POS_ORDER", ReferenceID: orderID,
+			Description: "Bonus points on the counter sale",
+		})
+		if err != nil {
+			return earned, err
+		}
+		if bonus.Entry != nil {
+			earned += bonus.Entry.XPDelta
+		}
+	}
+	return earned, nil
+}

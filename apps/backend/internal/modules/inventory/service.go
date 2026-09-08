@@ -878,3 +878,23 @@ func (s *Service) ItemNames(ctx context.Context) (map[string]string, error) {
 	}
 	return names, nil
 }
+
+// UnitCost is an item's weighted-average cost, for callers that need to freeze
+// a margin at the moment of sale.
+func (s *Service) UnitCost(ctx context.Context, itemID string) (float64, error) {
+	item, err := s.repo.Item(ctx, itemID, false)
+	if err != nil {
+		return 0, err
+	}
+	return item.UnitCostIDR, nil
+}
+
+// OnHand is what one branch actually has, for a till deciding whether it can
+// sell what it is showing.
+func (s *Service) OnHand(ctx context.Context, itemID, branchID string) (domain.Quantity, error) {
+	level, err := s.repo.Level(ctx, itemID, branchID, false)
+	if err != nil {
+		return 0, err
+	}
+	return level.QtyOnHand, nil
+}

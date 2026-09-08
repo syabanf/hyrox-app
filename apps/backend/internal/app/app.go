@@ -21,6 +21,7 @@ import (
 	"github.com/syabanf/nuhabit-backend/internal/modules/identity"
 	"github.com/syabanf/nuhabit-backend/internal/modules/incentives"
 	"github.com/syabanf/nuhabit-backend/internal/modules/inventory"
+	"github.com/syabanf/nuhabit-backend/internal/modules/pos"
 	"github.com/syabanf/nuhabit-backend/internal/modules/purchasing"
 	"github.com/syabanf/nuhabit-backend/internal/modules/reporting"
 	"github.com/syabanf/nuhabit-backend/internal/modules/scheduling"
@@ -51,6 +52,7 @@ const (
 	ModuleInventory  = "inventory"
 	ModulePurchasing = "purchasing"
 	ModuleCRM        = "crm"
+	ModulePOS        = "pos"
 )
 
 // App is a wired-up process: an HTTP handler plus the background work that
@@ -76,6 +78,7 @@ type App struct {
 	Inventory  *inventory.Service
 	Purchasing *purchasing.Service
 	CRM        *crm.Service
+	POS        *pos.Service
 
 	clock clock.Clock
 }
@@ -128,6 +131,8 @@ func New(cfg config.Config, db *database.DB) *App {
 		purchasingStock{inventoryService}, catalogService, ids, now, auditor, cfg.StudioLocation())
 	crmService := crm.NewService(db, crm.NewRepository(db), identityService,
 		ids, now, auditor, cfg.StudioLocation())
+	posService := pos.NewService(db, pos.NewRepository(db), posStock{inventoryService},
+		crmService, identityService, ids, now, auditor, cfg.StudioLocation())
 	trainingService := training.NewService(training.NewRepository(db), now)
 
 	reportingService := reporting.NewService(reporting.Deps{
@@ -192,6 +197,9 @@ func New(cfg config.Config, db *database.DB) *App {
 	if cfg.Modules.IsEnabled(ModuleCRM) {
 		crm.NewHandler(crmService, guard).Mount(router)
 	}
+	if cfg.Modules.IsEnabled(ModulePOS) {
+		pos.NewHandler(posService, guard).Mount(router)
+	}
 
 	app := &App{
 		Config:     cfg,
@@ -210,6 +218,7 @@ func New(cfg config.Config, db *database.DB) *App {
 		Inventory:  inventoryService,
 		Purchasing: purchasingService,
 		CRM:        crmService,
+		POS:        posService,
 		clock:      now,
 	}
 

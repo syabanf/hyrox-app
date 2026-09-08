@@ -27,18 +27,19 @@ func New(db *database.DB, c clock.Clock) *Seeder { return &Seeder{db: db, clock:
 
 // Summary reports what the seed produced.
 type Summary struct {
-	Branches   int
-	Coaches    int
-	ClassTypes int
-	Packages   int
-	Members    int
-	AdminUsers int
-	Sessions   int
-	Exercises  int
-	Employees  int
-	StockItems int
-	Suppliers  int
-	Tiers      int
+	Branches    int
+	Coaches     int
+	ClassTypes  int
+	Packages    int
+	Members     int
+	AdminUsers  int
+	Sessions    int
+	Exercises   int
+	Employees   int
+	StockItems  int
+	Suppliers   int
+	Tiers       int
+	POSProducts int
 }
 
 // Run loads the demo studio in one transaction: a half-seeded database is
@@ -93,6 +94,9 @@ func (s *Seeder) Run(ctx context.Context) (Summary, error) {
 			return err
 		}
 		if summary.Tiers, err = s.seedLoyalty(ctx); err != nil {
+			return err
+		}
+		if summary.POSProducts, err = s.seedPOS(ctx); err != nil {
 			return err
 		}
 		return nil

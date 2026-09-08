@@ -5,6 +5,7 @@ import (
 
 	"github.com/syabanf/nuhabit-backend/internal/domain"
 	"github.com/syabanf/nuhabit-backend/internal/modules/inventory"
+	"github.com/syabanf/nuhabit-backend/internal/modules/pos"
 	"github.com/syabanf/nuhabit-backend/internal/modules/purchasing"
 )
 
@@ -43,4 +44,32 @@ func (a purchasingStock) ReleaseOnOrder(ctx context.Context, itemID, branchID st
 
 func (a purchasingStock) ItemNames(ctx context.Context) (map[string]string, error) {
 	return a.inventory.ItemNames(ctx)
+}
+
+// posStock and posLoyalty are the till's side of the same arrangement: POS
+// declares two narrow ports and this is where they meet the real services.
+type posStock struct{ inventory *inventory.Service }
+
+func (a posStock) Issue(ctx context.Context, itemID, branchID string, qty domain.Quantity,
+	ref pos.StockRef, actor pos.StockActor) error {
+	_, err := a.inventory.Issue(ctx, itemID, branchID, qty, domain.MovementOut,
+		inventory.Reference{Type: ref.Type, ID: ref.ID, Number: ref.Number},
+		inventory.Actor{ID: actor.ID, Name: actor.Name})
+	return err
+}
+
+func (a posStock) Restock(ctx context.Context, itemID, branchID string, qty domain.Quantity,
+	unitCostIDR float64, ref pos.StockRef, actor pos.StockActor) error {
+	_, err := a.inventory.Receive(ctx, itemID, branchID, qty, unitCostIDR,
+		inventory.Reference{Type: ref.Type, ID: ref.ID, Number: ref.Number},
+		inventory.Actor{ID: actor.ID, Name: actor.Name})
+	return err
+}
+
+func (a posStock) UnitCost(ctx context.Context, itemID string) (float64, error) {
+	return a.inventory.UnitCost(ctx, itemID)
+}
+
+func (a posStock) OnHand(ctx context.Context, itemID, branchID string) (domain.Quantity, error) {
+	return a.inventory.OnHand(ctx, itemID, branchID)
 }

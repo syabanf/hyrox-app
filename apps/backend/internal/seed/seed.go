@@ -53,6 +53,8 @@ type Summary struct {
 	Tiers       int
 	POSProducts int
 	Activities  int
+	Bookings    int
+	Campaigns   int
 	Pictures    int
 }
 
@@ -114,6 +116,15 @@ func (s *Seeder) Run(ctx context.Context) (Summary, error) {
 			return err
 		}
 		if summary.POSProducts, err = s.seedPOS(ctx); err != nil {
+			return err
+		}
+		// After the sessions and the members exist, because it books the one
+		// against the other.
+		if summary.Bookings, err = s.seedLifecycle(ctx); err != nil {
+			return err
+		}
+		// Points come from visits and purchases, so this runs after both.
+		if summary.Campaigns, err = s.seedCRMActivity(ctx); err != nil {
 			return err
 		}
 		// Last, because it fills in pictures for rows the other seeders made.

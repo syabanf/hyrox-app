@@ -63,17 +63,28 @@ import type {
   InventoryItemDetailView,
   InventoryItemView,
   BatchView,
+  CampaignReportView,
+  ConversationView,
   ExpiryReportView,
+  InboxOverviewView,
   InventoryOverviewView,
   ItemPackView,
+  LeaveReviewInput,
   LoyaltyMemberDetailView,
+  MemberBadgeView,
   LoyaltyProfileView,
   LoyaltySummaryView,
   POSOrderView,
   POSOverviewView,
   POSProductView,
   PurchaseOrderLineInput,
+  OpenConversationInput,
+  PostMessageInput,
+  ReviewsForView,
+  ReviewView,
   ScanView,
+  SetConsentInput,
+  TemplatePreviewView,
   PurchaseOrderView,
   PurchaseRequestLineInput,
   PurchaseRequestView,
@@ -86,11 +97,13 @@ import type {
   StockTakeView,
   TenderInput,
   TransferStockInput,
+  UpsertBadgeInput,
   UpsertInventoryItemInput,
   UpsertPackInput,
   UpsertPOSProductInput,
   UpsertRewardInput,
   UpsertSupplierInput,
+  UpsertTemplateInput,
   UpsertTierInput,
   XPAwardView,
 } from '@nuhabit/contracts';
@@ -183,10 +196,14 @@ import type {
   CreditPackage,
   Exercise,
   Gate,
+  Badge,
+  ContactPreference,
   Gear,
   GeneratedWorkout,
   ItemPack,
   Member,
+  MemberBadge,
+  MessageTemplate,
   MemberNotification,
   Department,
   EmploymentStatus,
@@ -195,6 +212,7 @@ import type {
   Payment,
   Position,
   ProductPrice,
+  Review,
   RaceEvent,
   SalesChannel,
   Shift,
@@ -684,6 +702,68 @@ export function createApiClient(options: ApiClientOptions) {
             post<XPAwardView>(`/api/admin/crm/members/${id}/adjust`, input),
           redeem: (id: string, rewardId: string) =>
             post<RedemptionView>(`/api/admin/crm/members/${id}/redeem`, { rewardId }),
+          /** What this member has done, as opposed to what they have spent. */
+          badges: (id: string) => get<MemberBadgeView[]>(`/api/admin/crm/members/${id}/badges`),
+          awardBadge: (id: string, badgeId: string, note?: string) =>
+            post<MemberBadge>(`/api/admin/crm/members/${id}/badges`, { badgeId, note: note ?? null }),
+          revokeBadge: (id: string, badgeId: string) =>
+            del(`/api/admin/crm/members/${id}/badges/${badgeId}`),
+          /** Awards everything newly qualified for. Idempotent, so it is cheap to run. */
+          evaluateBadges: (id: string) =>
+            post<Badge[]>(`/api/admin/crm/members/${id}/badges/evaluate`, {}),
+          /** Whether we may contact them, per channel. */
+          consent: (id: string) =>
+            get<ContactPreference[]>(`/api/admin/crm/members/${id}/consent`),
+          setConsent: (id: string, input: SetConsentInput) =>
+            put<ContactPreference>(`/api/admin/crm/members/${id}/consent`, input),
+        },
+        badges: {
+          list: (activeOnly = false) =>
+            get<Badge[]>('/api/admin/crm/badges', { activeOnly: activeOnly ? 'true' : '' }),
+          save: (input: UpsertBadgeInput) => put<Badge>('/api/admin/crm/badges', input),
+        },
+        /**
+         * The inbox. The one number that matters is the gap between a member
+         * speaking and somebody answering, and it is computed rather than
+         * maintained by hand.
+         */
+        inbox: () => get<InboxOverviewView>('/api/admin/crm/inbox'),
+        conversations: {
+          list: (query?: { status?: string; channel?: string; assignedTo?: string; memberId?: string; query?: string; limit?: number }) =>
+            get<ConversationView[]>('/api/admin/crm/conversations', query),
+          get: (id: string) => get<ConversationView>(`/api/admin/crm/conversations/${id}`),
+          open: (input: OpenConversationInput) =>
+            post<ConversationView>('/api/admin/crm/conversations', input),
+          update: (id: string, input: { status?: string; priority?: string; assignedTo?: string | null; assignedName?: string | null; tags?: string[]; memberId?: string | null; setMember?: boolean }) =>
+            put<ConversationView>(`/api/admin/crm/conversations/${id}`, input),
+          reply: (id: string, input: PostMessageInput) =>
+            post<ConversationView>(`/api/admin/crm/conversations/${id}/messages`, input),
+        },
+        templates: {
+          list: (channel?: string) =>
+            get<MessageTemplate[]>('/api/admin/crm/templates', { channel }),
+          save: (input: UpsertTemplateInput) =>
+            put<MessageTemplate>('/api/admin/crm/templates', input),
+          /** Renders against real values and says which placeholders had none. */
+          preview: (id: string, values: Record<string, string>) =>
+            post<TemplatePreviewView>(`/api/admin/crm/templates/${id}/preview`, { values }),
+        },
+        reviews: {
+          list: (query?: { subjectType?: string; subjectId?: string; memberId?: string; status?: string; unansweredOnly?: string; maxRating?: number; limit?: number }) =>
+            get<ReviewView[]>('/api/admin/crm/reviews', query),
+          summary: (subjectType: string, subjectId: string) =>
+            get<ReviewsForView>('/api/admin/crm/reviews/summary', { subjectType, subjectId }),
+          reply: (id: string, reply: string) =>
+            post<Review>(`/api/admin/crm/reviews/${id}/reply`, { reply }),
+          /** Hidden, never deleted: it leaves the average and stays in the list. */
+          setStatus: (id: string, status: string) =>
+            put<Review>(`/api/admin/crm/reviews/${id}/status`, { status }),
+        },
+        campaigns: {
+          report: (id: string) =>
+            get<CampaignReportView>(`/api/admin/crm/campaigns/${id}/report`),
+          mark: (id: string, memberId: string, event: 'OPENED' | 'CLICKED') =>
+            post<{ marked: boolean }>(`/api/admin/crm/campaigns/${id}/mark`, { memberId, event }),
         },
         ledger: (query?: { memberId?: string; direction?: string; limit?: number }) =>
           get<XPEntry[]>('/api/admin/crm/ledger', query),

@@ -791,3 +791,202 @@ export interface ExpirySummary {
   expiredQty: number;
   expiredValueIdr: number;
 }
+
+// ── Reaching a member, and hearing back ─────────────────────────────────────
+
+export const BADGE_METRICS = [
+  'VISITS', 'BOOKINGS', 'SPEND_IDR', 'XP_EARNED', 'STREAK_DAYS', 'REFERRALS', 'MANUAL',
+] as const;
+export type BadgeMetric = (typeof BADGE_METRICS)[number];
+
+export const BADGE_METRIC_LABELS: Record<BadgeMetric, string> = {
+  VISITS: 'Visits',
+  BOOKINGS: 'Bookings',
+  SPEND_IDR: 'Spend',
+  XP_EARNED: 'Points earned',
+  STREAK_DAYS: 'Streak',
+  REFERRALS: 'Referrals',
+  MANUAL: 'Given by hand',
+};
+
+/**
+ * Something a member has done, as opposed to something they have spent.
+ *
+ * A tier moves both ways with activity; a badge is a fact about the past that
+ * never becomes untrue.
+ */
+export interface Badge {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  metric: BadgeMetric;
+  threshold: number;
+  bonusXp: number;
+  icon: string | null;
+  sortOrder: number;
+  active: boolean;
+}
+
+export interface MemberBadge {
+  id: string;
+  memberId: string;
+  badgeId: string;
+  /** Frozen at the moment it was earned, so a later correction cannot take it away. */
+  earnedValue: number;
+  earnedAt: string;
+  awardedBy: string | null;
+  note: string | null;
+}
+
+export const CONTACT_CHANNELS = ['PUSH', 'EMAIL', 'WHATSAPP', 'SMS'] as const;
+export type ContactChannel = (typeof CONTACT_CHANNELS)[number];
+
+export const CONTACT_CHANNEL_LABELS: Record<ContactChannel, string> = {
+  PUSH: 'Push',
+  EMAIL: 'Email',
+  WHATSAPP: 'WhatsApp',
+  SMS: 'SMS',
+};
+
+/**
+ * What a member has said about one channel.
+ *
+ * Its existence is the point: no row means they have not been asked, which is
+ * a different fact from having said yes.
+ */
+export interface ContactPreference {
+  memberId: string;
+  channel: ContactChannel;
+  optedIn: boolean;
+  reason: string | null;
+  /** MARKETING is refusable; ALL silences even a booking confirmation. */
+  scope: 'MARKETING' | 'ALL';
+  changedAt: string;
+  changedBy: string | null;
+}
+
+export const RECIPIENT_STATUSES = [
+  'PENDING', 'SENT', 'SKIPPED', 'FAILED', 'OPENED', 'CLICKED',
+] as const;
+export type RecipientStatus = (typeof RECIPIENT_STATUSES)[number];
+
+export interface CampaignRecipient {
+  id: string;
+  campaignId: string;
+  memberId: string;
+  status: RecipientStatus;
+  skipReason: string | null;
+  notificationId: string | null;
+  sentAt: string | null;
+  openedAt: string | null;
+  clickedAt: string | null;
+  createdAt: string;
+}
+
+export interface CampaignReport {
+  audience: number;
+  sent: number;
+  skipped: number;
+  failed: number;
+  opened: number;
+  clicked: number;
+  /** Against what was sent, not the audience. */
+  openRate: number;
+  clickRate: number;
+  skipReasons: Record<string, number>;
+}
+
+export const CONVERSATION_STATUSES = ['OPEN', 'PENDING', 'RESOLVED', 'CLOSED'] as const;
+export type ConversationStatus = (typeof CONVERSATION_STATUSES)[number];
+
+export const CONVERSATION_CHANNELS = ['INBOX', 'WHATSAPP', 'EMAIL', 'INSTAGRAM', 'WALK_IN'] as const;
+export type ConversationChannel = (typeof CONVERSATION_CHANNELS)[number];
+
+export interface Conversation {
+  id: string;
+  memberId: string | null;
+  contactName: string;
+  contactHandle: string | null;
+  channel: ConversationChannel;
+  subject: string;
+  status: ConversationStatus;
+  priority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+  assignedTo: string | null;
+  assignedName: string | null;
+  branchId: string | null;
+  tags: string[];
+  lastMemberAt: string | null;
+  lastStaffAt: string | null;
+  firstResponseSeconds: number | null;
+  resolvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConversationMessage {
+  id: string;
+  conversationId: string;
+  direction: 'INBOUND' | 'OUTBOUND';
+  body: string;
+  authorId: string | null;
+  authorName: string | null;
+  templateId: string | null;
+  externalId: string | null;
+  /** A note to colleagues rather than a reply. It cannot stop the clock. */
+  internal: boolean;
+  createdAt: string;
+}
+
+export interface InboxMetrics {
+  open: number;
+  pending: number;
+  waiting: number;
+  resolved: number;
+  unassigned: number;
+  /** A median, not a mean: one late thread should not sink a good day. */
+  medianFirstResponseSeconds: number;
+  longestWaitSeconds: number;
+}
+
+export interface MessageTemplate {
+  id: string;
+  code: string;
+  name: string;
+  channel: string;
+  subject: string | null;
+  body: string;
+  variables: string[];
+  active: boolean;
+}
+
+export const REVIEW_SUBJECTS = ['SESSION', 'COACH', 'BRANCH', 'PRODUCT'] as const;
+export type ReviewSubject = (typeof REVIEW_SUBJECTS)[number];
+
+export interface Review {
+  id: string;
+  memberId: string;
+  subjectType: ReviewSubject;
+  subjectId: string;
+  rating: number;
+  comment: string | null;
+  /** Backed by a visit that could be found. Not a gate — a weighting. */
+  verified: boolean;
+  visitId: string | null;
+  status: 'PUBLISHED' | 'HIDDEN' | 'FLAGGED';
+  reply: string | null;
+  repliedBy: string | null;
+  repliedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReviewSummary {
+  count: number;
+  average: number;
+  distribution: Record<number, number>;
+  verified: number;
+  unanswered: number;
+  /** Poorly rated and unanswered: the list somebody should work through. */
+  negativeNew: number;
+}

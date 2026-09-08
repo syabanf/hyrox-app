@@ -3,11 +3,19 @@ import type {
   CashierShift,
   GoodsReceipt,
   GoodsReceiptItem,
+  Badge,
   Batch,
+  CampaignRecipient,
+  CampaignReport,
+  ContactPreference,
+  Conversation,
+  ConversationMessage,
   ExpiryState,
   ExpirySummary,
+  InboxMetrics,
   InventoryItem,
   ItemPack,
+  MemberBadge,
   LoyaltyProfile,
   LoyaltyTier,
   POSOrder,
@@ -22,6 +30,8 @@ import type {
   POSProduct,
   PurchaseReturnItem,
   Redemption,
+  Review,
+  ReviewSummary,
   StockLevel,
   StockMovement,
   StockTake,
@@ -483,4 +493,103 @@ export interface TenderInput {
   method: string;
   amountIdr: number;
   reference?: string | null;
+}
+
+// ── Reaching a member, and hearing back ─────────────────────────────────────
+
+/** An earned badge with the badge itself, so a profile need not join two lists. */
+export interface MemberBadgeView extends MemberBadge {
+  badge: Badge;
+}
+
+export interface ConversationView extends Conversation {
+  memberName: string;
+  /** The member is waiting on us rather than the reverse. */
+  waiting: boolean;
+  waitedSeconds: number;
+  messages: ConversationMessage[];
+}
+
+export interface InboxOverviewView {
+  metrics: InboxMetrics;
+  /** The queue itself: unanswered, longest wait first. */
+  oldest: ConversationView[];
+}
+
+export interface ReviewView extends Review {
+  memberName: string;
+}
+
+export interface ReviewsForView {
+  summary: ReviewSummary;
+  reviews: ReviewView[];
+}
+
+export interface CampaignReportView {
+  report: CampaignReport;
+  recipients: CampaignRecipient[];
+}
+
+export interface TemplatePreviewView {
+  subject: string;
+  body: string;
+  /** Placeholders with nothing to fill them, caught before four hundred people see them. */
+  missing: string[];
+}
+
+export interface UpsertBadgeInput {
+  code: string;
+  name: string;
+  description?: string;
+  metric: string;
+  threshold: number;
+  bonusXp?: number;
+  icon?: string | null;
+  sortOrder?: number;
+  active?: boolean;
+}
+
+export interface SetConsentInput {
+  channel: string;
+  optedIn: boolean;
+  reason?: string | null;
+  /** MARKETING by default: refusing campaigns is not refusing a receipt. */
+  scope?: 'MARKETING' | 'ALL';
+}
+
+export interface OpenConversationInput {
+  memberId?: string | null;
+  contactName: string;
+  contactHandle?: string | null;
+  channel?: string;
+  subject?: string;
+  priority?: string;
+  branchId?: string | null;
+  tags?: string[];
+  body: string;
+  inbound?: boolean;
+}
+
+export interface PostMessageInput {
+  body: string;
+  templateId?: string | null;
+  internal?: boolean;
+  inbound?: boolean;
+}
+
+export interface UpsertTemplateInput {
+  code: string;
+  name: string;
+  channel?: string;
+  subject?: string | null;
+  body: string;
+  variables?: string[];
+  active?: boolean;
+}
+
+export interface LeaveReviewInput {
+  subjectType: string;
+  subjectId: string;
+  rating: number;
+  comment?: string | null;
 }

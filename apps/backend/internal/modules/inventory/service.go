@@ -864,3 +864,17 @@ func (s *Service) CancelStockTake(ctx context.Context, takeID string, actor Acto
 	s.record(ctx, "inventory.stock_take", takeID, "CANCEL", actor, nil)
 	return s.viewStockTake(ctx, cancelled)
 }
+
+// ItemNames is the catalogue as a lookup, for modules that need to label a
+// line without a second round trip.
+func (s *Service) ItemNames(ctx context.Context) (map[string]string, error) {
+	items, err := s.repo.Items(ctx, ItemFilter{})
+	if err != nil {
+		return nil, err
+	}
+	names := make(map[string]string, len(items))
+	for _, item := range items {
+		names[item.ID] = item.Name
+	}
+	return names, nil
+}

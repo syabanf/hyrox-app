@@ -37,6 +37,7 @@ type Summary struct {
 	Exercises  int
 	Employees  int
 	StockItems int
+	Suppliers  int
 }
 
 // Run loads the demo studio in one transaction: a half-seeded database is
@@ -85,6 +86,9 @@ func (s *Seeder) Run(ctx context.Context) (Summary, error) {
 			return err
 		}
 		if summary.StockItems, err = s.seedInventory(ctx); err != nil {
+			return err
+		}
+		if summary.Suppliers, err = s.seedPurchasing(ctx); err != nil {
 			return err
 		}
 		return nil

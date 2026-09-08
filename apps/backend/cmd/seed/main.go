@@ -66,6 +66,7 @@ func run() error {
 		"exercises", summary.Exercises,
 		"employees", summary.Employees,
 		"stockItems", summary.StockItems,
+		"suppliers", summary.Suppliers,
 	)
 	return nil
 }

@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, PageTitle, Pager, StatCard } from '../../../../components/ui';
+import { ErrorNote, PageTitle, Pager, SearchSelect, StatCard } from '../../../../components/ui';
 
 export default function AccessLogsPage() {
   const qc = useQueryClient();
@@ -67,25 +67,45 @@ export default function AccessLogsPage() {
             setPage(0);
           }}
         />
-        <select className="a-input max-w-44" value={gateId} onChange={(e) => setGateId(e.target.value)}>
-          <option value="">All gates</option>
-          {(gates ?? []).map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.name}
-            </option>
-          ))}
-        </select>
-        <select className="a-input max-w-40" value={result} onChange={(e) => setResult(e.target.value)}>
-          <option value="">All results</option>
-          <option value="ALLOWED">Allowed</option>
-          <option value="DENIED">Denied</option>
-          <option value="CONFLICT">Conflict</option>
-        </select>
-        <select className="a-input max-w-40" value={mode} onChange={(e) => setMode(e.target.value)}>
-          <option value="">All modes</option>
-          <option value="ONLINE">Online</option>
-          <option value="OFFLINE">Offline</option>
-        </select>
+        <div className="max-w-44">
+          <SearchSelect
+            value={gateId}
+            onChange={setGateId}
+            allowEmpty
+            emptyLabel='All gates'
+            placeholder="Search…"
+            options={[
+              ...(gates ?? []).map((g) => ({ value: g.id, label: g.name })),
+            ]}
+          />
+        </div>
+        <div className="max-w-40">
+          <SearchSelect
+            value={result}
+            onChange={setResult}
+            allowEmpty
+            emptyLabel='All results'
+            placeholder="Search…"
+            options={[
+              { value: 'ALLOWED', label: 'Allowed' },
+              { value: 'DENIED', label: 'Denied' },
+              { value: 'CONFLICT', label: 'Conflict' },
+            ]}
+          />
+        </div>
+        <div className="max-w-40">
+          <SearchSelect
+            value={mode}
+            onChange={setMode}
+            allowEmpty
+            emptyLabel='All modes'
+            placeholder="Search…"
+            options={[
+              { value: 'ONLINE', label: 'Online' },
+              { value: 'OFFLINE', label: 'Offline' },
+            ]}
+          />
+        </div>
       </div>
       {isLoading ? (
         <Spinner label="Loading logs…" />

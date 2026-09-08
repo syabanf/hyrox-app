@@ -4,7 +4,7 @@ import { Spinner, StatusBadge } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Send, StickyNote } from 'lucide-react';
 import { useState } from 'react';
-import { ErrorNote, PageTitle, QueryError, StatCard } from '../../../../components/ui';
+import { ErrorNote, PageTitle, QueryError, SearchSelect, StatCard } from '../../../../components/ui';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
 
@@ -187,17 +187,21 @@ function Thread({
         <div className="flex items-center gap-2">
           <StatusBadge status={conversation.status} />
           {canReply && conversation.status !== 'CLOSED' ? (
-            <select
-              className="a-input !py-1 text-xs"
-              value=""
-              onChange={(e) => e.target.value && setStatus.mutate(e.target.value)}
-            >
-              <option value="">Move to…</option>
-              <option value="OPEN">Open</option>
-              <option value="PENDING">Waiting on them</option>
-              <option value="RESOLVED">Resolved</option>
-              <option value="CLOSED">Closed</option>
-            </select>
+            <div className="!py-1 text-xs">
+              <SearchSelect
+                value=""
+                onChange={(v) => v && setStatus.mutate(v)}
+                allowEmpty
+                emptyLabel="Move to…"
+                placeholder="Search…"
+                options={[
+                  { value: 'OPEN', label: 'Open' },
+                  { value: 'PENDING', label: 'Waiting on them' },
+                  { value: 'RESOLVED', label: 'Resolved' },
+                  { value: 'CLOSED', label: 'Closed' },
+                ]}
+              />
+            </div>
           ) : null}
         </div>
       </div>

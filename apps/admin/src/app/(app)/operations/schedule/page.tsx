@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { api } from '../../../../lib/api';
-import { PageTitle } from '../../../../components/ui';
+import { PageTitle, SearchSelect } from '../../../../components/ui';
 
 function startOfWeek(base: Date): Date {
   const d = new Date(base);
@@ -63,14 +63,18 @@ export default function SchedulePage() {
         subtitle="All sessions on a Monday–Sunday grid"
         actions={
           <div className="flex items-center gap-2">
-            <select className="a-input max-w-40" value={branchId} onChange={(e) => setBranchId(e.target.value)}>
-              <option value="">All branches</option>
-              {(branches ?? []).map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
+            <div className="max-w-40">
+              <SearchSelect
+                value={branchId}
+                onChange={setBranchId}
+                allowEmpty
+                emptyLabel='All branches'
+                placeholder="Search…"
+                options={[
+                  ...(branches ?? []).map((b) => ({ value: b.id, label: b.name })),
+                ]}
+              />
+            </div>
             <button className="a-btn-ghost !px-2.5" onClick={() => setWeekOffset((w) => w - 1)} aria-label="Previous week">
               <ChevronLeft size={16} />
             </button>

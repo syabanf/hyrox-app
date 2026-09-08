@@ -325,18 +325,15 @@ function AddLineModal({
             <input className="a-input" value={qty} onChange={(e) => setQty(e.target.value)} />
           </Field>
           <Field label="Ordered in">
-            <select
-              className="a-input"
+            <SearchSelect
               value={chosenPack?.unitCode ?? ''}
+              onChange={setUnit}
               disabled={!item}
-              onChange={(e) => setUnit(e.target.value)}
-            >
-              {(packs ?? []).map((pack) => (
-                <option key={pack.id} value={pack.unitCode}>
-                  {pack.label}
-                </option>
-              ))}
-            </select>
+              placeholder="Search…"
+              options={[
+                ...(packs ?? []).map((pack) => ({ value: pack.unitCode, label: pack.label })),
+              ]}
+            />
           </Field>
           <Field label={`Price per ${chosenPack?.unitCode.toLowerCase() ?? 'unit'}`}>
             <input className="a-input" value={price} onChange={(e) => setPrice(e.target.value)} />

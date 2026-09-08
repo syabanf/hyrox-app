@@ -256,13 +256,12 @@ function CampaignModal({
         </div>
         <div>
           <label className="a-label">Audience segment</label>
-          <select className="a-input" value={segment} onChange={(e) => setSegment(e.target.value as MemberSegment)}>
-            {Object.entries(SEGMENT_LABEL).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
-          </select>
+          <SearchSelect
+            value={segment}
+            onChange={(v) => setSegment(v as MemberSegment)}
+            placeholder="Search…"
+            options={Object.entries(SEGMENT_LABEL).map(([k, v]) => ({ value: k, label: v }))}
+          />
         </div>
         {segment === 'CUSTOM' ? (
           <div className="rounded-xl border border-line bg-surface-raised p-3">

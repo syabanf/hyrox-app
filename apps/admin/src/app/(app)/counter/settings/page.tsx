@@ -190,17 +190,14 @@ function MethodModal({
           </Field>
         </div>
         <Field label="Behaves like">
-          <select
-            className="a-input"
+          <SearchSelect
             value={form.kind}
-            onChange={(e) => setForm((f) => ({ ...f, kind: e.target.value as PaymentMethod['kind'] }))}
-          >
-            {METHOD_KINDS.map((k) => (
-              <option key={k} value={k}>
-                {k.toLowerCase().replace('_', ' ')}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => setForm((f) => ({ ...f, kind: v as PaymentMethod['kind'] }))}
+            placeholder="Search…"
+            options={[
+              ...METHOD_KINDS.map((k) => ({ value: k, label: k.toLowerCase().replace('_', ' ') })),
+            ]}
+          />
         </Field>
         <label className="flex items-start gap-2 text-sm font-bold">
           <input
@@ -377,14 +374,17 @@ function ReceiptCard({
             <input className="a-input" value={form.footer} onChange={(e) => set('footer', e.target.value)} />
           </Field>
           <Field label="Paper">
-            <select
-              className="a-input max-w-[10rem]"
-              value={form.paperWidth}
-              onChange={(e) => set('paperWidth', Number(e.target.value) as 58 | 80)}
-            >
-              <option value={58}>58mm (32 columns)</option>
-              <option value={80}>80mm (48 columns)</option>
-            </select>
+            <div className="max-w-[10rem]">
+              <SearchSelect
+                value={String(form.paperWidth)}
+                onChange={(v) => set('paperWidth', Number(v) as 58 | 80)}
+                placeholder="Search…"
+                options={[
+                  { value: '58', label: '58mm (32 columns)' },
+                  { value: '80', label: '80mm (48 columns)' },
+                ]}
+              />
+            </div>
           </Field>
           <label className="flex items-center gap-2 text-sm font-bold">
             <input

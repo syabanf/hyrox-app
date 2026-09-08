@@ -250,17 +250,14 @@ function OfferModal({
         </div>
 
         <Field label="What it does">
-          <select
-            className="a-input"
+          <SearchSelect
             value={form.kind}
-            onChange={(e) => set('kind', e.target.value)}
-          >
-            {PROMOTION_KINDS.map((k) => (
-              <option key={k} value={k}>
-                {PROMOTION_KIND_LABELS[k]}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => set('kind', v)}
+            placeholder="Search…"
+            options={[
+              ...PROMOTION_KINDS.map((k) => ({ value: k, label: PROMOTION_KIND_LABELS[k] })),
+            ]}
+          />
         </Field>
 
         {kind === 'PERCENT' ? (

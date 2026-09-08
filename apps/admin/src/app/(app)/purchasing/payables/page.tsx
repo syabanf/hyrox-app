@@ -1,6 +1,6 @@
 'use client';
 
-import { formatIdr, Spinner, StatusBadge } from '@nuhabit/ui';
+import { formatDay, formatIdr, Spinner, StatusBadge } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Banknote, ReceiptText } from 'lucide-react';
 import { useState } from 'react';
@@ -345,28 +345,27 @@ function PaymentModal({
         </Field>
         {payables && payables.terms.length > 0 ? (
           <Field label="Which instalment">
-            <select
-              className="a-input"
+            <SearchSelect
               value={form.termId}
-              onChange={(e) => {
-                const term = payables.terms.find((t) => t.id === e.target.value);
+              onChange={(v) => {
+                const term = payables.terms.find((t) => t.id === v);
                 setForm((f) => ({
                   ...f,
-                  termId: e.target.value,
+                  termId: v,
                   // Prefilled with exactly what is owed, because paying more
                   // than an instalment needs is refused.
                   amountIdr: term ? String(term.amountIdr - term.paidIdr) : f.amountIdr,
                 }));
               }}
-            >
-              <option value="">None</option>
-              {payables.terms.map((term) => (
-                <option key={term.id} value={term.id}>
-                  {term.label || `Instalment ${term.sequence}`} · due {term.dueOn} ·{' '}
-                  {formatIdr(term.amountIdr - term.paidIdr)} left
-                </option>
-              ))}
-            </select>
+              allowEmpty
+              emptyLabel="No instalment — pay against the order"
+              placeholder="Search instalment…"
+              options={payables.terms.map((t) => ({
+                value: t.id,
+                label: t.label,
+                hint: `${formatIdr(t.amountIdr - t.paidIdr)} outstanding · due ${formatDay(t.dueOn)}`,
+              }))}
+            />
           </Field>
         ) : null}
         <div className="grid gap-3 sm:grid-cols-2">
@@ -378,17 +377,15 @@ function PaymentModal({
             />
           </Field>
           <Field label="Method">
-            <select
-              className="a-input"
+            <SearchSelect
               value={form.method}
-              onChange={(e) => setForm((f) => ({ ...f, method: e.target.value }))}
-            >
-              {['TRANSFER', 'CASH', 'CHEQUE', 'CARD'].map((m) => (
-                <option key={m} value={m}>
-                  {m.toLowerCase()}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setForm((f) => ({ ...f, method: v }))}
+              placeholder="Search…"
+              options={['TRANSFER', 'CASH', 'CHEQUE', 'CARD'].map((m) => ({
+                value: m,
+                label: m.toLowerCase(),
+              }))}
+            />
           </Field>
         </div>
         <Field label="Reference" hint="The transfer id or cheque number.">

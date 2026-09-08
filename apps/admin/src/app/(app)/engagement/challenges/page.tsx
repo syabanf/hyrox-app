@@ -199,11 +199,12 @@ function ChallengeModal({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="a-label">Counts</label>
-            <select className="a-input" value={type} onChange={(e) => setType(e.target.value as Challenge['type'])}>
-              {['ANY', 'RUN', 'RIDE', 'WALK'].map((t) => (
-                <option key={t}>{t}</option>
-              ))}
-            </select>
+            <SearchSelect
+              value={type}
+              onChange={(v) => setType(v as Challenge['type'])}
+              placeholder="Search…"
+              options={['ANY', 'RUN', 'RIDE', 'WALK'].map((t) => ({ value: t, label: t }))}
+            />
           </div>
           <div>
             <label className="a-label">Target (km)</label>

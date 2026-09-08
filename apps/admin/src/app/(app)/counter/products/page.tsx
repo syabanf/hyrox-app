@@ -477,17 +477,14 @@ function PriceBreakModal({ product, onClose }: { product: POSProductView; onClos
 
         <div className="grid items-end gap-3 sm:grid-cols-4">
           <Field label="Channel">
-            <select
-              className="a-input"
+            <SearchSelect
               value={draft.channel}
-              onChange={(e) => setDraft((d) => ({ ...d, channel: e.target.value as SalesChannel }))}
-            >
-              {SALES_CHANNELS.map((channel) => (
-                <option key={channel} value={channel}>
-                  {CHANNEL_LABELS[channel]}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setDraft((d) => ({ ...d, channel: v as SalesChannel }))}
+              placeholder="Search…"
+              options={[
+                ...SALES_CHANNELS.map((channel) => ({ value: channel, label: CHANNEL_LABELS[channel] })),
+              ]}
+            />
           </Field>
           <Field label="From quantity">
             <input

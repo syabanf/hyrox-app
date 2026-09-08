@@ -292,17 +292,14 @@ function PartnerModal({
           </Field>
         </div>
         <Field label="Kind">
-          <select
-            className="a-input"
+          <SearchSelect
             value={form.kind}
-            onChange={(e) => setForm((f) => ({ ...f, kind: e.target.value as IntegrationPartner['kind'] }))}
-          >
-            {PARTNER_KINDS.map((k) => (
-              <option key={k} value={k}>
-                {k.toLowerCase()}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => setForm((f) => ({ ...f, kind: v as IntegrationPartner['kind'] }))}
+            placeholder="Search…"
+            options={[
+              ...PARTNER_KINDS.map((k) => ({ value: k, label: k.toLowerCase() })),
+            ]}
+          />
         </Field>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Who to ask">

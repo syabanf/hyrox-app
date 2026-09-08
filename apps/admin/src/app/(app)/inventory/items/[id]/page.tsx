@@ -7,7 +7,7 @@ import { ArrowLeft, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
-import { ErrorNote, Field, Modal, PageTitle, StatCard } from '../../../../../components/ui';
+import { ErrorNote, Field, Modal, PageTitle, SearchSelect, StatCard } from '../../../../../components/ui';
 import { api, ApiError } from '../../../../../lib/api';
 import { usePermissions } from '../../../../../lib/auth';
 
@@ -385,18 +385,18 @@ function PackModal({
         <ErrorNote message={error} />
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Unit">
-            <select
-              className="a-input"
+            <SearchSelect
               value={form.unitCode}
-              onChange={(e) => setForm((f) => ({ ...f, unitCode: e.target.value }))}
-            >
-              <option value="">Choose…</option>
-              {(units ?? []).map((unit) => (
-                <option key={unit.id} value={unit.code}>
-                  {unit.code} — {unit.name}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setForm((f) => ({ ...f, unitCode: v }))}
+              allowEmpty
+              emptyLabel="Choose…"
+              placeholder="Search unit…"
+              options={(units ?? []).map((unit) => ({
+                value: unit.code,
+                label: unit.code,
+                hint: unit.name,
+              }))}
+            />
           </Field>
           <Field label={`Holds how many ${baseUnit.toLowerCase()}`}>
             <input

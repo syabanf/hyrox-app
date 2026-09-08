@@ -6,15 +6,7 @@ import { formatIdr, Spinner, StatusBadge } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Pencil } from 'lucide-react';
 import { useState } from 'react';
-import {
-  ErrorNote,
-  Field,
-  Modal,
-  PageTitle,
-  QueryError,
-  RowActions,
-  StatCard,
-} from '../../../../components/ui';
+import { ErrorNote, Field, Modal, PageTitle, QueryError, RowActions, SearchSelect, StatCard } from '../../../../components/ui';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
 
@@ -200,17 +192,14 @@ function BadgeModal({
         </Field>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Earned by">
-            <select
-              className="a-input"
+            <SearchSelect
               value={form.metric}
-              onChange={(e) => set('metric', e.target.value as BadgeMetric)}
-            >
-              {BADGE_METRICS.map((metric) => (
-                <option key={metric} value={metric}>
-                  {BADGE_METRIC_LABELS[metric]}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => set('metric', v as BadgeMetric)}
+              placeholder="Search…"
+              options={[
+                ...BADGE_METRICS.map((metric) => ({ value: metric, label: BADGE_METRIC_LABELS[metric] })),
+              ]}
+            />
           </Field>
           {form.metric !== 'MANUAL' ? (
             <Field label="At this many">

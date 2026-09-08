@@ -214,17 +214,14 @@ function RaiseModal({
           />
         </Field>
         <Field label="Why">
-          <select
-            className="a-input"
+          <SearchSelect
             value={form.reasonType}
-            onChange={(e) => setForm((f) => ({ ...f, reasonType: e.target.value }))}
-          >
-            {['DAMAGED', 'WRONG_ITEM', 'EXPIRED', 'OVERSTOCK', 'SPEC_MISMATCH', 'OTHER'].map((r) => (
-              <option key={r} value={r}>
-                {r.toLowerCase().replace('_', ' ')}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => setForm((f) => ({ ...f, reasonType: v }))}
+            placeholder="Search…"
+            options={['DAMAGED', 'WRONG_ITEM', 'EXPIRED', 'OVERSTOCK', 'SPEC_MISMATCH', 'OTHER'].map(
+              (r) => ({ value: r, label: r.toLowerCase().replace('_', ' ') }),
+            )}
+          />
         </Field>
         <Field label="What to tell the supplier">
           <input

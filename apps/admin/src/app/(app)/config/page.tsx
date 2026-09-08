@@ -99,19 +99,16 @@ function RulesTab() {
           <div key={f.key}>
             <label className="a-label">{f.label}</label>
             {f.kind === 'select' ? (
-              <select
-                className="a-input"
+              <SearchSelect
                 disabled={!canEdit}
-                value={valueOf(f.key)}
-                onChange={(e) => {
-                  setDraft((d) => ({ ...d, [f.key]: e.target.value }));
+                value={String(valueOf(f.key))}
+                onChange={(v) => {
+                  setDraft((d) => ({ ...d, [f.key]: v }));
                   setSaved(false);
                 }}
-              >
-                {f.options!.map((o) => (
-                  <option key={o}>{o}</option>
-                ))}
-              </select>
+                placeholder="Search…"
+                options={f.options!.map((o) => ({ value: o, label: o }))}
+              />
             ) : (
               <input
                 className="a-input"
@@ -348,10 +345,15 @@ function BranchModal({
         {branch ? (
           <div>
             <label className="a-label">Status</label>
-            <select className="a-input" value={status} onChange={(e) => setStatus(e.target.value as typeof status)}>
-              <option>ACTIVE</option>
-              <option>INACTIVE</option>
-            </select>
+            <SearchSelect
+              value={status}
+              onChange={(v) => setStatus(v as typeof status)}
+              placeholder="Search…"
+              options={[
+                { value: 'ACTIVE', label: 'ACTIVE' },
+                { value: 'INACTIVE', label: 'INACTIVE' },
+              ]}
+            />
           </div>
         ) : null}
         <ErrorNote message={error} />
@@ -542,13 +544,14 @@ function UserModal({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="a-label">Role</label>
-            <select className="a-input" value={role} onChange={(e) => setRole(e.target.value as AdminRole)}>
-              {ADMIN_ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {r.replaceAll('_', ' ')}
-                </option>
-              ))}
-            </select>
+            <SearchSelect
+              value={role}
+              onChange={(v) => setRole(v as AdminRole)}
+              placeholder="Search…"
+              options={[
+                ...ADMIN_ROLES.map((r) => ({ value: r, label: r.replaceAll('_', ' ') })),
+              ]}
+            />
           </div>
           <div>
             <label className="a-label">Branch scope</label>

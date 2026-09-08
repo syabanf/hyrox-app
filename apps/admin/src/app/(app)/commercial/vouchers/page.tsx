@@ -237,19 +237,29 @@ function VoucherModal({
           </div>
           <div>
             <label className="a-label">Segment</label>
-            <select className="a-input" value={segment} onChange={(e) => setSegment(e.target.value as typeof segment)}>
-              <option value="ALL">All members</option>
-              <option value="NEW_MEMBERS">New members</option>
-            </select>
+            <SearchSelect
+              value={segment}
+              onChange={(v) => setSegment(v as typeof segment)}
+              placeholder="Search…"
+              options={[
+                { value: 'ALL', label: 'All members' },
+                { value: 'NEW_MEMBERS', label: 'New members' },
+              ]}
+            />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="a-label">Type</label>
-            <select className="a-input" value={type} onChange={(e) => setType(e.target.value as typeof type)}>
-              <option value="PERCENT">Percent discount</option>
-              <option value="FIXED_IDR">Fixed IDR discount</option>
-            </select>
+            <SearchSelect
+              value={type}
+              onChange={(v) => setType(v as typeof type)}
+              placeholder="Search…"
+              options={[
+                { value: 'PERCENT', label: 'Percent discount' },
+                { value: 'FIXED_IDR', label: 'Fixed IDR discount' },
+              ]}
+            />
           </div>
           <div>
             <label className="a-label">{type === 'PERCENT' ? 'Percent' : 'Amount (IDR)'}</label>

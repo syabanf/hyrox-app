@@ -7,7 +7,7 @@ import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, Modal, PageTitle, StatCard } from '../../../../components/ui';
+import { ErrorNote, Modal, PageTitle, SearchSelect, StatCard } from '../../../../components/ui';
 
 const TABS = ['Overview', 'Credit Ledger', 'Bookings', 'Visits', 'Payments', 'Waiver', 'Activity'] as const;
 type Tab = (typeof TABS)[number];
@@ -49,17 +49,15 @@ export default function MemberDetailPage() {
         subtitle={`${m.member.email} · ${m.member.phone}`}
         actions={
           can('members.manage') ? (
-            <select
-              className="a-input"
+            <SearchSelect
               value={m.member.status}
-              onChange={(e) => statusMutation.mutate(e.target.value as MemberStatus)}
-            >
-              {['ACTIVE', 'SUSPENDED', 'INACTIVE', 'ARCHIVED'].map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => statusMutation.mutate(v as MemberStatus)}
+              placeholder="Search…"
+              options={['ACTIVE', 'SUSPENDED', 'INACTIVE', 'ARCHIVED'].map((s) => ({
+                value: s,
+                label: s,
+              }))}
+            />
           ) : (
             <StatusBadge status={m.member.status} />
           )

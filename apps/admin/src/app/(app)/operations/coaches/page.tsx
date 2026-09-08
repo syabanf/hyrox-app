@@ -243,10 +243,15 @@ function CoachModal({
           </div>
           <div>
             <label className="a-label">Status</label>
-            <select className="a-input" value={status} onChange={(e) => setStatus(e.target.value as typeof status)}>
-              <option>ACTIVE</option>
-              <option>INACTIVE</option>
-            </select>
+            <SearchSelect
+              value={status}
+              onChange={(v) => setStatus(v as typeof status)}
+              placeholder="Search…"
+              options={[
+                { value: 'ACTIVE', label: 'ACTIVE' },
+                { value: 'INACTIVE', label: 'INACTIVE' },
+              ]}
+            />
           </div>
         </div>
         <ErrorNote message={error} />

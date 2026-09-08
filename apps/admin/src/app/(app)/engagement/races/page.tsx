@@ -225,11 +225,12 @@ function RaceModal({
           </div>
           <div>
             <label className="a-label">Region</label>
-            <select className="a-input" value={region} onChange={(e) => setRegion(e.target.value as RaceRegion)}>
-              {RACE_REGIONS.map((r) => (
-                <option key={r}>{r}</option>
-              ))}
-            </select>
+            <SearchSelect
+              value={region}
+              onChange={(v) => setRegion(v as RaceRegion)}
+              placeholder="Search…"
+              options={RACE_REGIONS.map((r) => ({ value: r, label: r }))}
+            />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -244,11 +245,12 @@ function RaceModal({
           </div>
           <div>
             <label className="a-label">Status</label>
-            <select className="a-input" value={status} onChange={(e) => setStatus(e.target.value as RaceStatus)}>
-              {RACE_STATUSES.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
+            <SearchSelect
+              value={status}
+              onChange={(v) => setStatus(v as RaceStatus)}
+              placeholder="Search…"
+              options={RACE_STATUSES.map((s) => ({ value: s, label: s }))}
+            />
           </div>
         </div>
         <div>

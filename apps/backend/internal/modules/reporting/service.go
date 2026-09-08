@@ -38,6 +38,7 @@ type (
 		Lots(ctx context.Context, memberID string) ([]domain.TopUpLot, error)
 		Payments(ctx context.Context, filter wallet.PaymentFilter) ([]domain.Payment, error)
 		PackageSales(ctx context.Context) (map[string]wallet.PackageSale, error)
+		LiveVouchers(ctx context.Context) ([]domain.Voucher, error)
 	}
 
 	Scheduling interface {
@@ -69,6 +70,16 @@ type (
 	AuditLog interface {
 		List(ctx context.Context, limit int) ([]domain.AuditEvent, error)
 	}
+
+	// Notifications and Announcements are optional: when the engagement
+	// module is not mounted the home feed is simply quiet rather than broken.
+	Notifications interface {
+		UnreadCount(ctx context.Context, memberID string) (int, error)
+	}
+
+	Announcements interface {
+		Recent(ctx context.Context, limit int) ([]AnnouncementView, error)
+	}
 )
 
 // MemberQuery mirrors the identity module's filter without importing it, so
@@ -80,28 +91,50 @@ type MemberQuery struct {
 	Offset int
 }
 
-// Service builds the cross-module read models.
-type Service struct {
-	members    Members
-	wallet     Wallet
-	scheduling Scheduling
-	access     Access
-	catalog    Catalog
-	incentives Incentives
-	audit      AuditLog
-	clock      clock.Clock
-	// studio is the timezone "today" is measured in. A Jakarta studio's day
+// Deps are the ports this module reads through. Incentives, Notifications and
+// Announcements may be nil when those modules are not mounted.
+type Deps struct {
+	Members       Members
+	Wallet        Wallet
+	Scheduling    Scheduling
+	Access        Access
+	Catalog       Catalog
+	Incentives    Incentives
+	Notifications Notifications
+	Announcements Announcements
+	Audit         AuditLog
+	Clock         clock.Clock
+	// Studio is the timezone "today" is measured in. A Jakarta studio's day
 	// does not start at midnight UTC.
-	studio *time.Location
+	Studio *time.Location
 }
 
-func NewService(members Members, w Wallet, sched Scheduling, acc Access, cat Catalog,
-	inc Incentives, auditLog AuditLog, c clock.Clock, studio *time.Location) *Service {
+// Service builds the cross-module read models.
+type Service struct {
+	members       Members
+	wallet        Wallet
+	scheduling    Scheduling
+	access        Access
+	catalog       Catalog
+	incentives    Incentives
+	notifications Notifications
+	announcements Announcements
+	audit         AuditLog
+	clock         clock.Clock
+	studio        *time.Location
+}
+
+func NewService(deps Deps) *Service {
+	studio := deps.Studio
 	if studio == nil {
 		studio = time.UTC
 	}
-	return &Service{members: members, wallet: w, scheduling: sched, access: acc,
-		catalog: cat, incentives: inc, audit: auditLog, clock: c, studio: studio}
+	return &Service{
+		members: deps.Members, wallet: deps.Wallet, scheduling: deps.Scheduling,
+		access: deps.Access, catalog: deps.Catalog, incentives: deps.Incentives,
+		notifications: deps.Notifications, announcements: deps.Announcements,
+		audit: deps.Audit, clock: deps.Clock, studio: studio,
+	}
 }
 
 // startOfToday is the studio's local midnight, expressed as an instant.

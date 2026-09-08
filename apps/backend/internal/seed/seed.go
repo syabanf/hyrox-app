@@ -263,7 +263,7 @@ func (s *Seeder) seedMembers(ctx context.Context) (int, error) {
 		id, name, email, phone, branch, status string
 		joinedDaysAgo                          int
 	}{
-		{"mem_demo", "Fahmi Syaban", "demo@nuhabit.id", "+628123456789", "brn_senopati", "ACTIVE", 90},
+		{"mem_demo", "Fahmi Syaban", "demo@hyrox.id", "+628123456789", "brn_senopati", "ACTIVE", 90},
 		{"mem_natalie", "Natalie Brown", "natalie@example.com", "+628123456701", "brn_pik", "ACTIVE", 60},
 		{"mem_lucas", "Lucas Conn", "lucas@example.com", "+628123456702", "brn_senopati", "ACTIVE", 45},
 		{"mem_jaime", "Jaime Waelchi", "jaime@example.com", "+628123456703", "brn_senopati", "ACTIVE", 30},

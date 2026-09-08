@@ -5,6 +5,10 @@ RUN corepack enable
 WORKDIR /repo
 COPY . .
 RUN pnpm install --frozen-lockfile
+# Baked in at build time by Vite. Empty keeps the in-process mock, so the
+# demo still runs with no database behind it.
+ARG VITE_API_BASE_URL=""
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN pnpm --filter @hyrox/member build
 
 FROM nginx:alpine

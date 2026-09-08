@@ -21,6 +21,10 @@ func NewHandler(service *Service, guard *auth.Guard) *Handler {
 func (h *Handler) Mount(r *httpx.Router) {
 	admin := func(p domain.Permission) httpx.Middleware { return h.guard.RequireAdmin(string(p)) }
 
+	// The member app's own composite reads.
+	r.Get("/api/me", h.me, h.guard.RequireMember)
+	r.Get("/api/home", h.home, h.guard.RequireMember)
+
 	r.Get("/api/admin/reports/dashboard", h.dashboard, admin(domain.PermDashboardView))
 	r.Get("/api/admin/reports/sales", h.sales, admin(domain.PermReportsView))
 	r.Get("/api/admin/reports/visits", h.visits, admin(domain.PermReportsView))
@@ -31,6 +35,24 @@ func (h *Handler) Mount(r *httpx.Router) {
 	r.Get("/api/admin/members/{id}", h.memberDetail, admin(domain.PermMembersView))
 
 	r.Get("/api/admin/audit", h.auditTrail, admin(domain.PermConfigView))
+}
+
+func (h *Handler) me(w http.ResponseWriter, r *http.Request) {
+	view, err := h.service.Me(r.Context(), auth.MemberID(r.Context()))
+	if err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	httpx.OK(w, view)
+}
+
+func (h *Handler) home(w http.ResponseWriter, r *http.Request) {
+	view, err := h.service.Home(r.Context(), auth.MemberID(r.Context()))
+	if err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	httpx.OK(w, view)
 }
 
 func (h *Handler) dashboard(w http.ResponseWriter, r *http.Request) {

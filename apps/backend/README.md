@@ -11,20 +11,24 @@ base URL.
 
 ## Quick start
 
+This app lives in the NuHabit monorepo alongside the member PWA and the admin
+panel. From the repository root:
+
 ```bash
-cp .env.example .env
-make up          # PostgreSQL + API in Docker, then the demo studio is seeded
-curl localhost:9080/ready
+pnpm stack:up    # database, API, member app and admin panel, then seeded
+open http://localhost:8088          # member PWA
+open http://localhost:8088/admin    # admin panel
+curl localhost:8088/api/../ready    # the API is also direct on :9080
 ```
 
-Or against a local Go toolchain:
+To work on the API alone with a local Go toolchain:
 
 ```bash
-docker compose up -d postgres
+make db                          # just PostgreSQL
 make migrate && make seed && make run
 ```
 
-Demo credentials: any member email from the seed (`demo@nuhabit.id`) — the
+Demo credentials: any member email from the seed (`demo@hyrox.id`) — the
 sign-in code comes back in the response while `AUTH_DEMO_OTP=true`. Staff sign
 in by id: `adm_super`, `adm_hq`, `adm_branch`, `adm_desk`, `adm_coach`,
 `adm_finance`.
@@ -36,7 +40,7 @@ API=http://localhost:9080
 
 # 1. Sign in (demo mode returns the code instead of sending an SMS)
 CH=$(curl -s -X POST $API/api/auth/otp/request -H 'content-type: application/json' \
-      -d '{"identifier":"demo@nuhabit.id"}')
+      -d '{"identifier":"demo@hyrox.id"}')
 TOKEN=$(curl -s -X POST $API/api/auth/otp/verify -H 'content-type: application/json' \
       -d "{\"challengeId\":\"$(jq -r .challengeId <<<"$CH")\",\"code\":\"$(jq -r .code <<<"$CH")\"}" | jq -r .token)
 
@@ -160,10 +164,15 @@ scheduling with bookings, waitlist and attendance, QR gate access with offline
 reconciliation, coach incentives and payouts, and the cross-module reporting
 layer.
 
-The `training` schema (activities, segments, clubs, gear, generated workouts,
-race calendars) ships with the migrations so the tables exist, but its HTTP
-surface is not built yet — that is the member app's social and workout tab, and
-it is the natural next module.
+Two modules are deliberately partial, each built out to exactly what the member
+app opens with:
+
+- **engagement** serves in-app notifications and turns booking, waitlist and
+  payment events from the outbox into messages. Campaign authoring and segment
+  sending are not built yet.
+- **training** serves athlete settings. Activities, segments, clubs, gear,
+  generated workouts and race calendars are migrated but have no HTTP surface —
+  that is the member app's social and workout tab, and the natural next module.
 
 Payments run against a mock gateway. The `wallet.Gateway` interface is where a
 real Xendit client drops in; nothing else changes.

@@ -14,7 +14,12 @@
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "dev:backend": "pnpm --filter @hyrox/backend dev",
+    "stack:up": "docker compose up -d --build && docker compose --profile seed run --rm seed",
+    "stack:down": "docker compose down",
+    "stack:reset": "docker compose down -v",
+    "stack:logs": "docker compose logs -f api"
   },
   "devDependencies": {
     "@eslint/js": "^9.20.0",

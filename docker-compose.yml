@@ -1,14 +1,89 @@
-# Full demo stack: http://localhost:8088 (member) + /admin (panel).
-# Both apps run their entire backend in the visitor's browser (MSW).
+# The whole product in one command:
+#
+#   docker compose up -d --build
+#   docker compose --profile seed run --rm seed     # load the demo studio
+#
+#   http://localhost:8088         member PWA
+#   http://localhost:8088/admin   admin panel
+#   http://localhost:8088/api     Go API (also direct on :9080)
+#
+# One repository, one stack: the member app, the admin panel and the API that
+# backs them, in front of the database they share.
+
+name: nuhabit
+
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: nuhabit
+      POSTGRES_PASSWORD: nuhabit
+      POSTGRES_DB: nuhabit
+    ports:
+      - '5433:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      # The API waits for this rather than sleeping and hoping.
+      test: ['CMD-SHELL', 'pg_isready -U nuhabit -d nuhabit']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ./apps/backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      APP_ENV: development
+      HTTP_ADDR: ':8080'
+      DATABASE_URL: postgres://nuhabit:nuhabit@postgres:5432/nuhabit?sslmode=disable
+      AUTH_SECRET: ${AUTH_SECRET:-dev-secret-change-me}
+      AUTH_DEMO_OTP: 'true'
+      LOG_FORMAT: text
+      STUDIO_TIMEZONE: Asia/Jakarta
+      HTTP_ALLOWED_ORIGINS: '*'
+    ports:
+      - '9080:8080'
+    restart: unless-stopped
+
+  # One-shot: load the demo studio, then exit.
+  seed:
+    build:
+      context: ./apps/backend
+    profiles: ['seed']
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgres://nuhabit:nuhabit@postgres:5432/nuhabit?sslmode=disable
+      AUTH_SECRET: ${AUTH_SECRET:-dev-secret-change-me}
+      LOG_FORMAT: text
+    entrypoint: ['/usr/local/bin/seed']
+
   member:
     build:
       context: .
       dockerfile: deploy/member.Dockerfile
+      args:
+        # Empty means the app keeps its in-process mock, so the demo still
+        # runs with no database at all.
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL-/api}
+    restart: unless-stopped
+
   admin:
     build:
       context: .
       dockerfile: deploy/admin.Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL-/api}
+    restart: unless-stopped
+
+  # The front door: one origin for the apps and the API, so the browser makes
+  # same-origin calls and CORS never enters the picture.
   proxy:
     image: nginx:alpine
     volumes:
@@ -18,3 +93,51 @@ services:
     depends_on:
       - member
       - admin
+      - api
+    restart: unless-stopped
+
+  # ── Split deployment ───────────────────────────────────────────────────────
+  # The same API image mounting different modules. Proof that the module
+  # boundaries are real: each service 404s on the other's routes, and a token
+  # minted by one is accepted by the other with no shared session store.
+
+  api-studio:
+    build:
+      context: ./apps/backend
+    profiles: ['split']
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      APP_ENV: development
+      HTTP_ADDR: ':8080'
+      DATABASE_URL: postgres://nuhabit:nuhabit@postgres:5432/nuhabit?sslmode=disable
+      AUTH_SECRET: ${AUTH_SECRET:-dev-secret-change-me}
+      AUTH_DEMO_OTP: 'true'
+      LOG_FORMAT: text
+      MODULES: catalog,identity,scheduling,access,reporting
+    ports:
+      - '9081:8080'
+
+  api-commerce:
+    build:
+      context: ./apps/backend
+    profiles: ['split']
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      APP_ENV: development
+      HTTP_ADDR: ':8080'
+      DATABASE_URL: postgres://nuhabit:nuhabit@postgres:5432/nuhabit?sslmode=disable
+      AUTH_SECRET: ${AUTH_SECRET:-dev-secret-change-me}
+      LOG_FORMAT: text
+      # Migrations belong to one owner; a second replica applying them
+      # concurrently is safe but pointless.
+      AUTO_MIGRATE: 'false'
+      MODULES: wallet,incentives
+    ports:
+      - '9082:8080'
+
+volumes:
+  postgres-data:

@@ -15,10 +15,12 @@ import (
 
 	"github.com/syabanf/nuhabit-backend/internal/modules/access"
 	"github.com/syabanf/nuhabit-backend/internal/modules/catalog"
+	"github.com/syabanf/nuhabit-backend/internal/modules/engagement"
 	"github.com/syabanf/nuhabit-backend/internal/modules/identity"
 	"github.com/syabanf/nuhabit-backend/internal/modules/incentives"
 	"github.com/syabanf/nuhabit-backend/internal/modules/reporting"
 	"github.com/syabanf/nuhabit-backend/internal/modules/scheduling"
+	"github.com/syabanf/nuhabit-backend/internal/modules/training"
 	"github.com/syabanf/nuhabit-backend/internal/modules/wallet"
 	"github.com/syabanf/nuhabit-backend/internal/platform/audit"
 	"github.com/syabanf/nuhabit-backend/internal/platform/auth"
@@ -39,6 +41,8 @@ const (
 	ModuleAccess     = "access"
 	ModuleIncentives = "incentives"
 	ModuleReporting  = "reporting"
+	ModuleEngagement = "engagement"
+	ModuleTraining   = "training"
 )
 
 // App is a wired-up process: an HTTP handler plus the background work that
@@ -58,6 +62,8 @@ type App struct {
 	Access     *access.Service
 	Incentives *incentives.Service
 	Reporting  *reporting.Service
+	Engagement *engagement.Service
+	Training   *training.Service
 
 	clock clock.Clock
 }
@@ -101,9 +107,22 @@ func New(cfg config.Config, db *database.DB) *App {
 	incentivesService := incentives.NewService(db, incentivesRepo, catalogService,
 		schedulingService, ids, now, auditor, cfg.StudioLocation())
 
-	reportingService := reporting.NewService(
-		reportingMembers{identityService}, walletService, schedulingService,
-		accessService, catalogService, incentivesService, auditor, now, cfg.StudioLocation())
+	engagementService := engagement.NewService(engagement.NewRepository(db), ids, now)
+	trainingService := training.NewService(training.NewRepository(db), now)
+
+	reportingService := reporting.NewService(reporting.Deps{
+		Members:       reportingMembers{identityService},
+		Wallet:        walletService,
+		Scheduling:    schedulingService,
+		Access:        accessService,
+		Catalog:       catalogService,
+		Incentives:    incentivesService,
+		Notifications: engagementService,
+		Announcements: announcementFeed{engagementService},
+		Audit:         auditor,
+		Clock:         now,
+		Studio:        cfg.StudioLocation(),
+	})
 
 	router := httpx.NewRouter(
 		httpx.RequestID(ids),
@@ -135,6 +154,12 @@ func New(cfg config.Config, db *database.DB) *App {
 	if cfg.Modules.IsEnabled(ModuleReporting) {
 		reporting.NewHandler(reportingService, guard).Mount(router)
 	}
+	if cfg.Modules.IsEnabled(ModuleEngagement) {
+		engagement.NewHandler(engagementService, guard).Mount(router)
+	}
+	if cfg.Modules.IsEnabled(ModuleTraining) {
+		training.NewHandler(trainingService, guard).Mount(router)
+	}
 
 	app := &App{
 		Config:     cfg,
@@ -147,6 +172,8 @@ func New(cfg config.Config, db *database.DB) *App {
 		Access:     accessService,
 		Incentives: incentivesService,
 		Reporting:  reportingService,
+		Engagement: engagementService,
+		Training:   trainingService,
 		clock:      now,
 	}
 
@@ -176,24 +203,30 @@ func (a *App) mountOperational(r *httpx.Router) {
 	})
 }
 
-// subscribeEvents connects outbox topics to their handlers. Until the
-// engagement module lands, delivery is recorded rather than sent, which keeps
-// the messages flowing and visible instead of silently dropped.
+// subscribeEvents connects outbox topics to their consumers.
+//
+// This is the far side of the transactional outbox: scheduling and wallet
+// publish facts inside their own transactions, and engagement decides what to
+// tell the member about them. Neither knows the other exists.
 func (a *App) subscribeEvents() {
-	log := func(topic string) outbox.Handler {
-		return func(ctx context.Context, msg outbox.Message) error {
-			slog.InfoContext(ctx, "domain event", "topic", topic, "payload", string(msg.Payload))
-			return nil
-		}
+	if a.Config.Modules.IsEnabled(ModuleEngagement) {
+		a.Dispatcher.Subscribe(outbox.TopicBookingConfirmed, a.Engagement.HandleBookingConfirmed)
+		a.Dispatcher.Subscribe(outbox.TopicWaitlistPromoted, a.Engagement.HandleWaitlistPromoted)
+		a.Dispatcher.Subscribe(outbox.TopicPaymentPaid, a.Engagement.HandlePaymentPaid)
 	}
-	for _, topic := range []string{
-		outbox.TopicBookingConfirmed,
-		outbox.TopicWaitlistPromoted,
-		outbox.TopicVisitLogged,
-		outbox.TopicPaymentPaid,
-	} {
-		a.Dispatcher.Subscribe(topic, log(topic))
-	}
+	// A topic nobody consumes in this deployment is recorded and retired
+	// rather than retried forever.
+	a.Dispatcher.Subscribe(outbox.TopicVisitLogged, func(ctx context.Context, msg outbox.Message) error {
+		slog.DebugContext(ctx, "visit logged", "payload", string(msg.Payload))
+		return nil
+	})
+}
+
+// DrainOutbox delivers every pending message once and returns. The background
+// dispatcher does this on a timer; tests call it directly so they assert on
+// delivery rather than on a sleep.
+func (a *App) DrainOutbox(ctx context.Context) error {
+	return a.Dispatcher.DrainOnce(ctx)
 }
 
 // RunBackground starts the loops that keep derived state correct: outbox

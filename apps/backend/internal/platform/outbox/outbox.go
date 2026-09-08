@@ -122,6 +122,12 @@ func (d *Dispatcher) Run(ctx context.Context) {
 	}
 }
 
+// DrainOnce delivers every pending message and returns, which is what a test
+// needs in place of waiting for the next tick.
+func (d *Dispatcher) DrainOnce(ctx context.Context) error {
+	return d.drain(ctx)
+}
+
 // drain claims a batch and processes it. The claim uses SKIP LOCKED, so
 // several instances can run the dispatcher without doing each other's work.
 func (d *Dispatcher) drain(ctx context.Context) error {

@@ -48,18 +48,25 @@ build: ## Build the binaries into ./bin
 docker: ## Build the container image
 	docker build -t nuhabit-backend:dev .
 
-up: ## Start PostgreSQL and the API in Docker
-	docker compose up -d --build
-	docker compose --profile seed run --rm seed
+# The compose stack lives at the repo root: one file brings up the database,
+# this API, the member PWA and the admin panel together.
+COMPOSE = docker compose -f ../../docker-compose.yml
+
+up: ## Start the whole stack (database, API, member app, admin panel)
+	$(COMPOSE) up -d --build
+	$(COMPOSE) --profile seed run --rm seed
 
 down: ## Stop the stack
-	docker compose down
+	$(COMPOSE) down
 
 reset: ## Stop the stack and delete its data
-	docker compose down -v
+	$(COMPOSE) down -v
 
 logs: ## Tail the API logs
-	docker compose logs -f api
+	$(COMPOSE) logs -f api
+
+db: ## Start only PostgreSQL, for running the API from source
+	$(COMPOSE) up -d postgres
 
 psql: ## Open a database shell
 	psql "$(DATABASE_URL)"

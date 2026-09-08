@@ -298,7 +298,7 @@ func TestCoreLoop(t *testing.T) {
 // TestQrTokenIsSingleUse proves a screenshotted code cannot be reused.
 func TestQrTokenIsSingleUse(t *testing.T) {
 	h := newHarness(t)
-	token := h.memberToken("demo@nuhabit.id")
+	token := h.memberToken("demo@hyrox.id")
 	h.topUp(token, "pkg_visit10")
 
 	admin := h.adminToken("adm_super")
@@ -361,7 +361,7 @@ func TestCapacityAndWaitlistPromotion(t *testing.T) {
 	admin := h.adminToken("adm_super")
 	sessionID := h.createSession(admin, 3*time.Hour, 1)
 
-	first := h.memberToken("demo@nuhabit.id")
+	first := h.memberToken("demo@hyrox.id")
 	second := h.memberToken("lucas@example.com")
 	h.topUp(first, "pkg_starter5")
 	h.topUp(second, "pkg_starter5")
@@ -399,7 +399,7 @@ func TestCapacityAndWaitlistPromotion(t *testing.T) {
 func TestLateCancellationForfeitsACredit(t *testing.T) {
 	h := newHarness(t)
 	admin := h.adminToken("adm_super")
-	token := h.memberToken("demo@nuhabit.id")
+	token := h.memberToken("demo@hyrox.id")
 	credits := h.topUp(token, "pkg_starter5")
 
 	// Inside the four-hour deadline, so cancelling is late.
@@ -440,7 +440,7 @@ func TestPackageCoverageIsEnforced(t *testing.T) {
 // gateway callback inflating a balance.
 func TestSettlingAPaymentTwiceGrantsCreditsOnce(t *testing.T) {
 	h := newHarness(t)
-	token := h.memberToken("demo@nuhabit.id")
+	token := h.memberToken("demo@hyrox.id")
 
 	_, result := h.request(http.MethodPost, "/api/me/topup", token, map[string]any{
 		"packageId": "pkg_starter5", "channel": "QRIS",
@@ -463,7 +463,7 @@ func TestSettlingAPaymentTwiceGrantsCreditsOnce(t *testing.T) {
 // it, without deleting the original entry.
 func TestRefundReversesTheCredits(t *testing.T) {
 	h := newHarness(t)
-	token := h.memberToken("demo@nuhabit.id")
+	token := h.memberToken("demo@hyrox.id")
 	admin := h.adminToken("adm_super")
 
 	_, result := h.request(http.MethodPost, "/api/me/topup", token, map[string]any{
@@ -489,6 +489,102 @@ func TestRefundReversesTheCredits(t *testing.T) {
 	entries := wallet["entries"].([]any)
 	if len(entries) != 2 {
 		t.Fatalf("ledger has %d entries, want the top-up and its reversal", len(entries))
+	}
+}
+
+// TestMemberHomeScreen proves the composite reads the app opens with actually
+// assemble across modules: identity for the profile, wallet for the balance
+// and live promos, scheduling for the class rail.
+func TestMemberHomeScreen(t *testing.T) {
+	h := newHarness(t)
+	token := h.memberToken("demo@hyrox.id")
+
+	status, me := h.request(http.MethodGet, "/api/me", token, nil)
+	if status != http.StatusOK {
+		t.Fatalf("/api/me returned %d: %v", status, me)
+	}
+	member := me["member"].(map[string]any)
+	if member["email"] != "demo@hyrox.id" {
+		t.Fatalf("signed in as %v", member["email"])
+	}
+	if me["lowBalance"] != true {
+		t.Fatal("a member with no credits should read as low balance")
+	}
+
+	admin := h.adminToken("adm_super")
+	h.createSession(admin, 2*time.Hour, 10)
+
+	status, home := h.request(http.MethodGet, "/api/home", token, nil)
+	if status != http.StatusOK {
+		t.Fatalf("/api/home returned %d: %v", status, home)
+	}
+	if rail := home["railDay"]; rail != "TODAY" && rail != "TOMORROW" {
+		t.Fatalf("railDay = %v", rail)
+	}
+	if len(home["todaySessions"].([]any)) == 0 {
+		t.Fatal("the class rail is empty even though a class was just scheduled")
+	}
+	// Live vouchers become the promo cards.
+	if len(home["promos"].([]any)) == 0 {
+		t.Fatal("no promos even though the seed has live vouchers")
+	}
+
+	// Settings default rather than 404 for a member who never changed them.
+	status, settings := h.request(http.MethodGet, "/api/me/settings", token, nil)
+	if status != http.StatusOK || settings["units"] != "METRIC" {
+		t.Fatalf("settings = %d %v", status, settings)
+	}
+	status, saved := h.request(http.MethodPut, "/api/me/settings", token,
+		map[string]any{"language": "ID", "weeklyGoalKm": 25})
+	if status != http.StatusOK || saved["language"] != "ID" {
+		t.Fatalf("saving settings = %d %v", status, saved)
+	}
+}
+
+// TestNotificationsFollowBookings proves the transactional outbox actually
+// delivers: booking a class eventually tells the member about it.
+func TestNotificationsFollowBookings(t *testing.T) {
+	h := newHarness(t)
+	token := h.memberToken("demo@hyrox.id")
+	admin := h.adminToken("adm_super")
+	h.topUp(token, "pkg_starter5")
+
+	sessionID := h.createSession(admin, 3*time.Hour, 10)
+	if status, booked := h.request(http.MethodPost, "/api/sessions/"+sessionID+"/book", token, nil); status != http.StatusCreated {
+		t.Fatalf("booking returned %d: %v", status, booked)
+	}
+
+	// The message is published inside the booking transaction; the dispatcher
+	// delivers it separately, so drain it here rather than sleeping.
+	if err := h.app.DrainOutbox(context.Background()); err != nil {
+		t.Fatalf("draining the outbox: %v", err)
+	}
+
+	status, notifications := h.requestList(http.MethodGet, "/api/me/notifications", token, nil)
+	if status != http.StatusOK {
+		t.Fatalf("notifications returned %d", status)
+	}
+	found := false
+	for _, n := range notifications {
+		if n["type"] == "BOOKING_CONFIRMED" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("no booking notification was delivered: %v", notifications)
+	}
+
+	status, me := h.request(http.MethodGet, "/api/me", token, nil)
+	if status != http.StatusOK || int(me["unreadNotifications"].(float64)) == 0 {
+		t.Fatalf("unread count did not follow the notification: %v", me["unreadNotifications"])
+	}
+
+	if status, _ := h.request(http.MethodPost, "/api/me/notifications/read-all", token, nil); status != http.StatusOK {
+		t.Fatal("marking notifications read failed")
+	}
+	_, after := h.request(http.MethodGet, "/api/me", token, nil)
+	if int(after["unreadNotifications"].(float64)) != 0 {
+		t.Fatalf("unread count after read-all = %v, want 0", after["unreadNotifications"])
 	}
 }
 
@@ -543,7 +639,7 @@ func TestAnonymousCallersCannotReachMemberData(t *testing.T) {
 // TestMembersCannotReadEachOthersPayments proves ownership is checked.
 func TestMembersCannotReadEachOthersPayments(t *testing.T) {
 	h := newHarness(t)
-	owner := h.memberToken("demo@nuhabit.id")
+	owner := h.memberToken("demo@hyrox.id")
 	other := h.memberToken("lucas@example.com")
 
 	_, result := h.request(http.MethodPost, "/api/me/topup", owner, map[string]any{
@@ -563,7 +659,7 @@ func TestMembersCannotReadEachOthersPayments(t *testing.T) {
 // TestVoucherRulesAtCheckout pins the discount and its eligibility rules.
 func TestVoucherRulesAtCheckout(t *testing.T) {
 	h := newHarness(t)
-	token := h.memberToken("demo@nuhabit.id")
+	token := h.memberToken("demo@hyrox.id")
 
 	// A general code applies.
 	status, quote := h.request(http.MethodPost, "/api/vouchers/validate", token, map[string]any{
@@ -666,7 +762,7 @@ func TestSchedulePublicVisibility(t *testing.T) {
 	}
 	draftID := draft["id"].(string)
 
-	member := h.memberToken("demo@nuhabit.id")
+	member := h.memberToken("demo@hyrox.id")
 	if status, _ := h.request(http.MethodGet, "/api/sessions/"+draftID, member, nil); status != http.StatusNotFound {
 		t.Fatalf("a member can see a draft class (status %d)", status)
 	}
@@ -687,7 +783,7 @@ func TestSchedulePublicVisibility(t *testing.T) {
 func TestDashboardReflectsActivity(t *testing.T) {
 	h := newHarness(t)
 	admin := h.adminToken("adm_super")
-	token := h.memberToken("demo@nuhabit.id")
+	token := h.memberToken("demo@hyrox.id")
 
 	before := dashboardValue(h, admin, "outstandingCredits")
 	h.topUp(token, "pkg_visit10")
@@ -715,7 +811,7 @@ func dashboardValue(h *harness, adminToken, key string) int {
 // even a direct SQL mistake, not just careful application code.
 func TestAppendOnlyLedgerIsEnforcedByTheDatabase(t *testing.T) {
 	h := newHarness(t)
-	token := h.memberToken("demo@nuhabit.id")
+	token := h.memberToken("demo@hyrox.id")
 	h.topUp(token, "pkg_starter5")
 
 	ctx := context.Background()

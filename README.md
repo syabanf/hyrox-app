@@ -1,10 +1,10 @@
 # NüHabit App
 
-Monorepo implementing the **NüHabit Studio Operating System** blueprint - member PWA, admin panel, and a mock backend with a real domain core:
+Monorepo implementing the **NüHabit Studio Operating System** blueprint - member PWA, admin panel, and a Go + PostgreSQL backend, all in one repository:
 
 **REGISTER → TOP UP → BOOK → CHECK-IN (QR) → CREDIT DEDUCTION → ATTEND**
 
-Frontend-only for now: all data flows through **MSW** service workers backed by in-memory repositories, but through the exact HTTP contracts a real API will serve later. Swap = point the API client's base URL at a server and delete the worker.
+The apps run either way. Point them at the backend (`VITE_API_BASE_URL` / `NEXT_PUBLIC_API_BASE_URL`) and they talk to it over HTTP; leave it unset and each app answers its own requests in-process from a bundled seed, so the demo still runs with no database behind it. Same contracts either way.
 
 ## Apps & packages
 
@@ -12,6 +12,7 @@ Frontend-only for now: all data flows through **MSW** service workers backed by 
 |---|---|
 | `apps/member` | Member PWA - Vite 7 + React 19 + React Router v7 + vite-plugin-pwa. NüHabit brand: White Beige ground (#F3ECE2), Deep Forest Green ink (#00281A), Pale Lime accents (#DAFF59). |
 | `apps/admin` | Admin panel - Next.js 15 (App Router). Light theme, dark sidebar, table-first. |
+| `apps/backend` | **The API** - Go + PostgreSQL, one module per bounded context, no framework. See `apps/backend/README.md`. |
 | `packages/domain` | **Zero-dependency** entities, state machines, ledger math, booking/gate/voucher policies, coach incentive math, RBAC. Fully unit-tested. |
 | `packages/application` | Use cases + repository ports (clean architecture application layer). |
 | `packages/contracts` | zod request schemas + response view models + route map - the future API surface. |
@@ -23,13 +24,34 @@ Layer rule (eslint-enforced): `domain → nothing`, `application → domain`, `a
 
 ## Run it
 
+The whole product, one command:
+
+```bash
+pnpm stack:up       # PostgreSQL + Go API + member app + admin panel, then seeded
+```
+
+| | |
+|---|---|
+| http://localhost:8088 | member PWA |
+| http://localhost:8088/admin | admin panel |
+| http://localhost:8088/api | the API (also direct on :9080) |
+
+One origin serves all three, so the browser never makes a cross-origin call.
+`pnpm stack:down` stops it, `pnpm stack:reset` also drops the data.
+
+Or run the pieces from source:
+
 ```bash
 pnpm install
-pnpm dev            # both apps via turbo
-# or individually:
+pnpm dev            # both apps via turbo, on the in-process mock
 pnpm dev:member     # http://localhost:5173
 pnpm dev:admin      # http://localhost:3000
+pnpm dev:backend    # http://localhost:8080 (needs PostgreSQL: make -C apps/backend db)
 ```
+
+Demo sign-in: the member app signs itself in as `demo@hyrox.id`; staff pick a
+role card (`adm_super`, `adm_hq`, `adm_branch`, `adm_desk`, `adm_coach`,
+`adm_finance`).
 
 Verification suite:
 

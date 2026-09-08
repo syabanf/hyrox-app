@@ -73,6 +73,7 @@ func run() error {
 		"bookings", summary.Bookings,
 		"campaigns", summary.Campaigns,
 		"purchaseOrders", summary.Orders,
+		"sales", summary.Sales,
 		"pictures", summary.Pictures,
 	)
 	// Printed rather than left to be guessed: an unfindable demo password ends

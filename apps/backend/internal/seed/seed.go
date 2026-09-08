@@ -56,6 +56,7 @@ type Summary struct {
 	Bookings    int
 	Campaigns   int
 	Orders      int
+	Sales       int
 	Pictures    int
 }
 
@@ -129,6 +130,9 @@ func (s *Seeder) Run(ctx context.Context) (Summary, error) {
 			return err
 		}
 		if summary.Orders, err = s.seedPurchasingActivity(ctx); err != nil {
+			return err
+		}
+		if summary.Sales, err = s.seedOperations(ctx); err != nil {
 			return err
 		}
 		// Last, because it fills in pictures for rows the other seeders made.

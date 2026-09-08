@@ -1,0 +1,15 @@
+bin/
+/out/
+
+# Local configuration; .env.example is the tracked template.
+.env
+.env.local
+
+# Go test and coverage artifacts
+*.test
+*.out
+coverage.html
+
+.DS_Store
+.idea/
+.vscode/

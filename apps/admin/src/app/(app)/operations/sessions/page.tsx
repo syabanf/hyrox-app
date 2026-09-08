@@ -7,12 +7,17 @@ import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
 import { Eye, Trash2 } from 'lucide-react';
-import { ErrorNote, Modal, PageTitle, Pager, RowActions, SearchSelect, StatCard } from '../../../../components/ui';
+import { CreateSessionModal } from '../../../../components/create-session';
+import { ErrorNote, PageTitle, Pager, RowActions, SearchSelect, StatCard } from '../../../../components/ui';
 
 export default function SessionsPage() {
   const qc = useQueryClient();
   const { can } = usePermissions();
   const [branchId, setBranchId] = useState('');
+  const [coachId, setCoachId] = useState('');
+  // The create modal opens either empty, or already set to a coach — from the
+  // Coaches page, or from the coach this list is filtered to.
+  const [createFor, setCreateFor] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [showPast, setShowPast] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
@@ -21,9 +26,14 @@ export default function SessionsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const { data: branches } = useQuery({ queryKey: ['branches'], queryFn: api.catalog.branches });
+  const { data: coaches } = useQuery({ queryKey: ['coaches'], queryFn: api.admin.coaches.list });
   const { data: sessions, isLoading } = useQuery({
-    queryKey: ['admin-sessions', branchId],
-    queryFn: () => api.admin.sessions.list(branchId ? { branchId } : undefined),
+    queryKey: ['admin-sessions', branchId, coachId],
+    queryFn: () =>
+      api.admin.sessions.list({
+        ...(branchId ? { branchId } : {}),
+        ...(coachId ? { coachId } : {}),
+      }),
   });
 
   const remove = useMutation({
@@ -53,7 +63,13 @@ export default function SessionsPage() {
         subtitle="Scheduled occurrences (class type ≠ session)"
         actions={
           can('sessions.manage') ? (
-            <button className="a-btn" onClick={() => setCreateOpen(true)}>
+            <button
+              className="a-btn"
+              onClick={() => {
+                setCreateFor(coachId || null);
+                setCreateOpen(true);
+              }}
+            >
               + New session
             </button>
           ) : undefined
@@ -89,6 +105,21 @@ export default function SessionsPage() {
             emptyLabel="All branches"
             placeholder="Search branch…"
             options={(branches ?? []).map((b) => ({ value: b.id, label: b.name }))}
+          />
+        </div>
+        <div className="w-44">
+          <SearchSelect
+            value={coachId}
+            onChange={(v) => {
+              setCoachId(v);
+              setPage(0);
+            }}
+            allowEmpty
+            emptyLabel="All coaches"
+            placeholder="Search coach…"
+            options={(coaches ?? [])
+              .filter((c) => !branchId || c.branchId === branchId)
+              .map((c) => ({ value: c.id, label: c.name, hint: c.specialization }))}
           />
         </div>
         <div className="w-40">
@@ -179,6 +210,7 @@ export default function SessionsPage() {
       )}
       {createOpen ? (
         <CreateSessionModal
+          coachId={createFor}
           onClose={() => setCreateOpen(false)}
           onDone={() => {
             setCreateOpen(false);
@@ -187,102 +219,5 @@ export default function SessionsPage() {
         />
       ) : null}
     </div>
-  );
-}
-
-function CreateSessionModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
-  const { data: classTypes } = useQuery({ queryKey: ['class-types'], queryFn: api.admin.classTypes.list });
-  const { data: branches } = useQuery({ queryKey: ['branches'], queryFn: api.catalog.branches });
-  const { data: coaches } = useQuery({ queryKey: ['coaches'], queryFn: api.admin.coaches.list });
-  const [classTypeId, setClassTypeId] = useState('');
-  const [branchId, setBranchId] = useState('');
-  const [coachId, setCoachId] = useState('');
-  const [startsAt, setStartsAt] = useState('');
-  const [capacity, setCapacity] = useState('');
-  const [publish, setPublish] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const mutation = useMutation({
-    mutationFn: () =>
-      api.admin.sessions.create({
-        classTypeId,
-        branchId,
-        coachId,
-        startsAt: new Date(startsAt).toISOString(),
-        capacity: capacity ? Number(capacity) : undefined,
-        area: null,
-        publish,
-      }),
-    onSuccess: onDone,
-    onError: (e) => setError(e instanceof ApiError ? e.message : 'Create failed.'),
-  });
-
-  return (
-    <Modal title="New class session" onClose={onClose}>
-      <div className="flex flex-col gap-3">
-        <div>
-          <label className="a-label">Class type</label>
-          <SearchSelect
-            value={classTypeId}
-            onChange={setClassTypeId}
-            placeholder="Search class type…"
-            options={(classTypes ?? []).map((t) => ({
-              value: t.id,
-              label: t.name,
-              hint: `${t.defaultCreditCost} cr · cap ${t.defaultCapacity}`,
-            }))}
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="a-label">Branch</label>
-            <SearchSelect
-              value={branchId}
-              onChange={setBranchId}
-              placeholder="Search branch…"
-              options={(branches ?? []).map((b) => ({ value: b.id, label: b.name }))}
-            />
-          </div>
-          <div>
-            <label className="a-label">Coach</label>
-            <SearchSelect
-              value={coachId}
-              onChange={setCoachId}
-              placeholder="Search coach…"
-              options={(coaches ?? [])
-                .filter((c) => !branchId || c.branchId === branchId)
-                .map((c) => ({ value: c.id, label: c.name, hint: c.specialization }))}
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="a-label">Starts at</label>
-            <input
-              type="datetime-local"
-              className="a-input"
-              value={startsAt}
-              onChange={(e) => setStartsAt(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="a-label">Capacity (blank = type default)</label>
-            <input className="a-input" value={capacity} onChange={(e) => setCapacity(e.target.value)} />
-          </div>
-        </div>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={publish} onChange={(e) => setPublish(e.target.checked)} />
-          Publish immediately (bookable)
-        </label>
-        <ErrorNote message={error} />
-        <button
-          className="a-btn"
-          disabled={mutation.isPending || !classTypeId || !branchId || !coachId || !startsAt}
-          onClick={() => mutation.mutate()}
-        >
-          Create session
-        </button>
-      </div>
-    </Modal>
   );
 }

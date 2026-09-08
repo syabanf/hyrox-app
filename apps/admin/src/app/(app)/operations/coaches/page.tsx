@@ -6,13 +6,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { Pencil, Trash2 } from 'lucide-react';
+import { CalendarPlus, Pencil, Trash2 } from 'lucide-react';
+import { CreateSessionModal } from '../../../../components/create-session';
 import { ErrorNote, Modal, PageTitle, RowActions, SearchSelect, StatCard } from '../../../../components/ui';
 
 export default function CoachesPage() {
   const qc = useQueryClient();
   const { can } = usePermissions();
   const [editing, setEditing] = useState<Coach | 'new' | null>(null);
+  // Scheduling a class for the coach whose card it was clicked from.
+  const [schedulingFor, setSchedulingFor] = useState<Coach | null>(null);
   const [branchView, setBranchView] = useState('');
   const [query, setQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -92,6 +95,15 @@ export default function CoachesPage() {
                 <RowActions
                   items={[
                     { label: 'Edit', icon: Pencil, onClick: () => setEditing(c) },
+                    ...(can('sessions.manage')
+                      ? [
+                          {
+                            label: 'Schedule a class',
+                            icon: CalendarPlus,
+                            onClick: () => setSchedulingFor(c),
+                          },
+                        ]
+                      : []),
                     {
                       label: 'Delete',
                       icon: Trash2,
@@ -107,6 +119,16 @@ export default function CoachesPage() {
           </div>
         ))}
       </div>
+      {schedulingFor ? (
+        <CreateSessionModal
+          coachId={schedulingFor.id}
+          onClose={() => setSchedulingFor(null)}
+          onDone={() => {
+            setSchedulingFor(null);
+            void qc.invalidateQueries();
+          }}
+        />
+      ) : null}
       {editing ? (
         <CoachModal
           coach={editing === 'new' ? null : editing}

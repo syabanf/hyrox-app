@@ -25,6 +25,11 @@ func (h *Handler) Mount(r *httpx.Router) {
 	// The public schedule takes an optional member token: with one, each class
 	// also reports whether the caller already has a place.
 	r.Get("/api/sessions", h.listSessions, h.guard.Optional)
+	// Browsing by who is teaching, rather than by when. Optional auth, so the
+	// cards show a member their own bookings once signed in and still render
+	// for somebody who is not.
+	r.Get("/api/coaches", h.listTrainers, h.guard.Optional)
+	r.Get("/api/coaches/{id}", h.trainer, h.guard.Optional)
 	r.Get("/api/sessions/{id}", h.session, h.guard.Optional)
 
 	r.Post("/api/sessions/{id}/book", h.book, h.guard.RequireMember)
@@ -83,8 +88,11 @@ func (h *Handler) listSessions(w http.ResponseWriter, r *http.Request) {
 	}
 	sessions, err := h.service.Sessions(ctx, SessionFilter{
 		BranchID: httpx.Query(r, "branchId"),
-		From:     from,
-		To:       to,
+		// Members pick a class by who is teaching it as often as by when it
+		// is on, so the schedule filters by coach the way the panel does.
+		CoachID: httpx.Query(r, "coachId"),
+		From:    from,
+		To:      to,
 		// Drafts are staff-only: a member must never see a class that has not
 		// been published.
 		Statuses: []domain.SessionStatus{

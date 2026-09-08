@@ -4,6 +4,8 @@ import { LoginPage } from '../features/auth/login-page';
 import { RegisterPage } from '../features/auth/register-page';
 import { BookingsPage } from '../features/classes/bookings-page';
 import { SchedulePage } from '../features/classes/schedule-page';
+import { TrainerDetailPage } from '../features/classes/trainer-detail-page';
+import { TrainersPage } from '../features/classes/trainers-page';
 import { SessionDetailPage } from '../features/classes/session-detail-page';
 import { HomePage } from '../features/home/home-page';
 import { NotificationsPage } from '../features/notifications/notifications-page';
@@ -49,6 +51,8 @@ export const router = createBrowserRouter([
       { path: '/classes', element: <SchedulePage /> },
       { path: '/my-classes', element: <MyClassesPage /> },
       { path: '/classes/:sessionId', element: <SessionDetailPage /> },
+      { path: '/trainers', element: <TrainersPage /> },
+      { path: '/trainers/:coachId', element: <TrainerDetailPage /> },
       { path: '/bookings', element: <BookingsPage /> },
       { path: '/qr', element: <QrPage /> },
       { path: '/visits', element: <VisitsPage /> },

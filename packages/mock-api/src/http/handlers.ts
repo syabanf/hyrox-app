@@ -468,17 +468,85 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
     http.get('*/api/sessions', ({ request }) => {
       const url = new URL(request.url);
       const branchId = url.searchParams.get('branchId');
+      const coachId = url.searchParams.get('coachId');
       const from = url.searchParams.get('from');
       const to = url.searchParams.get('to');
       const member = memberFromRequest(db(), request);
       const views = db()
         .sessions.filter((s) => s.status !== 'DRAFT')
         .filter((s) => !branchId || s.branchId === branchId)
+        .filter((s) => !coachId || s.coachId === coachId)
         .filter((s) => !from || msOf(s.startsAt) >= msOf(from))
         .filter((s) => !to || msOf(s.startsAt) <= msOf(to))
         .sort((a, b) => msOf(a.startsAt) - msOf(b.startsAt))
         .map((s) => sessionView(db(), s, member?.id));
       return HttpResponse.json(views);
+    }),
+
+    // Browsing by who is teaching. The window and the ordering match the
+    // server's: coaches with classes first, soonest first.
+    http.get('*/api/coaches', ({ request }) => {
+      const branchId = new URL(request.url).searchParams.get('branchId');
+      const now = msOf(deps().clock.now());
+      const until = now + 14 * 24 * 3600_000;
+      const upcoming = db().sessions.filter(
+        (s) =>
+          (s.status === 'PUBLISHED' || s.status === 'FULL') &&
+          msOf(s.startsAt) >= now &&
+          msOf(s.startsAt) <= until &&
+          (!branchId || s.branchId === branchId),
+      );
+
+      const cards = db()
+        .coaches.filter((c) => c.status === 'ACTIVE')
+        .filter((c) => !branchId || c.branchId === branchId)
+        .map((coach) => {
+          const theirs = upcoming.filter((s) => s.coachId === coach.id);
+          const names = [...new Set(theirs.map((s) => (db().classTypes.find((t) => t.id === s.classTypeId)?.name ?? 'Class')))];
+          return {
+            coach,
+            branchName: (db().branches.find((b) => b.id === coach.branchId)?.name ?? 'Branch'),
+            upcomingCount: theirs.length,
+            nextSessionAt:
+              theirs.length > 0
+                ? theirs.reduce((a, b) => (msOf(a.startsAt) < msOf(b.startsAt) ? a : b)).startsAt
+                : null,
+            classTypeNames: names,
+          };
+        })
+        .sort((a, b) => {
+          if (!a.nextSessionAt !== !b.nextSessionAt) return a.nextSessionAt ? -1 : 1;
+          if (a.nextSessionAt && b.nextSessionAt && a.nextSessionAt !== b.nextSessionAt) {
+            return msOf(a.nextSessionAt) - msOf(b.nextSessionAt);
+          }
+          return a.coach.name.localeCompare(b.coach.name);
+        });
+      return HttpResponse.json(cards);
+    }),
+
+    http.get('*/api/coaches/:id', ({ request, params }) => {
+      const coach = db().coaches.find((c) => c.id === param(params, 'id'));
+      if (!coach) return jsonError(404, 'NOT_FOUND', 'Coach not found.');
+      const member = memberFromRequest(db(), request);
+      const now = msOf(deps().clock.now());
+      const until = now + 14 * 24 * 3600_000;
+      const theirs = db()
+        .sessions.filter(
+          (s) =>
+            s.coachId === coach.id &&
+            (s.status === 'PUBLISHED' || s.status === 'FULL') &&
+            msOf(s.startsAt) >= now &&
+            msOf(s.startsAt) <= until,
+        )
+        .sort((a, b) => msOf(a.startsAt) - msOf(b.startsAt));
+
+      return HttpResponse.json({
+        coach,
+        branchName: (db().branches.find((b) => b.id === coach.branchId)?.name ?? 'Branch'),
+        upcomingCount: theirs.length,
+        classTypeNames: [...new Set(theirs.map((s) => (db().classTypes.find((t) => t.id === s.classTypeId)?.name ?? 'Class')))],
+        upcoming: theirs.map((s) => sessionView(db(), s, member?.id)),
+      });
     }),
 
     http.get('*/api/sessions/:id', ({ request, params }) => {

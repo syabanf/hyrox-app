@@ -114,6 +114,26 @@ export interface SessionView {
   spotsLeft: number;
   myBooking: Pick<Booking, 'id' | 'status' | 'waitlistPosition' | 'promotionOfferedAt'> | null;
 }
+/** One coach on the browse-by-trainer screen. */
+export interface TrainerCardView {
+  coach: Coach;
+  branchName: string;
+  /** Classes in the next fortnight. Zero for a coach with nothing scheduled. */
+  upcomingCount: number;
+  nextSessionAt: string | null;
+  /** What they teach, most-taught first. */
+  classTypeNames: string[];
+}
+
+/** A trainer's own page: who they are and what they are teaching next. */
+export interface TrainerProfileView {
+  coach: Coach;
+  branchName: string;
+  upcomingCount: number;
+  classTypeNames: string[];
+  upcoming: SessionView[];
+}
+
 export interface BookingView {
   booking: Booking;
   session: ClassSession;

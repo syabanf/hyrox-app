@@ -4,7 +4,10 @@ import { api } from './api';
 export const keys = {
   me: ['me'] as const,
   wallet: ['wallet'] as const,
-  sessions: (branchId?: string) => ['sessions', branchId ?? 'all'] as const,
+  sessions: (branchId?: string, coachId?: string) =>
+    ['sessions', branchId ?? 'all', coachId ?? 'all'] as const,
+  trainers: (branchId?: string) => ['trainers', branchId ?? 'all'] as const,
+  trainer: (id: string) => ['trainer', id] as const,
   session: (id: string) => ['session', id] as const,
   bookings: ['bookings'] as const,
   visits: ['visits'] as const,
@@ -19,11 +22,21 @@ export const useBranches = () =>
   useQuery({ queryKey: keys.branches, queryFn: api.catalog.branches, staleTime: Infinity });
 export const usePackages = () =>
   useQuery({ queryKey: keys.packages, queryFn: api.catalog.packages });
-export const useSessions = (branchId?: string) =>
+export const useSessions = (branchId?: string, coachId?: string) =>
   useQuery({
-    queryKey: keys.sessions(branchId),
-    queryFn: () => api.catalog.sessions(branchId ? { branchId } : undefined),
+    queryKey: keys.sessions(branchId, coachId),
+    queryFn: () =>
+      api.catalog.sessions({
+        ...(branchId ? { branchId } : {}),
+        ...(coachId ? { coachId } : {}),
+      }),
   });
+
+/** Coaches members can book, with what each has coming up. */
+export const useTrainers = (branchId?: string) =>
+  useQuery({ queryKey: keys.trainers(branchId), queryFn: () => api.catalog.trainers(branchId) });
+export const useTrainer = (id: string) =>
+  useQuery({ queryKey: keys.trainer(id), queryFn: () => api.catalog.trainer(id) });
 export const useSession = (id: string) =>
   useQuery({ queryKey: keys.session(id), queryFn: () => api.catalog.session(id) });
 export const useMyBookings = () => useQuery({ queryKey: keys.bookings, queryFn: api.me.bookings });

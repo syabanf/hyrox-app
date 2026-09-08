@@ -3,6 +3,8 @@ import type {
   AdminSessionView,
   ApiErrorBody,
   AuthModeView,
+  TrainerCardView,
+  TrainerProfileView,
   BookResultView,
   BookingView,
   CancelResultView,
@@ -436,9 +438,13 @@ export function createApiClient(options: ApiClientOptions) {
       branches: () => get<Branch[]>('/api/branches'),
       classTypes: () => get<ClassType[]>('/api/class-types'),
       packages: () => get<(CreditPackage & { coverageNames: string[] | null })[]>('/api/packages'),
-      sessions: (query?: { branchId?: string; from?: string; to?: string }) =>
+      sessions: (query?: { branchId?: string; coachId?: string; from?: string; to?: string }) =>
         get<SessionView[]>('/api/sessions', query),
       session: (id: string) => get<SessionView>(`/api/sessions/${id}`),
+      /** Coaches members can book, with what each has coming up. */
+      trainers: (branchId?: string) =>
+        get<TrainerCardView[]>('/api/coaches', branchId ? { branchId } : undefined),
+      trainer: (id: string) => get<TrainerProfileView>(`/api/coaches/${id}`),
       validateVoucher: (code: string, packageId: string) =>
         post<VoucherQuoteView>('/api/vouchers/validate', { code, packageId }),
     },
@@ -481,7 +487,7 @@ export function createApiClient(options: ApiClientOptions) {
         remove: (id: string) => del(`/api/admin/class-types/${id}`),
       },
       sessions: {
-        list: (query?: { branchId?: string; from?: string; to?: string }) =>
+        list: (query?: { branchId?: string; coachId?: string; from?: string; to?: string }) =>
           get<SessionView[]>('/api/admin/sessions', query),
         get: (id: string) => get<SessionDetailAdminView>(`/api/admin/sessions/${id}`),
         create: (input: CreateSessionInput) => post<SessionView>('/api/admin/sessions', input),

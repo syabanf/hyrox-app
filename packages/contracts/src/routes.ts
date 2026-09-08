@@ -25,6 +25,8 @@ export const ROUTES = {
   packages: `${API_BASE}/packages`,
   validateVoucher: `${API_BASE}/vouchers/validate`,
   sessions: `${API_BASE}/sessions`,
+  trainers: `${API_BASE}/coaches`,
+  trainer: (id: string) => `${API_BASE}/coaches/${id}`,
   session: (id: string) => `${API_BASE}/sessions/${id}`,
   bookSession: (id: string) => `${API_BASE}/sessions/${id}/book`,
   cancelBooking: (id: string) => `${API_BASE}/bookings/${id}/cancel`,

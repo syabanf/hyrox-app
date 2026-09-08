@@ -25,6 +25,7 @@ func (h *Handler) Mount(r *httpx.Router) {
 	manage := admin(domain.PermPurchasingManage)
 	approve := admin(domain.PermPurchasingApprove)
 	receive := admin(domain.PermPurchasingReceive)
+	pay := admin(domain.PermPurchasingPay)
 
 	r.Get("/api/admin/purchasing/overview", h.overview, view)
 
@@ -70,7 +71,32 @@ func (h *Handler) Mount(r *httpx.Router) {
 	r.Post("/api/admin/purchasing/returns", h.openReturn, receive)
 	r.Get("/api/admin/purchasing/returns/{id}", h.getReturn, view)
 	r.Post("/api/admin/purchasing/returns/{id}/lines", h.addReturnLine, receive)
+	// Sending goods back is somebody's signature, not the receiving bay's
+	// decision, so submitting and approving are separate grants.
+	r.Post("/api/admin/purchasing/returns/{id}/submit", h.submitReturn, receive)
+	r.Post("/api/admin/purchasing/returns/{id}/approve", h.approveReturn, approve)
+	r.Post("/api/admin/purchasing/returns/{id}/reject", h.rejectReturn, approve)
+	// A rejected return goes back to whoever raised it to be corrected.
+	r.Post("/api/admin/purchasing/returns/{id}/revise", h.reviseReturn, receive)
 	r.Post("/api/admin/purchasing/returns/{id}/post", h.postReturn, receive)
+
+	// The receiving bay: what came off the truck, before anybody judged it.
+	r.Get("/api/admin/purchasing/deliveries", h.listDeliveries, view)
+	r.Post("/api/admin/purchasing/deliveries", h.openDelivery, receive)
+	r.Get("/api/admin/purchasing/deliveries/{id}", h.getDelivery, view)
+	r.Post("/api/admin/purchasing/deliveries/{id}/lines", h.addDeliveryLine, receive)
+	r.Post("/api/admin/purchasing/deliveries/{id}/close", h.closeDelivery, receive)
+
+	// The money. Paying a supplier is a finance grant, not a buying one.
+	r.Get("/api/admin/purchasing/orders/{id}/payables", h.getPayables, view)
+	r.Post("/api/admin/purchasing/orders/{id}/payables/schedule", h.scheduleTerms, pay)
+	r.Put("/api/admin/purchasing/orders/{id}/payables/terms", h.saveTerms, pay)
+	r.Get("/api/admin/purchasing/payments", h.listPayments, view)
+	r.Post("/api/admin/purchasing/payments", h.recordPayment, pay)
+	r.Post("/api/admin/purchasing/payments/{id}/post", h.postPayment, pay)
+	r.Post("/api/admin/purchasing/payments/{id}/void", h.voidPayment, pay)
+	r.Get("/api/admin/purchasing/credits", h.listCredits, view)
+	r.Post("/api/admin/purchasing/credits", h.raiseCredit, pay)
 
 	// What buying cost, and how suppliers actually behaved.
 	r.Get("/api/admin/purchasing/reports/orders", h.reportOrders, view)

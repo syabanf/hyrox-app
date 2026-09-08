@@ -17,14 +17,14 @@ import (
 // ── Goods receipts ───────────────────────────────────────────────────────────
 
 const receiptColumns = `id, grn_number, order_id, supplier_id, branch_id, received_on,
-	received_by, received_by_name, delivery_note_number, status, note, posted_at,
+	received_by, received_by_name, delivery_note_number, delivery_id, status, note, posted_at,
 	created_at, updated_at`
 
 func scanReceipt(row pgx.Row) (domain.GoodsReceipt, error) {
 	var g domain.GoodsReceipt
 	var receivedOn time.Time
 	err := row.Scan(&g.ID, &g.GRNNumber, &g.OrderID, &g.SupplierID, &g.BranchID, &receivedOn,
-		&g.ReceivedBy, &g.ReceivedByName, &g.DeliveryNoteNumber, &g.Status, &g.Note,
+		&g.ReceivedBy, &g.ReceivedByName, &g.DeliveryNoteNumber, &g.DeliveryID, &g.Status, &g.Note,
 		&g.PostedAt, &g.CreatedAt, &g.UpdatedAt)
 	if err != nil {
 		return domain.GoodsReceipt{}, err
@@ -99,10 +99,11 @@ func (r *Repository) Receipt(ctx context.Context, id string, forUpdate bool) (do
 func (r *Repository) InsertReceipt(ctx context.Context, g domain.GoodsReceipt) (domain.GoodsReceipt, error) {
 	created, err := scanReceipt(r.db.QueryRow(ctx, `
 		INSERT INTO purchasing.goods_receipts (id, grn_number, order_id, supplier_id, branch_id,
-			received_on, received_by, received_by_name, delivery_note_number, status, note)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING `+receiptColumns,
+			received_on, received_by, received_by_name, delivery_note_number, delivery_id,
+			status, note)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING `+receiptColumns,
 		g.ID, g.GRNNumber, g.OrderID, g.SupplierID, g.BranchID, requiredDate(g.ReceivedOn),
-		g.ReceivedBy, g.ReceivedByName, g.DeliveryNoteNumber, g.Status, g.Note))
+		g.ReceivedBy, g.ReceivedByName, g.DeliveryNoteNumber, g.DeliveryID, g.Status, g.Note))
 	if database.IsUniqueViolation(err) {
 		return domain.GoodsReceipt{}, httpx.Conflict("DUPLICATE", "That receipt number is taken.")
 	}
@@ -234,14 +235,16 @@ func (r *Repository) AddReturnedQty(ctx context.Context, receiptItemID string, q
 // ── Returns ──────────────────────────────────────────────────────────────────
 
 const returnColumns = `id, return_number, receipt_id, supplier_id, branch_id, returned_on,
-	reason_type, reason_note, status, total_idr, posted_at, created_at, updated_at`
+	reason_type, reason_note, status, total_idr, posted_at, submitted_at, approved_by,
+	approved_at, rejected_by, rejected_at, decision_note, credit_id, created_at, updated_at`
 
 func scanReturn(row pgx.Row) (domain.PurchaseReturn, error) {
 	var p domain.PurchaseReturn
 	var returnedOn time.Time
 	err := row.Scan(&p.ID, &p.ReturnNumber, &p.ReceiptID, &p.SupplierID, &p.BranchID,
 		&returnedOn, &p.ReasonType, &p.ReasonNote, &p.Status, &p.TotalIDR, &p.PostedAt,
-		&p.CreatedAt, &p.UpdatedAt)
+		&p.SubmittedAt, &p.ApprovedBy, &p.ApprovedAt, &p.RejectedBy, &p.RejectedAt,
+		&p.DecisionNote, &p.CreditID, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		return domain.PurchaseReturn{}, err
 	}
@@ -320,11 +323,16 @@ func (r *Repository) InsertReturn(ctx context.Context, p domain.PurchaseReturn) 
 func (r *Repository) SaveReturn(ctx context.Context, p domain.PurchaseReturn) (domain.PurchaseReturn, error) {
 	saved, err := scanReturn(r.db.QueryRow(ctx, `
 		UPDATE purchasing.purchase_returns SET status = $2, reason_note = $3, total_idr = $4,
-			posted_at = $5, updated_at = now()
+			posted_at = $5, submitted_at = $6, approved_by = $7, approved_at = $8,
+			rejected_by = $9, rejected_at = $10, decision_note = $11, updated_at = now()
 		WHERE id = $1 RETURNING `+returnColumns,
-		p.ID, p.Status, p.ReasonNote, p.TotalIDR, p.PostedAt))
+		p.ID, p.Status, p.ReasonNote, p.TotalIDR, p.PostedAt, p.SubmittedAt,
+		p.ApprovedBy, p.ApprovedAt, p.RejectedBy, p.RejectedAt, p.DecisionNote))
 	if database.IsNoRows(err) {
 		return domain.PurchaseReturn{}, httpx.NotFound("purchase return")
+	}
+	if database.IsCheckViolation(err) {
+		return domain.PurchaseReturn{}, httpx.Invalid("Rejecting a return needs a reason.")
 	}
 	if err != nil {
 		return domain.PurchaseReturn{}, fmt.Errorf("purchasing: saving return: %w", err)

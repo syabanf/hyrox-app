@@ -85,10 +85,29 @@ func (s *Service) Receipt(ctx context.Context, receiptID string) (ReceiptView, e
 }
 
 // OpenReceipt starts a delivery note against an order.
-func (s *Service) OpenReceipt(ctx context.Context, orderID string, deliveryNote *string, note *string, actor Actor) (ReceiptView, error) {
+func (s *Service) OpenReceipt(ctx context.Context, orderID string, deliveryNote *string,
+	deliveryID *string, note *string, actor Actor) (ReceiptView, error) {
+
 	order, err := s.repo.Order(ctx, orderID, false)
 	if err != nil {
 		return ReceiptView{}, err
+	}
+	// A receipt may inspect a recorded arrival, or be raised straight off the
+	// order — the small delivery somebody checked as it came in is still a
+	// legitimate way to work.
+	if deliveryID != nil && *deliveryID != "" {
+		delivery, err := s.repo.Delivery(ctx, *deliveryID, false)
+		if err != nil {
+			return ReceiptView{}, err
+		}
+		if delivery.OrderID != orderID {
+			return ReceiptView{}, httpx.Invalid("That delivery arrived against a different order.")
+		}
+		if delivery.Status != domain.DeliveryArrived {
+			return ReceiptView{}, httpx.Conflict("DELIVERY_CLOSED",
+				"That delivery is %s and has already been inspected.",
+				strings.ToLower(string(delivery.Status)))
+		}
 	}
 	switch order.Status {
 	case domain.POApproved, domain.POSent, domain.POPartiallyReceived:
@@ -102,7 +121,8 @@ func (s *Service) OpenReceipt(ctx context.Context, orderID string, deliveryNote 
 		ID: s.ids.New(id.GoodsReceipt), GRNNumber: s.documentNumber("GRN", id.GoodsReceipt),
 		OrderID: orderID, SupplierID: order.SupplierID, BranchID: order.BranchID,
 		ReceivedOn: s.today(), ReceivedBy: &actor.ID, ReceivedByName: &actor.Name,
-		DeliveryNoteNumber: deliveryNote, Status: domain.GRNDraft, Note: note,
+		DeliveryNoteNumber: deliveryNote, DeliveryID: deliveryID,
+		Status: domain.GRNDraft, Note: note,
 	})
 	if err != nil {
 		return ReceiptView{}, err
@@ -517,6 +537,7 @@ func (s *Service) PostReturn(ctx context.Context, returnID string, actor Actor) 
 		}
 
 		ref := StockRef{Type: "PURCHASE_RETURN", ID: ret.ID, Number: ret.ReturnNumber}
+		var value float64
 		for _, line := range lines {
 			if err := s.stock.Return(ctx, line.ItemID, ret.BranchID, line.Qty, ref, s.stockActor(actor)); err != nil {
 				return err
@@ -524,6 +545,7 @@ func (s *Service) PostReturn(ctx context.Context, returnID string, actor Actor) 
 			if err := s.repo.AddReturnedQty(ctx, line.ReceiptItemID, line.Qty); err != nil {
 				return err
 			}
+			value += float64(line.Qty) * line.UnitPriceIDR
 		}
 
 		now := s.clock.Now()
@@ -532,6 +554,27 @@ func (s *Service) PostReturn(ctx context.Context, returnID string, actor Actor) 
 		saved, err := s.repo.SaveReturn(ctx, ret)
 		if err != nil {
 			return err
+		}
+
+		// Goods going back are money coming back. A credit note is raised with
+		// them so the debt is reduced at the moment the stock leaves, rather
+		// than whenever somebody remembers — which is how a supplier ends up
+		// paid in full for goods they took back.
+		if value > 0 {
+			reason := "Return " + ret.ReturnNumber
+			credit, err := s.repo.InsertCredit(ctx, domain.VendorCredit{
+				ID: s.ids.New(id.VendorCredit), CreditNumber: s.documentNumber("CN", id.VendorCredit),
+				SupplierID: ret.SupplierID, ReturnID: &ret.ID,
+				IssuedOn:  domain.DateOf(now, s.studio),
+				AmountIDR: value, Status: domain.CreditOpen, Reason: &reason,
+			})
+			if err != nil {
+				return err
+			}
+			if err := s.repo.SetReturnCredit(ctx, ret.ID, credit.ID); err != nil {
+				return err
+			}
+			saved.CreditID = &credit.ID
 		}
 		view, err = s.viewReturn(ctx, saved)
 		return err

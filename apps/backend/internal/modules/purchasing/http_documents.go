@@ -426,7 +426,9 @@ func (h *Handler) getReceipt(w http.ResponseWriter, r *http.Request) {
 type openReceiptBody struct {
 	OrderID            string  `json:"orderId"`
 	DeliveryNoteNumber *string `json:"deliveryNoteNumber"`
-	Note               *string `json:"note"`
+	// The arrival this receipt is inspecting, when there was one.
+	DeliveryID *string `json:"deliveryId"`
+	Note       *string `json:"note"`
 }
 
 func (o *openReceiptBody) Validate() error {
@@ -443,7 +445,7 @@ func (h *Handler) openReceipt(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	receipt, err := h.service.OpenReceipt(r.Context(), body.OrderID,
-		body.DeliveryNoteNumber, body.Note, actorFrom(r))
+		body.DeliveryNoteNumber, body.DeliveryID, body.Note, actorFrom(r))
 	if err != nil {
 		httpx.Fail(w, r, err)
 		return

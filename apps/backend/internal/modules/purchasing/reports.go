@@ -109,14 +109,16 @@ func (r *Repository) orderBuckets(ctx context.Context, query string, args []any)
 // SupplierPerformance is how suppliers actually behave, as opposed to what
 // their price lists say.
 func (s *Service) SupplierPerformance(ctx context.Context, window ReportRange) ([]domain.SupplierPerformance, error) {
-	deliveries, err := s.repo.Deliveries(ctx, window)
+	deliveries, err := s.repo.DeliveryOutcomes(ctx, window)
 	if err != nil {
 		return nil, err
 	}
 	return domain.RankSuppliers(deliveries), nil
 }
 
-func (r *Repository) Deliveries(ctx context.Context, window ReportRange) ([]domain.SupplierDelivery, error) {
+// DeliveryOutcomes is one row per order: what was ordered against what turned
+// up. Named apart from Deliveries, which is the receiving bay's own document.
+func (r *Repository) DeliveryOutcomes(ctx context.Context, window ReportRange) ([]domain.SupplierDelivery, error) {
 	args := []any{window.From, window.To}
 	clause := ` AND o.ordered_on >= $1 AND o.ordered_on < $2 AND o.status <> 'CANCELLED'`
 	if window.SupplierID != "" {

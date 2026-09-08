@@ -73,6 +73,10 @@ const (
 	PermPurchasingManage  Permission = "purchasing.manage"
 	PermPurchasingApprove Permission = "purchasing.approve"
 	PermPurchasingReceive Permission = "purchasing.receive"
+	// Paying a supplier is a finance act, not a buying one. The person who
+	// chooses what to order should not also be the person who moves the money
+	// out — that is the whole of why the two grants are separate.
+	PermPurchasingPay Permission = "purchasing.pay"
 	// The till. Selling is the front desk's job; voiding a paid order is not.
 	PermPOSView   Permission = "pos.view"
 	PermPOSSell   Permission = "pos.sell"
@@ -99,6 +103,7 @@ var Permissions = []Permission{
 	PermHRISView, PermHRISManage, PermHRISAttendance, PermHRISApprove,
 	PermInventoryView, PermInventoryManage, PermInventoryCount,
 	PermPurchasingView, PermPurchasingManage, PermPurchasingApprove, PermPurchasingReceive,
+	PermPurchasingPay,
 	PermPOSView, PermPOSSell, PermPOSManage, PermPOSVoid,
 	PermCRMView, PermCRMManage, PermCRMApprove, PermCRMAdjust,
 }
@@ -142,6 +147,8 @@ var RolePermissions = map[AdminRole][]Permission{
 		// Finance is the second signature on a purchase and the reason stock
 		// valuation exists, but it never touches a quantity or a till.
 		PermInventoryView, PermPurchasingView, PermPurchasingApprove,
+		// And the only role besides the super admin that may actually pay one.
+		PermPurchasingPay,
 		PermPOSView, PermCRMView,
 	},
 }

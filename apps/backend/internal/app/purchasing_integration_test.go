@@ -335,6 +335,17 @@ func TestOnlyAcceptedGoodsCanBeReturned(t *testing.T) {
 
 	h.request(http.MethodPost, "/api/admin/purchasing/returns/"+returnID+"/lines", token,
 		map[string]any{"receiptItemId": receiptLineID, "qty": 5})
+
+	// Nothing leaves the building on the receiving bay's say-so.
+	status, unsigned := h.request(http.MethodPost,
+		"/api/admin/purchasing/returns/"+returnID+"/post", token, map[string]any{})
+	if status != http.StatusConflict || errorCode(unsigned) != "INVALID_TRANSITION" {
+		t.Fatalf("a draft return must not post, got %d: %v", status, unsigned)
+	}
+
+	h.request(http.MethodPost, "/api/admin/purchasing/returns/"+returnID+"/submit", token, map[string]any{})
+	h.request(http.MethodPost, "/api/admin/purchasing/returns/"+returnID+"/approve", token,
+		map[string]any{"note": "Agreed with the supplier"})
 	status, posted := h.request(http.MethodPost,
 		"/api/admin/purchasing/returns/"+returnID+"/post", token, map[string]any{})
 	if status != http.StatusOK || posted["status"] != "POSTED" {

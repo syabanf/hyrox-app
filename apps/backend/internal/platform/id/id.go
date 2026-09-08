@@ -80,6 +80,11 @@ const (
 	PurchaseRequest = "pr"
 	PurchaseOrder   = "po"
 	GoodsReceipt    = "grn"
+	Delivery        = "do"
+	PaymentTerm     = "trm"
+	VendorPayment   = "vpm"
+	VendorCredit    = "vcn"
+	CreditApply     = "vca"
 	PurchaseReturn  = "prt"
 	LineItem        = "lin"
 

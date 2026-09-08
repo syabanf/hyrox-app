@@ -476,20 +476,22 @@ var GoodsReceiptTransitions = TransitionMap[GoodsReceiptStatus]{
 
 // GoodsReceipt is what actually turned up.
 type GoodsReceipt struct {
-	ID                 string             `json:"id"`
-	GRNNumber          string             `json:"grnNumber"`
-	OrderID            string             `json:"orderId"`
-	SupplierID         string             `json:"supplierId"`
-	BranchID           string             `json:"branchId"`
-	ReceivedOn         Date               `json:"receivedOn"`
-	ReceivedBy         *string            `json:"receivedBy"`
-	ReceivedByName     *string            `json:"receivedByName"`
-	DeliveryNoteNumber *string            `json:"deliveryNoteNumber"`
-	Status             GoodsReceiptStatus `json:"status"`
-	Note               *string            `json:"note"`
-	PostedAt           *time.Time         `json:"postedAt"`
-	CreatedAt          time.Time          `json:"createdAt"`
-	UpdatedAt          time.Time          `json:"updatedAt"`
+	ID                 string  `json:"id"`
+	GRNNumber          string  `json:"grnNumber"`
+	OrderID            string  `json:"orderId"`
+	SupplierID         string  `json:"supplierId"`
+	BranchID           string  `json:"branchId"`
+	ReceivedOn         Date    `json:"receivedOn"`
+	ReceivedBy         *string `json:"receivedBy"`
+	ReceivedByName     *string `json:"receivedByName"`
+	DeliveryNoteNumber *string `json:"deliveryNoteNumber"`
+	// DeliveryID is the arrival this receipt inspected, when one was recorded.
+	DeliveryID *string            `json:"deliveryId"`
+	Status     GoodsReceiptStatus `json:"status"`
+	Note       *string            `json:"note"`
+	PostedAt   *time.Time         `json:"postedAt"`
+	CreatedAt  time.Time          `json:"createdAt"`
+	UpdatedAt  time.Time          `json:"updatedAt"`
 }
 
 // QCStatus is what inspection made of a delivered line.
@@ -585,13 +587,24 @@ func IsValidReturnReason(value string) bool {
 type PurchaseReturnStatus string
 
 const (
-	ReturnDraft     PurchaseReturnStatus = "DRAFT"
+	ReturnDraft PurchaseReturnStatus = "DRAFT"
+	// ReturnPending is waiting on a signature. Sending goods back costs the
+	// relationship something, so it stops being whatever the receiving bay
+	// decided and becomes somebody's decision.
+	ReturnPending   PurchaseReturnStatus = "PENDING_APPROVAL"
+	ReturnApproved  PurchaseReturnStatus = "APPROVED"
+	ReturnRejected  PurchaseReturnStatus = "REJECTED"
 	ReturnPosted    PurchaseReturnStatus = "POSTED"
 	ReturnCancelled PurchaseReturnStatus = "CANCELLED"
 )
 
+// A rejected return goes back to draft rather than dying: the usual outcome of
+// "no, not that one" is a corrected return, not an abandoned one.
 var PurchaseReturnTransitions = TransitionMap[PurchaseReturnStatus]{
-	ReturnDraft:     {ReturnPosted, ReturnCancelled},
+	ReturnDraft:     {ReturnPending, ReturnCancelled},
+	ReturnPending:   {ReturnApproved, ReturnRejected, ReturnCancelled},
+	ReturnApproved:  {ReturnPosted, ReturnCancelled},
+	ReturnRejected:  {ReturnDraft, ReturnCancelled},
 	ReturnPosted:    {},
 	ReturnCancelled: {},
 }
@@ -607,10 +620,21 @@ type PurchaseReturn struct {
 	ReasonType   ReturnReason         `json:"reasonType"`
 	ReasonNote   *string              `json:"reasonNote"`
 	Status       PurchaseReturnStatus `json:"status"`
-	TotalIDR     float64              `json:"totalIdr"`
-	PostedAt     *time.Time           `json:"postedAt"`
-	CreatedAt    time.Time            `json:"createdAt"`
-	UpdatedAt    time.Time            `json:"updatedAt"`
+	// SubmittedAt onwards: sending goods back is somebody's decision, so the
+	// return carries who made it and when.
+	SubmittedAt  *time.Time `json:"submittedAt"`
+	ApprovedBy   *string    `json:"approvedBy"`
+	ApprovedAt   *time.Time `json:"approvedAt"`
+	RejectedBy   *string    `json:"rejectedBy"`
+	RejectedAt   *time.Time `json:"rejectedAt"`
+	DecisionNote *string    `json:"decisionNote"`
+	// CreditID is the credit note the return produced, so the two documents
+	// point at each other rather than only one way.
+	CreditID  *string    `json:"creditId"`
+	TotalIDR  float64    `json:"totalIdr"`
+	PostedAt  *time.Time `json:"postedAt"`
+	CreatedAt time.Time  `json:"createdAt"`
+	UpdatedAt time.Time  `json:"updatedAt"`
 }
 
 // PurchaseReturnItem is one line going back.

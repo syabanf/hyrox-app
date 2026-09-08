@@ -11,6 +11,17 @@
       ],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "member",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@nuhabit/member",
+        "dev"
+      ],
+      "port": 5173,
+      "autoPort": true
     }
   ]
 }

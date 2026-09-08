@@ -121,13 +121,19 @@ func (r *Repository) SentCampaigns(ctx context.Context, limit int) ([]domain.Cam
 
 // Service implements the engagement use cases.
 type Service struct {
-	repo  *Repository
-	ids   id.Generator
-	clock clock.Clock
+	repo     *Repository
+	audience Audience
+	ids      id.Generator
+	clock    clock.Clock
 }
 
-func NewService(repo *Repository, ids id.Generator, c clock.Clock) *Service {
-	return &Service{repo: repo, ids: ids, clock: c}
+func NewService(repo *Repository, audience Audience, ids id.Generator, c clock.Clock) *Service {
+	return &Service{repo: repo, audience: audience, ids: ids, clock: c}
+}
+
+// Campaign reads one campaign by id.
+func (s *Service) Campaign(ctx context.Context, id string) (domain.Campaign, error) {
+	return s.repo.Campaign(ctx, id)
 }
 
 func (s *Service) Notifications(ctx context.Context, memberID string, limit int) ([]domain.MemberNotification, error) {

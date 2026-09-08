@@ -52,6 +52,7 @@ type Summary struct {
 	Suppliers   int
 	Tiers       int
 	POSProducts int
+	Activities  int
 }
 
 // Run loads the demo studio in one transaction: a half-seeded database is
@@ -106,6 +107,9 @@ func (s *Seeder) Run(ctx context.Context) (Summary, error) {
 			return err
 		}
 		if summary.Tiers, err = s.seedLoyalty(ctx); err != nil {
+			return err
+		}
+		if summary.Activities, err = s.seedTraining(ctx); err != nil {
 			return err
 		}
 		if summary.POSProducts, err = s.seedPOS(ctx); err != nil {

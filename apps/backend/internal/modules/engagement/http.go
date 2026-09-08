@@ -20,6 +20,7 @@ func NewHandler(service *Service, guard *auth.Guard) *Handler {
 func (h *Handler) Mount(r *httpx.Router) {
 	r.Get("/api/me/notifications", h.list, h.guard.RequireMember)
 	r.Post("/api/me/notifications/read-all", h.readAll, h.guard.RequireMember)
+	h.mountAdmin(r)
 }
 
 func (h *Handler) list(w http.ResponseWriter, r *http.Request) {

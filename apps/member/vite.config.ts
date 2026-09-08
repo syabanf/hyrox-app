@@ -38,7 +38,8 @@ export default defineConfig({
         // precached so the app (and its in-browser backend) works offline.
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         navigateFallback: '/index.html',
-        // The mock API worker must keep intercepting /api — never let Workbox touch it.
+        // /api is the backend (or, in the offline demo, the in-process mock).
+        // Either way Workbox must never answer it with the app shell.
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           // Fonts keep working offline after first load.
@@ -71,6 +72,18 @@ export default defineConfig({
   resolve: {
     alias: { '@': path.resolve(__dirname, 'src') },
   },
-  server: { port: Number(process.env.PORT) || 5173 },
-  preview: { port: Number(process.env.PORT) || 5173 },
+  // The app calls /api on its own origin, so the browser never makes a
+  // cross-origin request and CORS never enters the picture. In production
+  // nginx routes /api to the Go backend; in development this proxy does the
+  // same job, so `pnpm dev` talks to a local backend with nothing else to
+  // configure. VITE_OFFLINE_DEMO=1 answers in-process instead and never
+  // reaches the proxy at all.
+  server: {
+    port: Number(process.env.PORT) || 5173,
+    proxy: { '/api': { target: process.env.API_PROXY_TARGET ?? 'http://localhost:8080', changeOrigin: true } },
+  },
+  preview: {
+    port: Number(process.env.PORT) || 5173,
+    proxy: { '/api': { target: process.env.API_PROXY_TARGET ?? 'http://localhost:8080', changeOrigin: true } },
+  },
 });

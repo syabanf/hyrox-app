@@ -2,7 +2,9 @@ package wallet
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -31,6 +33,8 @@ func (h *Handler) Mount(r *httpx.Router) {
 	r.Get("/api/me/wallet", h.wallet, h.guard.RequireMember)
 	r.Post("/api/me/topup", h.topUp, h.guard.RequireMember)
 	r.Post("/api/vouchers/validate", h.validateVoucher, h.guard.RequireMember)
+	// One promo, opened from the home screen's promo strip.
+	r.Get("/api/promos/{code}", h.promo, h.guard.RequireMember)
 	r.Get("/api/payments/{id}", h.payment, h.guard.RequireMember)
 	// Settlement is reachable by the paying member (the demo "I paid" button)
 	// or by finance staff; the handler checks which.
@@ -171,6 +175,68 @@ func (h *Handler) validateVoucher(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.OK(w, quote)
+}
+
+// promo is one voucher as the member app advertises it: the code, what it is
+// worth in words, and when it stops working.
+//
+// Only a live voucher is shown. A promo strip that offers something already
+// expired is worse than an empty strip.
+func (h *Handler) promo(w http.ResponseWriter, r *http.Request) {
+	voucher, err := h.service.VoucherByCode(r.Context(), httpx.Param(r, "code"))
+	if err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	if voucher.Status != domain.VoucherActive {
+		httpx.Fail(w, r, httpx.NotFound("promo"))
+		return
+	}
+
+	// nil applicable packages means the code works on everything, which the
+	// app renders differently from a code limited to a named list.
+	var packageNames []string
+	for _, packageID := range voucher.ApplicablePackageIDs {
+		pkg, err := h.catalog.Package(r.Context(), packageID)
+		if err != nil {
+			continue
+		}
+		packageNames = append(packageNames, pkg.Name)
+	}
+
+	httpx.OK(w, map[string]any{
+		"code":           voucher.Code,
+		"label":          voucherLabel(voucher),
+		"type":           voucher.Type,
+		"value":          voucher.Value,
+		"endsAt":         voucher.EndsAt,
+		"usageLimit":     voucher.UsageLimit,
+		"newMembersOnly": voucher.EligibleSegment == domain.SegmentNewMembers,
+		"packageNames":   packageNames,
+	})
+}
+
+// voucherLabel says what a code is worth in the words a member reads on the
+// promo strip: "10% OFF", or "Rp100.000 OFF".
+func voucherLabel(v domain.Voucher) string {
+	if v.Type == domain.VoucherPercent {
+		return fmt.Sprintf("%d%% OFF", v.Value)
+	}
+	return "Rp" + formatThousands(v.Value) + " OFF"
+}
+
+// formatThousands groups with full stops, which is how Indonesian money is
+// written and how every other price in the app is shown.
+func formatThousands(value int64) string {
+	digits := strconv.FormatInt(value, 10)
+	var out strings.Builder
+	for i, r := range digits {
+		if i > 0 && (len(digits)-i)%3 == 0 {
+			out.WriteByte('.')
+		}
+		out.WriteRune(r)
+	}
+	return out.String()
 }
 
 // paymentDetailView is one payment with the names a receipt needs.

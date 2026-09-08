@@ -122,7 +122,9 @@ func New(cfg config.Config, db *database.DB) *App {
 	incentivesService := incentives.NewService(db, incentivesRepo, catalogService,
 		schedulingService, ids, now, auditor, cfg.StudioLocation())
 
-	engagementService := engagement.NewService(engagement.NewRepository(db), ids, now)
+	engagementService := engagement.NewService(engagement.NewRepository(db),
+		campaignAudience{identityService, walletService, accessService, catalogService, now.Now},
+		ids, now)
 	hrisService := hris.NewService(db, hris.NewRepository(db), catalogService,
 		ids, now, auditor, cfg.StudioLocation())
 	inventoryService := inventory.NewService(db, inventory.NewRepository(db), catalogService,
@@ -134,7 +136,9 @@ func New(cfg config.Config, db *database.DB) *App {
 	posService := pos.NewService(db, pos.NewRepository(db), posStock{inventoryService},
 		crmService, identityService, posSupervisors{identityService},
 		ids, now, auditor, cfg.StudioLocation())
-	trainingService := training.NewService(training.NewRepository(db), now)
+	trainingService := training.NewService(training.NewRepository(db),
+		trainingMembers{identityService}, trainingLibrary{catalogService},
+		trainingChallenges{engagementService}, ids, now)
 
 	reportingService := reporting.NewService(reporting.Deps{
 		Members:       reportingMembers{identityService},
@@ -184,7 +188,11 @@ func New(cfg config.Config, db *database.DB) *App {
 		engagement.NewHandler(engagementService, guard).Mount(router)
 	}
 	if cfg.Modules.IsEnabled(ModuleTraining) {
-		training.NewHandler(trainingService, guard).Mount(router)
+		trainingHandler := training.NewHandler(trainingService, guard)
+		trainingHandler.Mount(router)
+		// The race calendar is maintained from the panel, so its admin routes
+		// mount alongside the member ones.
+		trainingHandler.MountAdmin(router)
 	}
 	if cfg.Modules.IsEnabled(ModuleHRIS) {
 		hris.NewHandler(hrisService, guard).Mount(router)

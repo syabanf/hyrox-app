@@ -181,6 +181,13 @@ func (c Config) validate() error {
 		if c.Auth.DemoOTP {
 			return fmt.Errorf("config: AUTH_DEMO_OTP must be false in production")
 		}
+		// The knob exists so a test run does not spend half a second hashing a
+		// demo roster. A production deployment that inherited that value would
+		// be storing passwords behind a KDF that costs an attacker nothing.
+		if c.Auth.PasswordIterations < auth.DefaultPasswordIterations {
+			return fmt.Errorf("config: AUTH_PASSWORD_ITERATIONS must be at least %d in production",
+				auth.DefaultPasswordIterations)
+		}
 	}
 	if c.Payments.Provider == "xendit" && c.Payments.XenditAPIKey == "" {
 		return fmt.Errorf("config: XENDIT_API_KEY is required when PAYMENTS_PROVIDER=xendit")

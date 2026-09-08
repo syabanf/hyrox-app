@@ -167,6 +167,11 @@ func (s *Service) AddReceiptLine(ctx context.Context, receiptID string, in Recei
 		if _, err := s.repo.InsertReceiptItem(ctx, domain.GoodsReceiptItem{
 			ID: s.ids.New(id.LineItem), ReceiptID: receiptID, OrderItemID: in.OrderItemID,
 			ItemID: line.ItemID, QtyAccepted: in.QtyAccepted, QtyRejected: in.QtyRejected,
+			// The pack comes from the order line rather than the request: what
+			// was ordered in cartons arrives in cartons, and letting the
+			// receipt choose its own unit is exactly the gap a conversion bug
+			// gets in through.
+			Unit: line.Unit, PackFactor: line.PackFactor,
 			UnitPriceIDR: line.UnitPriceIDR,
 			QCStatus:     domain.DeriveQCStatus(in.QtyAccepted, in.QtyRejected),
 			BatchNumber:  in.BatchNumber, ExpiresOn: in.ExpiresOn, Note: in.Note,
@@ -245,27 +250,32 @@ func (s *Service) PostReceipt(ctx context.Context, receiptID string, actor Actor
 		if err != nil {
 			return err
 		}
-		ref := StockRef{Type: "GOODS_RECEIPT", ID: receipt.ID, Number: receipt.GRNNumber}
-
 		for _, line := range lines {
+			ref := StockRef{Type: "GOODS_RECEIPT", ID: receipt.ID, Number: receipt.GRNNumber,
+				PackUnit: line.Unit, PackFactor: line.PackFactor}
 			if line.QtyAccepted > 0 {
-				// Accepted stock arrives at what was actually paid, which is
-				// what moves the item's weighted-average cost.
+				// Ten cartons delivered is 240 pieces on the shelf, at the
+				// carton price divided by 24. Both conversions happen here,
+				// once, because a receipt that multiplies the quantity but
+				// not the price is how an average cost silently inflates by
+				// the size of the pack.
 				if err := s.stock.Receive(ctx, line.ItemID, receipt.BranchID,
-					line.QtyAccepted, line.UnitPriceIDR, ref, s.stockActor(actor)); err != nil {
+					line.BaseAccepted(), line.UnitPriceBaseIDR(), ref, s.stockActor(actor)); err != nil {
 					return err
 				}
+				// The order line is counted in the pack it was ordered in, so
+				// this one is not converted.
 				if err := s.repo.AddReceivedQty(ctx, line.OrderItemID, line.QtyAccepted); err != nil {
 					return err
 				}
-				if err := s.stock.ReleaseOnOrder(ctx, line.ItemID, receipt.BranchID, line.QtyAccepted); err != nil {
+				if err := s.stock.ReleaseOnOrder(ctx, line.ItemID, receipt.BranchID, line.BaseAccepted()); err != nil {
 					return err
 				}
 			}
 			// Rejected goods are recorded and never enter stock. They are also
 			// no longer expected, so they stop being on order.
 			if line.QtyRejected > 0 {
-				if err := s.stock.ReleaseOnOrder(ctx, line.ItemID, receipt.BranchID, line.QtyRejected); err != nil {
+				if err := s.stock.ReleaseOnOrder(ctx, line.ItemID, receipt.BranchID, line.BaseRejected()); err != nil {
 					return err
 				}
 			}

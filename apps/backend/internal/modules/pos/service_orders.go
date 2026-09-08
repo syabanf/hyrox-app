@@ -60,7 +60,7 @@ func (s *Service) Order(ctx context.Context, orderID string) (OrderView, error) 
 
 // OpenOrder starts a sale on the cashier's open till.
 func (s *Service) OpenOrder(ctx context.Context, branchID string, memberID *string,
-	orderType string, note *string, actor Actor) (OrderView, error) {
+	channelCode string, note *string, actor Actor) (OrderView, error) {
 
 	shift, hasShift, err := s.repo.OpenShiftFor(ctx, actor.ID, branchID)
 	if err != nil {
@@ -78,14 +78,17 @@ func (s *Service) OpenOrder(ctx context.Context, branchID string, memberID *stri
 		}
 	}
 
-	kind := strings.ToUpper(orderType)
-	if kind == "" {
-		kind = "COUNTER"
+	channel := domain.SalesChannel(strings.ToUpper(strings.TrimSpace(channelCode)))
+	if channel == "" {
+		channel = domain.ChannelRetail
+	}
+	if !domain.IsValidChannel(string(channel)) {
+		return OrderView{}, httpx.Invalid("%q is not a sales channel.", channelCode)
 	}
 	created, err := s.repo.InsertOrder(ctx, domain.POSOrder{
 		ID: s.ids.New(id.POSOrder), OrderNumber: s.documentNumber("SAL", id.POSOrder),
 		BranchID: branchID, ShiftID: &shift.ID, CashierID: actor.ID, CashierName: actor.Name,
-		MemberID: memberID, OrderType: kind,
+		MemberID: memberID, Channel: channel,
 		Status: domain.POSOpen, PaymentStatus: domain.POSUnpaid, Note: note,
 	})
 	if err != nil {
@@ -131,6 +134,8 @@ func (s *Service) AddLine(ctx context.Context, orderID string, in LineInput, act
 
 		// The cost is read at the moment of sale, so the margin is the truth
 		// about this sale rather than about whenever the product was set up.
+		// It is a cost per base unit, which is why the line multiplies it by
+		// the pack factor and not by the quantity the cashier typed.
 		cost := product.CostIDR
 		if product.InventoryItemID != nil {
 			if current, err := s.stock.UnitCost(ctx, *product.InventoryItemID); err == nil {
@@ -138,11 +143,20 @@ func (s *Service) AddLine(ctx context.Context, orderID string, in LineInput, act
 			}
 		}
 
+		// What this customer pays: the deepest price break their channel and
+		// quantity reach, falling back to the shelf price.
+		prices, err := s.repo.ProductPrices(ctx, product.ID)
+		if err != nil {
+			return err
+		}
+		unitPrice := domain.ResolvePrice(prices, product.PriceIDR, order.Channel, in.Qty)
+
 		if _, err := s.repo.InsertOrderItem(ctx, domain.POSOrderItem{
 			ID: s.ids.New(id.LineItem), OrderID: orderID, ProductID: product.ID,
 			ProductName: product.Name, ProductSKU: product.SKU,
 			InventoryItemID: product.InventoryItemID, Qty: in.Qty,
-			UnitPriceIDR: product.PriceIDR, DiscountIDR: in.DiscountIDR,
+			PackUnit: product.PackUnit, PackFactor: product.PackFactor,
+			UnitPriceIDR: unitPrice, DiscountIDR: in.DiscountIDR,
 			TaxPercent: product.TaxPercent, UnitCostIDR: cost, Note: in.Note,
 		}); err != nil {
 			return err
@@ -206,10 +220,9 @@ func (s *Service) retotal(ctx context.Context, order domain.POSOrder) (domain.PO
 		order.TierDiscountIDR = domain.TierDiscount(subtotal, percent)
 	}
 
-	totals := domain.ComputeOrderPOSTotals(items, order.DiscountIDR+order.TierDiscountIDR, 0)
+	totals := domain.ComputeOrderPOSTotals(items, order.DiscountIDR+order.TierDiscountIDR)
 	order.SubtotalIDR = totals.SubtotalIDR
 	order.TaxIDR = totals.TaxIDR
-	order.ServiceChargeIDR = totals.ServiceChargeIDR
 	order.TotalIDR = totals.TotalIDR
 	order.CostIDR = totals.CostIDR
 	order.GrossProfitIDR = totals.GrossProfitIDR
@@ -376,18 +389,21 @@ func (s *Service) Complete(ctx context.Context, orderID string, actor Actor) (Or
 				"That sale still owes %.0f.", order.TotalIDR-order.PaidIDR)
 		}
 
-		ref := StockRef{Type: "POS_SALE", ID: order.ID, Number: order.OrderNumber}
 		soldItems := 0
 		for _, item := range items {
-			soldItems += int(item.Qty)
+			ref := StockRef{Type: "POS_SALE", ID: order.ID, Number: order.OrderNumber,
+				PackUnit: item.PackUnit, PackFactor: item.PackFactor}
+			soldItems += int(item.BaseQty())
 			// A product with no inventory item is a service, and moves no
 			// stock. Everything else comes off the shelf here or the sale
 			// does not happen at all.
 			if item.InventoryItemID == nil {
 				continue
 			}
+			// Base units, never sold units: selling two six-packs takes
+			// twelve bottles off the shelf.
 			if err := s.stock.Issue(ctx, *item.InventoryItemID, order.BranchID,
-				item.Qty, ref, StockActor{ID: actor.ID, Name: actor.Name}); err != nil {
+				item.BaseQty(), ref, StockActor{ID: actor.ID, Name: actor.Name}); err != nil {
 				return err
 			}
 		}
@@ -487,15 +503,16 @@ func (s *Service) Void(ctx context.Context, orderID, reason string, actor Actor)
 		if err != nil {
 			return err
 		}
-		ref := StockRef{Type: "POS_VOID", ID: order.ID, Number: order.OrderNumber}
 		for _, item := range items {
 			if item.InventoryItemID == nil {
 				continue
 			}
+			ref := StockRef{Type: "POS_VOID", ID: order.ID, Number: order.OrderNumber,
+				PackUnit: item.PackUnit, PackFactor: item.PackFactor}
 			// Back at what it cost when it was sold, not at today's average:
 			// the goods returning are the same goods that left.
 			if err := s.stock.Restock(ctx, *item.InventoryItemID, order.BranchID,
-				item.Qty, item.UnitCostIDR, ref, StockActor{ID: actor.ID, Name: actor.Name}); err != nil {
+				item.BaseQty(), item.UnitCostIDR, ref, StockActor{ID: actor.ID, Name: actor.Name}); err != nil {
 				return err
 			}
 		}

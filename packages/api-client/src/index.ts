@@ -63,6 +63,7 @@ import type {
   InventoryItemDetailView,
   InventoryItemView,
   InventoryOverviewView,
+  ItemPackView,
   LoyaltyMemberDetailView,
   LoyaltyProfileView,
   LoyaltySummaryView,
@@ -70,6 +71,7 @@ import type {
   POSOverviewView,
   POSProductView,
   PurchaseOrderLineInput,
+  ScanView,
   PurchaseOrderView,
   PurchaseRequestLineInput,
   PurchaseRequestView,
@@ -83,6 +85,7 @@ import type {
   TenderInput,
   TransferStockInput,
   UpsertInventoryItemInput,
+  UpsertPackInput,
   UpsertPOSProductInput,
   UpsertRewardInput,
   UpsertSupplierInput,
@@ -180,6 +183,7 @@ import type {
   Gate,
   Gear,
   GeneratedWorkout,
+  ItemPack,
   Member,
   MemberNotification,
   Department,
@@ -188,10 +192,14 @@ import type {
   LeaveBalance,
   Payment,
   Position,
+  ProductPrice,
   RaceEvent,
+  SalesChannel,
   Shift,
   Route,
   SubstitutionRule,
+  Unit,
+  UnitKind,
   UserRace,
   VoucherStatus,
 } from '@nuhabit/domain';
@@ -523,6 +531,23 @@ export function createApiClient(options: ApiClientOptions) {
             put<InventoryItemView>(`/api/admin/inventory/items/${id}`, input),
           setReorderPoint: (id: string, input: ReorderPointInput) =>
             put<StockRowView['level']>(`/api/admin/inventory/items/${id}/reorder`, input),
+          /**
+           * How this item may be handed over. The base pack is the unit stock
+           * is counted in; the rest are the cartons it is bought by.
+           */
+          packs: (id: string, branchId?: string) =>
+            get<ItemPackView[]>(`/api/admin/inventory/items/${id}/packs`, { branchId }),
+          savePack: (id: string, input: UpsertPackInput) =>
+            put<ItemPack>(`/api/admin/inventory/items/${id}/packs`, input),
+          deletePack: (id: string, packId: string) =>
+            del(`/api/admin/inventory/items/${id}/packs/${packId}`),
+        },
+        /** The unit master: a word for an amount, shared across the catalogue. */
+        units: {
+          list: (activeOnly?: boolean) =>
+            get<Unit[]>('/api/admin/inventory/units', { activeOnly: activeOnly ? 'true' : undefined }),
+          save: (input: { code: string; name: string; kind?: UnitKind; sortOrder?: number; active?: boolean }) =>
+            put<Unit>('/api/admin/inventory/units', input),
         },
         stock: (query?: { branchId?: string; categoryId?: string; query?: string; lowOnly?: string; limit?: number }) =>
           get<StockRowView[]>('/api/admin/inventory/stock', query),
@@ -683,7 +708,20 @@ export function createApiClient(options: ApiClientOptions) {
           list: (query?: { query?: string; categoryId?: string; sellableOnly?: string; branchId?: string; limit?: number }) =>
             get<POSProductView[]>('/api/admin/pos/products', query),
           save: (input: UpsertPOSProductInput) => put<POSProduct>('/api/admin/pos/products', input),
+          /** Every price break defined for one product, in every channel. */
+          prices: (id: string) => get<ProductPrice[]>(`/api/admin/pos/products/${id}/prices`),
+          savePrice: (id: string, input: { channel: SalesChannel; minQty: number; priceIdr: number; active?: boolean }) =>
+            put<ProductPrice>(`/api/admin/pos/products/${id}/prices`, input),
+          deletePrice: (id: string, priceId: string) =>
+            del(`/api/admin/pos/products/${id}/prices/${priceId}`),
         },
+        /**
+         * The scanner's endpoint. A barcode resolves to exactly one product or
+         * to nothing at all, so a miss is a 404 rather than an empty list —
+         * the cashier's next move depends on knowing which.
+         */
+        scan: (barcode: string, branchId?: string) =>
+          get<ScanView>('/api/admin/pos/scan', { barcode, branchId }),
         shifts: {
           list: (query?: { branchId?: string; cashierId?: string; status?: string; limit?: number }) =>
             get<CashierShift[]>('/api/admin/pos/shifts', query),
@@ -697,7 +735,7 @@ export function createApiClient(options: ApiClientOptions) {
           list: (query?: { branchId?: string; shiftId?: string; memberId?: string; status?: string; limit?: number }) =>
             get<POSOrder[]>('/api/admin/pos/orders', query),
           get: (id: string) => get<POSOrderView>(`/api/admin/pos/orders/${id}`),
-          open: (input: { branchId: string; memberId?: string | null; orderType?: string; note?: string | null }) =>
+          open: (input: { branchId: string; memberId?: string | null; channel?: SalesChannel; note?: string | null }) =>
             post<POSOrderView>('/api/admin/pos/orders', input),
           setDetails: (id: string, input: { memberId?: string | null; setMember?: boolean; discountIdr: number; discountReason?: string | null; note?: string | null }) =>
             put<POSOrderView>(`/api/admin/pos/orders/${id}`, input),

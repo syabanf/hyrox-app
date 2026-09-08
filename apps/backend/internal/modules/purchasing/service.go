@@ -25,7 +25,13 @@ import (
 )
 
 // StockRef is what a stock movement points back at.
-type StockRef struct{ Type, ID, Number string }
+type StockRef struct {
+	Type, ID, Number string
+	// The pack the document was written in, so the ledger row can say "10
+	// CTN" beside the 240 pieces it actually moved.
+	PackUnit   string
+	PackFactor float64
+}
 
 // StockActor is who caused one.
 type StockActor struct{ ID, Name string }
@@ -47,6 +53,11 @@ type Stock interface {
 	ReleaseOnOrder(ctx context.Context, itemID, branchID string, qty domain.Quantity) error
 	// ItemName is for showing a line without a second round trip.
 	ItemNames(ctx context.Context) (map[string]string, error)
+	// PackFor resolves the unit a line is ordered in to how many base units
+	// it holds. Purchasing never invents a factor: an unknown unit is refused
+	// here rather than silently treated as one piece, which is how an order
+	// for ten cartons is received as ten pieces.
+	PackFor(ctx context.Context, itemID, unitCode string) (domain.ItemPack, error)
 }
 
 // Catalog is the port for branches.

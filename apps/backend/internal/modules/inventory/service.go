@@ -88,8 +88,12 @@ type Movement struct {
 	ReferenceType   *string
 	ReferenceID     *string
 	ReferenceNumber *string
-	Reason          *string
-	Note            *string
+	// PackUnit and PackFactor record what was handled, when the caller dealt
+	// in something other than base units.
+	PackUnit   *string
+	PackFactor *float64
+	Reason     *string
+	Note       *string
 }
 
 // Post applies one movement: it locks the level, asks the domain whether the
@@ -120,6 +124,18 @@ func (s *Service) Post(ctx context.Context, in Movement, actor Actor) (domain.St
 		UnitCostIDR: in.UnitCostIDR, TotalCostIDR: posted.TotalCostIDR,
 		ReferenceType: in.ReferenceType, ReferenceID: in.ReferenceID,
 		ReferenceNumber: in.ReferenceNumber, Reason: in.Reason, Note: in.Note,
+	}
+	// The pack quantity is derived from the base one rather than passed in, so
+	// the two can never contradict each other on the way to a constraint that
+	// would reject them both.
+	if in.PackUnit != nil && in.PackFactor != nil && *in.PackFactor > 0 {
+		packQty := domain.BaseToPack(posted.Qty, *in.PackFactor)
+		if packQty < 0 {
+			packQty = -packQty
+		}
+		movement.PackUnit = in.PackUnit
+		movement.PackQty = &packQty
+		movement.PackFactor = in.PackFactor
 	}
 	if actor.ID != "" {
 		movement.ActorID = &actor.ID
@@ -169,11 +185,13 @@ func movementRejectionError(rejection domain.StockRejection, item domain.Invento
 // Receive is the entry point purchasing uses when goods arrive.
 func (s *Service) Receive(ctx context.Context, itemID, branchID string, qty domain.Quantity,
 	unitCostIDR float64, ref Reference, actor Actor) (domain.StockMovement, error) {
-	return s.Post(ctx, Movement{
+	movement := Movement{
 		ItemID: itemID, BranchID: branchID, Kind: domain.MovementIn, Qty: qty,
 		UnitCostIDR: unitCostIDR, ReferenceType: &ref.Type, ReferenceID: &ref.ID,
 		ReferenceNumber: &ref.Number,
-	}, actor)
+	}
+	ref.applyPack(&movement)
+	return s.Post(ctx, movement, actor)
 }
 
 // Issue is the entry point the till uses when something is sold, and the one
@@ -183,17 +201,35 @@ func (s *Service) Issue(ctx context.Context, itemID, branchID string, qty domain
 	if qty < 0 {
 		qty = -qty
 	}
-	return s.Post(ctx, Movement{
+	movement := Movement{
 		ItemID: itemID, BranchID: branchID, Kind: kind, Qty: -qty,
 		ReferenceType: &ref.Type, ReferenceID: &ref.ID, ReferenceNumber: &ref.Number,
-	}, actor)
+	}
+	ref.applyPack(&movement)
+	return s.Post(ctx, movement, actor)
 }
 
 // Reference is what caused a movement, so the ledger row can be traced back.
+//
+// PackUnit and PackFactor say what was physically handled. The ledger stays in
+// base units — that is what makes it addable — but a receipt line reading
+// "240" is unreadable next to a delivery note saying ten cartons, so the row
+// carries both and a CHECK constraint refuses them if they disagree.
 type Reference struct {
-	Type   string
-	ID     string
-	Number string
+	Type       string
+	ID         string
+	Number     string
+	PackUnit   string
+	PackFactor float64
+}
+
+// applyPack copies the transacted pack onto a movement, when there is one.
+func (r Reference) applyPack(m *Movement) {
+	if r.PackUnit == "" || r.PackFactor <= 0 {
+		return
+	}
+	unit, factor := r.PackUnit, r.PackFactor
+	m.PackUnit, m.PackFactor = &unit, &factor
 }
 
 // ReserveOnOrder and ReleaseOnOrder are how purchasing tells stock that goods
@@ -403,7 +439,23 @@ func (in ItemInput) apply(item domain.InventoryItem) domain.InventoryItem {
 }
 
 func (s *Service) CreateItem(ctx context.Context, in ItemInput, actor Actor) (ItemView, error) {
-	created, err := s.repo.InsertItem(ctx, in.apply(domain.InventoryItem{ID: s.ids.New(id.InventoryItem)}))
+	var created domain.InventoryItem
+	err := s.db.InTx(ctx, func(ctx context.Context) error {
+		var err error
+		created, err = s.repo.InsertItem(ctx, in.apply(domain.InventoryItem{ID: s.ids.New(id.InventoryItem)}))
+		if err != nil {
+			return err
+		}
+		// An item without a base pack has quantities that mean nothing, so it
+		// gets one in the same transaction it is created in. Every other pack
+		// is a multiple of this one.
+		_, err = s.repo.UpsertPack(ctx, domain.ItemPack{
+			ID: s.ids.New(id.ItemPack), ItemID: created.ID, UnitCode: created.Unit,
+			Factor: 1, Barcode: created.Barcode, IsBase: true,
+			PurchaseDefault: true, SaleDefault: true, Active: true,
+		})
+		return err
+	})
 	if err != nil {
 		return ItemView{}, err
 	}

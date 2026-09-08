@@ -22,7 +22,13 @@ import (
 )
 
 // StockRef and StockActor are what a stock movement points back at.
-type StockRef struct{ Type, ID, Number string }
+type StockRef struct {
+	Type, ID, Number string
+	// The pack the document was written in, so the ledger row can say "10
+	// CTN" beside the 240 pieces it actually moved.
+	PackUnit   string
+	PackFactor float64
+}
 type StockActor struct{ ID, Name string }
 
 // Stock is the port the till needs from inventory: take stock out when
@@ -35,6 +41,10 @@ type Stock interface {
 		unitCostIDR float64, ref StockRef, actor StockActor) error
 	UnitCost(ctx context.Context, itemID string) (float64, error)
 	OnHand(ctx context.Context, itemID, branchID string) (domain.Quantity, error)
+	// PackFor resolves the unit a product is sold in to how many base units it
+	// takes off the shelf. The till never invents a factor: a six-pack that
+	// inventory has no six-pack for is a catalogue mistake, not a sale.
+	PackFor(ctx context.Context, itemID, unitCode string) (domain.ItemPack, error)
 }
 
 // Loyalty is the port the till needs from CRM: what a member's tier takes off
@@ -100,7 +110,7 @@ func (s *Service) documentNumber(prefix, idPrefix string) string {
 		s.clock.Now().In(s.studio).Format("20060102"), shortCode(s.ids.New(idPrefix)))
 }
 
-// ── Menu ─────────────────────────────────────────────────────────────────────
+// ── Catalogue ────────────────────────────────────────────────────────────────
 
 func (s *Service) Categories(ctx context.Context) ([]domain.POSCategory, error) {
 	return s.repo.Categories(ctx)
@@ -182,15 +192,41 @@ type ProductInput struct {
 	InventoryItemID *string
 	PriceIDR        float64
 	TaxPercent      float64
-	BonusXP         int
-	ImageURL        *string
-	Active          bool
-	Available       bool
+	Barcode         *string
+	// PackUnit and PackFactor say how much stock one sold unit takes off the
+	// shelf. A carton of 24 is a factor of 24, and selling one moves 24.
+	PackUnit   string
+	PackFactor float64
+	BonusXP    int
+	ImageURL   *string
+	Active     bool
+	Available  bool
 }
 
 func (s *Service) SaveProduct(ctx context.Context, in ProductInput, actor Actor) (domain.POSProduct, error) {
+	factor := in.PackFactor
+	if factor <= 0 {
+		factor = 1
+	}
+	unit := strings.ToUpper(strings.TrimSpace(in.PackUnit))
+	if unit == "" {
+		unit = "PCS"
+	}
+	// A product that draws on stock is sold in one of that item's defined
+	// packs, and the factor comes from there rather than from the form: two
+	// places holding the same conversion is two places for it to drift.
+	if in.InventoryItemID != nil {
+		pack, err := s.stock.PackFor(ctx, *in.InventoryItemID, in.PackUnit)
+		if err != nil {
+			return domain.POSProduct{}, err
+		}
+		unit, factor = pack.UnitCode, pack.Factor
+	}
+
 	// The cost follows the linked item's weighted average rather than being
-	// typed: a margin somebody typed is a margin nobody can trust.
+	// typed: a margin somebody typed is a margin nobody can trust. It is a
+	// cost per base unit, so a carton product carries the piece cost and the
+	// factor does the rest.
 	var cost float64
 	if in.InventoryItemID != nil {
 		itemCost, err := s.stock.UnitCost(ctx, *in.InventoryItemID)
@@ -205,6 +241,7 @@ func (s *Service) SaveProduct(ctx context.Context, in ProductInput, actor Actor)
 		Name: strings.TrimSpace(in.Name), Description: in.Description,
 		CategoryID: in.CategoryID, InventoryItemID: in.InventoryItemID,
 		PriceIDR: in.PriceIDR, CostIDR: cost, TaxPercent: in.TaxPercent,
+		Barcode: in.Barcode, PackUnit: unit, PackFactor: factor,
 		BonusXP: in.BonusXP, ImageURL: in.ImageURL,
 		Active: in.Active, Available: in.Available,
 	})
@@ -343,4 +380,90 @@ func (s *Service) CloseShift(ctx context.Context, shiftID string, countedCashIDR
 	}
 	s.record(ctx, "pos.shift", shiftID, "CLOSE", actor, note)
 	return s.viewShift(ctx, closed)
+}
+
+// ── Scanning and price breaks ────────────────────────────────────────────────
+
+// ScanView is what a barcode resolves to: the product, what it costs in each
+// channel, and whether there is any left.
+type ScanView struct {
+	ProductView
+	Prices []domain.ProductPrice `json:"prices"`
+}
+
+// Scan resolves a barcode to one product.
+//
+// A miss is a 404 rather than an empty list, because the cashier's next move
+// depends on knowing the scan found nothing rather than found nothing yet.
+func (s *Service) Scan(ctx context.Context, barcode, branchID string) (ScanView, error) {
+	barcode = strings.TrimSpace(barcode)
+	if barcode == "" {
+		return ScanView{}, httpx.Invalid("A scan needs a barcode.")
+	}
+
+	product, err := s.repo.ProductByBarcode(ctx, barcode)
+	if err != nil {
+		return ScanView{}, err
+	}
+
+	view := ScanView{ProductView: ProductView{POSProduct: product}}
+	if product.CategoryID != nil {
+		categories, err := s.repo.Categories(ctx)
+		if err != nil {
+			return ScanView{}, err
+		}
+		for _, c := range categories {
+			if c.ID == *product.CategoryID {
+				name := c.Name
+				view.CategoryName = &name
+			}
+		}
+	}
+	// Stock is held in base units, and the till thinks in packs: five bottles
+	// on hand is not one six-pack, and saying so is the point of dividing.
+	if product.InventoryItemID != nil && branchID != "" {
+		if onHand, err := s.stock.OnHand(ctx, *product.InventoryItemID, branchID); err == nil {
+			held := domain.BaseToPack(onHand, product.PackFactor)
+			view.OnHand = &held
+		}
+	}
+	prices, err := s.repo.ProductPrices(ctx, product.ID)
+	if err != nil {
+		return ScanView{}, err
+	}
+	view.Prices = prices
+	return view, nil
+}
+
+func (s *Service) ProductPrices(ctx context.Context, productID string) ([]domain.ProductPrice, error) {
+	return s.repo.ProductPrices(ctx, productID)
+}
+
+// ProductPriceInput is one price break.
+type ProductPriceInput struct {
+	ProductID string
+	Channel   domain.SalesChannel
+	MinQty    domain.Quantity
+	PriceIDR  float64
+	Active    bool
+}
+
+func (s *Service) SaveProductPrice(ctx context.Context, in ProductPriceInput, actor Actor) (domain.ProductPrice, error) {
+	saved, err := s.repo.UpsertProductPrice(ctx, domain.ProductPrice{
+		ID: s.ids.New(id.ProductPrice), ProductID: in.ProductID, Channel: in.Channel,
+		MinQty: in.MinQty, PriceIDR: in.PriceIDR, Active: in.Active,
+	})
+	if err != nil {
+		return domain.ProductPrice{}, err
+	}
+	s.record(ctx, "pos.price", saved.ID, "SAVE", actor, nil)
+	return saved, nil
+}
+
+func (s *Service) DeleteProductPrice(ctx context.Context, priceID string, actor Actor) error {
+	if err := s.repo.DeleteProductPrice(ctx, priceID); err != nil {
+		return err
+	}
+	s.record(ctx, "pos.price", priceID, "DELETE", actor, nil)
+	return nil
 }

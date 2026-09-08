@@ -387,13 +387,15 @@ func (r *Repository) AdjustOnOrder(ctx context.Context, itemID, branchID string,
 // ── Movements ────────────────────────────────────────────────────────────────
 
 const movementColumns = `id, item_id, branch_id, kind, qty, qty_before, qty_after,
-	unit_cost_idr, total_cost_idr, reference_type, reference_id, reference_number,
+	unit_cost_idr, total_cost_idr, pack_unit, pack_qty, pack_factor,
+	reference_type, reference_id, reference_number,
 	reason, note, actor_id, actor_name, created_at`
 
 func scanMovement(row pgx.Row) (domain.StockMovement, error) {
 	var m domain.StockMovement
 	err := row.Scan(&m.ID, &m.ItemID, &m.BranchID, &m.Kind, &m.Qty, &m.QtyBefore, &m.QtyAfter,
-		&m.UnitCostIDR, &m.TotalCostIDR, &m.ReferenceType, &m.ReferenceID, &m.ReferenceNumber,
+		&m.UnitCostIDR, &m.TotalCostIDR, &m.PackUnit, &m.PackQty, &m.PackFactor,
+		&m.ReferenceType, &m.ReferenceID, &m.ReferenceNumber,
 		&m.Reason, &m.Note, &m.ActorID, &m.ActorName, &m.CreatedAt)
 	return m, err
 }
@@ -401,13 +403,18 @@ func scanMovement(row pgx.Row) (domain.StockMovement, error) {
 func (r *Repository) InsertMovement(ctx context.Context, m domain.StockMovement) (domain.StockMovement, error) {
 	created, err := scanMovement(r.db.QueryRow(ctx, `
 		INSERT INTO inventory.stock_movements (id, item_id, branch_id, kind, qty, qty_before,
-			qty_after, unit_cost_idr, total_cost_idr, reference_type, reference_id,
-			reference_number, reason, note, actor_id, actor_name)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+			qty_after, unit_cost_idr, total_cost_idr, pack_unit, pack_qty, pack_factor,
+			reference_type, reference_id, reference_number, reason, note, actor_id, actor_name)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
 		RETURNING `+movementColumns,
 		m.ID, m.ItemID, m.BranchID, m.Kind, m.Qty, m.QtyBefore, m.QtyAfter, m.UnitCostIDR,
-		m.TotalCostIDR, m.ReferenceType, m.ReferenceID, m.ReferenceNumber, m.Reason, m.Note,
+		m.TotalCostIDR, m.PackUnit, m.PackQty, m.PackFactor,
+		m.ReferenceType, m.ReferenceID, m.ReferenceNumber, m.Reason, m.Note,
 		m.ActorID, m.ActorName))
+	if database.IsCheckViolation(err) {
+		return domain.StockMovement{}, httpx.Invalid(
+			"That movement's pack quantity does not multiply out to its base quantity.")
+	}
 	if err != nil {
 		return domain.StockMovement{}, fmt.Errorf("inventory: inserting movement: %w", err)
 	}

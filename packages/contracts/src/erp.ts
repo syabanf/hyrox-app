@@ -4,11 +4,13 @@ import type {
   GoodsReceipt,
   GoodsReceiptItem,
   InventoryItem,
+  ItemPack,
   LoyaltyProfile,
   LoyaltyTier,
   POSOrder,
   POSOrderItem,
   POSPayment,
+  ProductPrice,
   PurchaseOrder,
   PurchaseOrderItem,
   PurchaseRequest,
@@ -195,8 +197,25 @@ export interface XPAwardView {
 
 export interface POSProductView extends POSProduct {
   categoryName: string | null;
-  /** Null for a service, which has no stock rather than none left. */
+  /**
+   * In the product's own pack, not in base units: a carton row that says "5"
+   * when there are five bottles left has told the cashier the opposite of the
+   * truth. Null for a service, which has no stock rather than none left.
+   */
   onHand: number | null;
+}
+
+/** What a barcode resolved to, with every price that could apply to it. */
+export interface ScanView extends POSProductView {
+  prices: ProductPrice[];
+}
+
+/** A pack with its arithmetic already done, so a form need not repeat it. */
+export interface ItemPackView extends ItemPack {
+  /** Reads the way a shelf edge does: "CTN (24 PCS)". */
+  label: string;
+  /** The branch's stock expressed in this pack. */
+  onHandPacks?: number;
 }
 
 export interface POSOrderView extends POSOrder {
@@ -339,7 +358,12 @@ export interface CreatePurchaseOrderInput {
 export interface PurchaseOrderLineInput {
   itemId: string;
   description?: string;
+  /** In the pack being ordered: ten cartons, not 240 pieces. */
   qty: number;
+  /**
+   * The pack to order in. Omitted means whatever this item is normally bought
+   * by; a unit the item has no pack for is refused rather than guessed at.
+   */
   unit?: string;
   unitPriceIdr: number;
   discountIdr?: number;
@@ -395,10 +419,29 @@ export interface UpsertPOSProductInput {
   inventoryItemId?: string | null;
   priceIdr: number;
   taxPercent?: number;
+  /** What the scanner reads. Unique across the catalogue. */
+  barcode?: string | null;
+  /**
+   * The pack this product is sold in. When it draws on stock, the factor is
+   * resolved from the item's own packs rather than taken from here — two
+   * places holding one conversion is two places for it to drift.
+   */
+  packUnit?: string;
+  packFactor?: number;
   bonusXp?: number;
   imageUrl?: string | null;
   active?: boolean;
   available?: boolean;
+}
+
+export interface UpsertPackInput {
+  unitCode: string;
+  /** Base units inside one of these. A carton of 24 is 24. */
+  factor: number;
+  barcode?: string | null;
+  purchaseDefault?: boolean;
+  saleDefault?: boolean;
+  active?: boolean;
 }
 
 export interface TenderInput {

@@ -84,11 +84,16 @@ const (
 	LineItem        = "lin"
 
 	// The till.
-	POSProduct  = "prd"
-	POSCategory = "pctg"
-	POSOrder    = "ord"
-	POSPayment  = "pmt"
-	POSShift    = "psh"
+	POSProduct   = "prd"
+	POSCategory  = "pctg"
+	POSOrder     = "ord"
+	POSPayment   = "pmt"
+	POSShift     = "psh"
+	ProductPrice = "ppr"
+
+	// Packs: how the same goods are bought by the carton and sold by the piece.
+	Unit     = "unt"
+	ItemPack = "ipk"
 
 	// Loyalty.
 	Tier              = "tir"

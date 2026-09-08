@@ -331,12 +331,12 @@ func (r *Repository) SaveOrder(ctx context.Context, o domain.PurchaseOrder) (dom
 }
 
 const orderItemColumns = `id, order_id, item_id, description, qty_ordered, qty_received, unit,
-	unit_price_idr, discount_idr, subtotal_idr, note`
+	pack_factor, unit_price_idr, discount_idr, subtotal_idr, note`
 
 func scanOrderItem(row pgx.Row) (domain.PurchaseOrderItem, error) {
 	var i domain.PurchaseOrderItem
 	err := row.Scan(&i.ID, &i.OrderID, &i.ItemID, &i.Description, &i.QtyOrdered, &i.QtyReceived,
-		&i.Unit, &i.UnitPriceIDR, &i.DiscountIDR, &i.SubtotalIDR, &i.Note)
+		&i.Unit, &i.PackFactor, &i.UnitPriceIDR, &i.DiscountIDR, &i.SubtotalIDR, &i.Note)
 	return i, err
 }
 
@@ -380,10 +380,10 @@ func (r *Repository) OrderItem(ctx context.Context, id string, forUpdate bool) (
 func (r *Repository) InsertOrderItem(ctx context.Context, i domain.PurchaseOrderItem) (domain.PurchaseOrderItem, error) {
 	created, err := scanOrderItem(r.db.QueryRow(ctx, `
 		INSERT INTO purchasing.purchase_order_items (id, order_id, item_id, description,
-			qty_ordered, unit, unit_price_idr, discount_idr, note)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING `+orderItemColumns,
-		i.ID, i.OrderID, i.ItemID, i.Description, i.QtyOrdered, i.Unit, i.UnitPriceIDR,
-		i.DiscountIDR, i.Note))
+			qty_ordered, unit, pack_factor, unit_price_idr, discount_idr, note)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING `+orderItemColumns,
+		i.ID, i.OrderID, i.ItemID, i.Description, i.QtyOrdered, i.Unit, i.PackFactor,
+		i.UnitPriceIDR, i.DiscountIDR, i.Note))
 	if database.IsForeignKeyViolation(err) {
 		return domain.PurchaseOrderItem{}, httpx.NotFound("purchase order")
 	}

@@ -328,22 +328,38 @@ type PurchaseOrder struct {
 
 // PurchaseOrderItem is one line of a commitment.
 type PurchaseOrderItem struct {
-	ID           string   `json:"id"`
-	OrderID      string   `json:"orderId"`
-	ItemID       string   `json:"itemId"`
-	Description  string   `json:"description"`
-	QtyOrdered   Quantity `json:"qtyOrdered"`
-	QtyReceived  Quantity `json:"qtyReceived"`
-	Unit         string   `json:"unit"`
-	UnitPriceIDR float64  `json:"unitPriceIdr"`
-	DiscountIDR  float64  `json:"discountIdr"`
-	SubtotalIDR  float64  `json:"subtotalIdr"`
-	Note         *string  `json:"note"`
+	ID          string   `json:"id"`
+	OrderID     string   `json:"orderId"`
+	ItemID      string   `json:"itemId"`
+	Description string   `json:"description"`
+	QtyOrdered  Quantity `json:"qtyOrdered"`
+	QtyReceived Quantity `json:"qtyReceived"`
+	// Unit is the pack the buyer ordered in, and PackFactor how many base
+	// units are inside it. A line is ten cartons; the ledger receives 240
+	// pieces, and the two must never be typed separately.
+	Unit         string  `json:"unit"`
+	PackFactor   float64 `json:"packFactor"`
+	UnitPriceIDR float64 `json:"unitPriceIdr"`
+	DiscountIDR  float64 `json:"discountIdr"`
+	SubtotalIDR  float64 `json:"subtotalIdr"`
+	Note         *string `json:"note"`
 }
 
-// QtyOutstanding is what is still owed on a line.
+// QtyOutstanding is what is still owed on a line, in the ordered pack.
 func (i PurchaseOrderItem) QtyOutstanding() Quantity {
 	return RoundQuantity(i.QtyOrdered - i.QtyReceived)
+}
+
+// BaseOrdered is the order line in the unit stock is counted in.
+func (i PurchaseOrderItem) BaseOrdered() Quantity {
+	return PackToBase(i.QtyOrdered, i.PackFactor)
+}
+
+// UnitPriceBaseIDR is the price per base unit: a carton at 396,000 holding 24
+// is 16,500 a piece, and that is the only figure the weighted-average cost can
+// accept without being wrong by a factor of the pack size.
+func (i PurchaseOrderItem) UnitPriceBaseIDR() float64 {
+	return PackPriceToBase(i.UnitPriceIDR, i.PackFactor)
 }
 
 // OrderTotals is the arithmetic of a purchase order.
@@ -502,13 +518,17 @@ func DeriveQCStatus(accepted, rejected Quantity) QCStatus {
 // rejected stock is recorded and never does, which is why they are two numbers
 // rather than one.
 type GoodsReceiptItem struct {
-	ID           string   `json:"id"`
-	ReceiptID    string   `json:"receiptId"`
-	OrderItemID  string   `json:"orderItemId"`
-	ItemID       string   `json:"itemId"`
-	QtyAccepted  Quantity `json:"qtyAccepted"`
-	QtyRejected  Quantity `json:"qtyRejected"`
-	QtyReturned  Quantity `json:"qtyReturned"`
+	ID          string   `json:"id"`
+	ReceiptID   string   `json:"receiptId"`
+	OrderItemID string   `json:"orderItemId"`
+	ItemID      string   `json:"itemId"`
+	QtyAccepted Quantity `json:"qtyAccepted"`
+	QtyRejected Quantity `json:"qtyRejected"`
+	QtyReturned Quantity `json:"qtyReturned"`
+	// The pack that was delivered in, carried from the order line so a receipt
+	// cannot quietly count cartons as pieces.
+	Unit         string   `json:"unit"`
+	PackFactor   float64  `json:"packFactor"`
 	UnitPriceIDR float64  `json:"unitPriceIdr"`
 	QCStatus     QCStatus `json:"qcStatus"`
 	BatchNumber  *string  `json:"batchNumber"`
@@ -519,6 +539,21 @@ type GoodsReceiptItem struct {
 // QtyReturnable is how much of an accepted line can still go back.
 func (i GoodsReceiptItem) QtyReturnable() Quantity {
 	return RoundQuantity(i.QtyAccepted - i.QtyReturned)
+}
+
+// BaseAccepted is what actually goes on the shelf.
+func (i GoodsReceiptItem) BaseAccepted() Quantity {
+	return PackToBase(i.QtyAccepted, i.PackFactor)
+}
+
+// BaseRejected is what was delivered and refused, in base units.
+func (i GoodsReceiptItem) BaseRejected() Quantity {
+	return PackToBase(i.QtyRejected, i.PackFactor)
+}
+
+// UnitPriceBaseIDR is the delivered price per base unit.
+func (i GoodsReceiptItem) UnitPriceBaseIDR() float64 {
+	return PackPriceToBase(i.UnitPriceIDR, i.PackFactor)
 }
 
 // ── Returns ──────────────────────────────────────────────────────────────────

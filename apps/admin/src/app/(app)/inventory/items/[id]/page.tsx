@@ -53,6 +53,8 @@ export default function ItemPage() {
         <StatCard label="Kind" value={<StatusBadge status={item.active ? item.kind : 'INACTIVE'} />} />
       </div>
 
+      <PacksCard itemId={id} baseUnit={item.unit} canManage={can('inventory.manage')} />
+
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="a-card !p-0">
           <h2 className="px-4 pt-4 font-black">Where it is</h2>
@@ -225,6 +227,220 @@ function ReorderModal({
           </button>
           <button className="a-btn" disabled={save.isPending} onClick={() => save.mutate()}>
             {save.isPending ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/**
+ * How this item may be handed over.
+ *
+ * Stock is counted in the base unit throughout; every other pack says how many
+ * of those it holds, and carries its own barcode. This is the table that makes
+ * "ten cartons" and "240 pieces" the same fact rather than two.
+ */
+function PacksCard({
+  itemId,
+  baseUnit,
+  canManage,
+}: {
+  itemId: string;
+  baseUnit: string;
+  canManage: boolean;
+}) {
+  const qc = useQueryClient();
+  const [adding, setAdding] = useState(false);
+
+  const { data: packs, isLoading } = useQuery({
+    queryKey: ['inventory', 'packs', itemId],
+    queryFn: () => api.admin.inventory.items.packs(itemId),
+  });
+
+  const remove = useMutation({
+    mutationFn: (packId: string) => api.admin.inventory.items.deletePack(itemId, packId),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['inventory', 'packs', itemId] }),
+  });
+
+  return (
+    <div className="a-card mb-4 !p-0">
+      <div className="flex items-start justify-between gap-3 px-4 pt-4">
+        <div>
+          <h2 className="font-black">How it is packed</h2>
+          <p className="text-xs text-muted">
+            Bought by the carton, counted by the {baseUnit.toLowerCase()}. Each pack scans differently.
+          </p>
+        </div>
+        {canManage ? (
+          <button className="a-btn-ghost !px-3 !py-1 text-xs" onClick={() => setAdding(true)}>
+            + Pack
+          </button>
+        ) : null}
+      </div>
+
+      {isLoading ? (
+        <div className="p-4">
+          <Spinner label="Loading packs…" />
+        </div>
+      ) : (
+        <table className="a-table mt-2">
+          <thead>
+            <tr>
+              <th>Pack</th>
+              <th className="text-right">Holds</th>
+              <th>Barcode</th>
+              <th>Used for</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {(packs ?? []).map((pack) => (
+              <tr key={pack.id}>
+                <td className="font-bold">
+                  {pack.unitCode}
+                  {pack.isBase ? <span className="ml-2 text-xs font-normal text-muted">base</span> : null}
+                </td>
+                <td className="text-right tabular-nums">
+                  {pack.factor} {baseUnit.toLowerCase()}
+                </td>
+                <td className="font-mono text-xs text-muted">{pack.barcode ?? '—'}</td>
+                <td className="text-xs text-muted">
+                  {[pack.purchaseDefault ? 'buying' : null, pack.saleDefault ? 'selling' : null]
+                    .filter(Boolean)
+                    .join(' · ') || '—'}
+                </td>
+                <td className="text-right">
+                  {canManage && !pack.isBase ? (
+                    <button
+                      className="a-btn-ghost !px-2 !py-1 text-xs"
+                      onClick={() => remove.mutate(pack.id)}
+                    >
+                      Remove
+                    </button>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {adding ? (
+        <PackModal
+          itemId={itemId}
+          baseUnit={baseUnit}
+          onClose={() => setAdding(false)}
+          onDone={() => {
+            setAdding(false);
+            void qc.invalidateQueries({ queryKey: ['inventory', 'packs', itemId] });
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function PackModal({
+  itemId,
+  baseUnit,
+  onClose,
+  onDone,
+}: {
+  itemId: string;
+  baseUnit: string;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    unitCode: '',
+    factor: 24,
+    barcode: '',
+    purchaseDefault: true,
+    saleDefault: false,
+  });
+
+  const { data: units } = useQuery({
+    queryKey: ['inventory', 'units'],
+    queryFn: () => api.admin.inventory.units.list(true),
+  });
+
+  const save = useMutation({
+    mutationFn: () =>
+      api.admin.inventory.items.savePack(itemId, {
+        unitCode: form.unitCode,
+        factor: form.factor,
+        barcode: form.barcode || null,
+        purchaseDefault: form.purchaseDefault,
+        saleDefault: form.saleDefault,
+      }),
+    onSuccess: onDone,
+    onError: (e) => setError(e instanceof ApiError ? e.message : 'That pack did not save.'),
+  });
+
+  return (
+    <Modal title="Add a pack" onClose={onClose}>
+      <div className="grid gap-3">
+        <ErrorNote message={error} />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Unit">
+            <select
+              className="a-input"
+              value={form.unitCode}
+              onChange={(e) => setForm((f) => ({ ...f, unitCode: e.target.value }))}
+            >
+              <option value="">Choose…</option>
+              {(units ?? []).map((unit) => (
+                <option key={unit.id} value={unit.code}>
+                  {unit.code} — {unit.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={`Holds how many ${baseUnit.toLowerCase()}`}>
+            <input
+              className="a-input"
+              type="number"
+              min={1}
+              value={form.factor}
+              onChange={(e) => setForm((f) => ({ ...f, factor: Number(e.target.value) }))}
+            />
+          </Field>
+        </div>
+        <Field label="Barcode" hint="The outer case has its own code, distinct from the single.">
+          <input
+            className="a-input font-mono"
+            value={form.barcode}
+            onChange={(e) => setForm((f) => ({ ...f, barcode: e.target.value }))}
+          />
+        </Field>
+        <label className="flex items-center gap-2 text-sm font-bold">
+          <input
+            type="checkbox"
+            checked={form.purchaseDefault}
+            onChange={(e) => setForm((f) => ({ ...f, purchaseDefault: e.target.checked }))}
+          />
+          What we normally buy in
+        </label>
+        <label className="flex items-center gap-2 text-sm font-bold">
+          <input
+            type="checkbox"
+            checked={form.saleDefault}
+            onChange={(e) => setForm((f) => ({ ...f, saleDefault: e.target.checked }))}
+          />
+          What we normally sell in
+        </label>
+        <div className="mt-2 flex justify-end gap-2">
+          <button className="a-btn-ghost" onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            className="a-btn"
+            disabled={save.isPending || !form.unitCode || form.factor <= 0}
+            onClick={() => save.mutate()}
+          >
+            {save.isPending ? 'Saving…' : 'Add pack'}
           </button>
         </div>
       </div>

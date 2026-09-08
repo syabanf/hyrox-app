@@ -24,7 +24,12 @@ func (h *harness) sentOrder(t *testing.T, token, itemID string, qty float64, pri
 
 	status, withLine := h.request(http.MethodPost,
 		"/api/admin/purchasing/orders/"+orderID+"/lines", token, map[string]any{
-			"itemId": itemID, "description": "Test line", "qty": qty, "unitPriceIdr": price,
+			// Explicitly in base units: these tests are about approvals and
+			// receiving, and leaving the unit off would silently order in
+			// whatever pack the item is normally bought by. The conversion
+			// has its own test.
+			"itemId": itemID, "description": "Test line", "qty": qty,
+			"unit": "PCS", "unitPriceIdr": price,
 		})
 	if status != http.StatusCreated {
 		t.Fatalf("adding a line returned %d: %v", status, withLine)

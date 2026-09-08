@@ -149,13 +149,17 @@ func (s *Service) AddOrderLine(ctx context.Context, orderID string, in OrderLine
 			return httpx.Invalid("A line needs a positive quantity.")
 		}
 
-		unit := strings.ToUpper(strings.TrimSpace(in.Unit))
-		if unit == "" {
-			unit = "PCS"
+		// The pack the buyer is ordering in, resolved against what the item is
+		// actually stocked in. An empty unit means "however we normally buy
+		// it", which is the case that keeps most lines free of a decision.
+		pack, err := s.stock.PackFor(ctx, in.ItemID, in.Unit)
+		if err != nil {
+			return err
 		}
 		if _, err := s.repo.InsertOrderItem(ctx, domain.PurchaseOrderItem{
 			ID: s.ids.New(id.LineItem), OrderID: orderID, ItemID: in.ItemID,
-			Description: strings.TrimSpace(in.Description), QtyOrdered: in.Qty, Unit: unit,
+			Description: strings.TrimSpace(in.Description), QtyOrdered: in.Qty,
+			Unit: pack.UnitCode, PackFactor: pack.Factor,
 			UnitPriceIDR: in.UnitPriceIDR, DiscountIDR: in.DiscountIDR, Note: in.Note,
 		}); err != nil {
 			return err
@@ -276,7 +280,10 @@ func (s *Service) SendOrder(ctx context.Context, orderID string, actor Actor) (O
 			return httpx.Conflict("NO_LINES", "That order has nothing on it.")
 		}
 		for _, item := range items {
-			if err := s.stock.ReserveOnOrder(ctx, item.ItemID, order.BranchID, item.QtyOutstanding()); err != nil {
+			// On-order is a stock figure, so it is in base units: ordering
+			// ten cartons means 240 pieces are coming.
+			outstanding := domain.PackToBase(item.QtyOutstanding(), item.PackFactor)
+			if err := s.stock.ReserveOnOrder(ctx, item.ItemID, order.BranchID, outstanding); err != nil {
 				return err
 			}
 		}

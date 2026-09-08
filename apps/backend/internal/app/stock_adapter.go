@@ -21,7 +21,8 @@ type purchasingStock struct{ inventory *inventory.Service }
 func (a purchasingStock) Receive(ctx context.Context, itemID, branchID string,
 	qty domain.Quantity, unitCostIDR float64, ref purchasing.StockRef, actor purchasing.StockActor) error {
 	_, err := a.inventory.Receive(ctx, itemID, branchID, qty, unitCostIDR,
-		inventory.Reference{Type: ref.Type, ID: ref.ID, Number: ref.Number},
+		inventory.Reference{Type: ref.Type, ID: ref.ID, Number: ref.Number,
+			PackUnit: ref.PackUnit, PackFactor: ref.PackFactor},
 		inventory.Actor{ID: actor.ID, Name: actor.Name})
 	return err
 }
@@ -53,7 +54,8 @@ type posStock struct{ inventory *inventory.Service }
 func (a posStock) Issue(ctx context.Context, itemID, branchID string, qty domain.Quantity,
 	ref pos.StockRef, actor pos.StockActor) error {
 	_, err := a.inventory.Issue(ctx, itemID, branchID, qty, domain.MovementOut,
-		inventory.Reference{Type: ref.Type, ID: ref.ID, Number: ref.Number},
+		inventory.Reference{Type: ref.Type, ID: ref.ID, Number: ref.Number,
+			PackUnit: ref.PackUnit, PackFactor: ref.PackFactor},
 		inventory.Actor{ID: actor.ID, Name: actor.Name})
 	return err
 }
@@ -72,4 +74,17 @@ func (a posStock) UnitCost(ctx context.Context, itemID string) (float64, error) 
 
 func (a posStock) OnHand(ctx context.Context, itemID, branchID string) (domain.Quantity, error) {
 	return a.inventory.OnHand(ctx, itemID, branchID)
+}
+
+// The two modules ask the same question and want different answers when the
+// caller names no unit: a buyer means the carton they always order, a cashier
+// means the single they always sell. Choosing between them is exactly the kind
+// of decision an adapter exists to make, so neither module has to know the
+// other's habits.
+func (a purchasingStock) PackFor(ctx context.Context, itemID, unitCode string) (domain.ItemPack, error) {
+	return a.inventory.PackFor(ctx, itemID, unitCode, domain.DefaultPurchasePack)
+}
+
+func (a posStock) PackFor(ctx context.Context, itemID, unitCode string) (domain.ItemPack, error) {
+	return a.inventory.PackFor(ctx, itemID, unitCode, domain.DefaultSalePack)
 }

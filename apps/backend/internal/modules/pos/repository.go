@@ -66,17 +66,18 @@ func (r *Repository) UpsertCategory(ctx context.Context, c domain.POSCategory) (
 // ── Products ─────────────────────────────────────────────────────────────────
 
 const productColumns = `id, sku, name, description, category_id, inventory_item_id, price_idr,
-	cost_idr, tax_percent, bonus_xp, image_url, active, available, created_at, updated_at`
+	cost_idr, tax_percent, barcode, pack_unit, pack_factor, bonus_xp, image_url, active,
+	available, created_at, updated_at`
 
 func scanProduct(row pgx.Row) (domain.POSProduct, error) {
 	var p domain.POSProduct
 	err := row.Scan(&p.ID, &p.SKU, &p.Name, &p.Description, &p.CategoryID, &p.InventoryItemID,
-		&p.PriceIDR, &p.CostIDR, &p.TaxPercent, &p.BonusXP, &p.ImageURL, &p.Active,
-		&p.Available, &p.CreatedAt, &p.UpdatedAt)
+		&p.PriceIDR, &p.CostIDR, &p.TaxPercent, &p.Barcode, &p.PackUnit, &p.PackFactor,
+		&p.BonusXP, &p.ImageURL, &p.Active, &p.Available, &p.CreatedAt, &p.UpdatedAt)
 	return p, err
 }
 
-// ProductFilter narrows the menu.
+// ProductFilter narrows the catalogue.
 type ProductFilter struct {
 	Query        string
 	CategoryID   string
@@ -138,17 +139,25 @@ func (r *Repository) Product(ctx context.Context, id string) (domain.POSProduct,
 func (r *Repository) UpsertProduct(ctx context.Context, p domain.POSProduct) (domain.POSProduct, error) {
 	saved, err := scanProduct(r.db.QueryRow(ctx, `
 		INSERT INTO pos.products (id, sku, name, description, category_id, inventory_item_id,
-			price_idr, cost_idr, tax_percent, bonus_xp, image_url, active, available)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+			price_idr, cost_idr, tax_percent, barcode, pack_unit, pack_factor, bonus_xp,
+			image_url, active, available)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 		ON CONFLICT (sku) DO UPDATE SET name = EXCLUDED.name,
 			description = EXCLUDED.description, category_id = EXCLUDED.category_id,
 			inventory_item_id = EXCLUDED.inventory_item_id, price_idr = EXCLUDED.price_idr,
-			tax_percent = EXCLUDED.tax_percent, bonus_xp = EXCLUDED.bonus_xp,
+			tax_percent = EXCLUDED.tax_percent, barcode = EXCLUDED.barcode,
+			pack_unit = EXCLUDED.pack_unit, pack_factor = EXCLUDED.pack_factor,
+			bonus_xp = EXCLUDED.bonus_xp,
 			image_url = EXCLUDED.image_url, active = EXCLUDED.active,
 			available = EXCLUDED.available, updated_at = now()
 		RETURNING `+productColumns,
 		p.ID, p.SKU, p.Name, p.Description, p.CategoryID, p.InventoryItemID, p.PriceIDR,
-		p.CostIDR, p.TaxPercent, p.BonusXP, p.ImageURL, p.Active, p.Available))
+		p.CostIDR, p.TaxPercent, p.Barcode, p.PackUnit, p.PackFactor, p.BonusXP,
+		p.ImageURL, p.Active, p.Available))
+	if database.IsUniqueViolation(err) {
+		return domain.POSProduct{}, httpx.Conflict("DUPLICATE_BARCODE",
+			"That barcode already belongs to another product.")
+	}
 	if database.IsForeignKeyViolation(err) {
 		return domain.POSProduct{}, httpx.NotFound("category")
 	}
@@ -293,15 +302,15 @@ func (r *Repository) SaveShift(ctx context.Context, s domain.CashierShift) (doma
 const orderColumns = `id, order_number, branch_id, shift_id, cashier_id, cashier_name,
 	member_id, order_type, status, payment_status, subtotal_idr, discount_idr,
 	tier_discount_idr, discount_reason,
-	tax_idr, service_charge_idr, total_idr, paid_idr, change_idr, cost_idr, gross_profit_idr,
+	tax_idr, total_idr, paid_idr, change_idr, cost_idr, gross_profit_idr,
 	xp_earned, note, opened_at, completed_at, cancelled_at, voided_at, voided_by, void_reason,
 	created_at, updated_at`
 
 func scanOrder(row pgx.Row) (domain.POSOrder, error) {
 	var o domain.POSOrder
 	err := row.Scan(&o.ID, &o.OrderNumber, &o.BranchID, &o.ShiftID, &o.CashierID, &o.CashierName,
-		&o.MemberID, &o.OrderType, &o.Status, &o.PaymentStatus, &o.SubtotalIDR, &o.DiscountIDR,
-		&o.TierDiscountIDR, &o.DiscountReason, &o.TaxIDR, &o.ServiceChargeIDR, &o.TotalIDR, &o.PaidIDR, &o.ChangeIDR,
+		&o.MemberID, &o.Channel, &o.Status, &o.PaymentStatus, &o.SubtotalIDR, &o.DiscountIDR,
+		&o.TierDiscountIDR, &o.DiscountReason, &o.TaxIDR, &o.TotalIDR, &o.PaidIDR, &o.ChangeIDR,
 		&o.CostIDR, &o.GrossProfitIDR, &o.XPEarned, &o.Note, &o.OpenedAt, &o.CompletedAt,
 		&o.CancelledAt, &o.VoidedAt, &o.VoidedBy, &o.VoidReason, &o.CreatedAt, &o.UpdatedAt)
 	return o, err
@@ -391,7 +400,7 @@ func (r *Repository) InsertOrder(ctx context.Context, o domain.POSOrder) (domain
 			member_id, order_type, status, payment_status, note)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING `+orderColumns,
 		o.ID, o.OrderNumber, o.BranchID, o.ShiftID, o.CashierID, o.CashierName, o.MemberID,
-		o.OrderType, o.Status, o.PaymentStatus, o.Note))
+		o.Channel, o.Status, o.PaymentStatus, o.Note))
 	if database.IsUniqueViolation(err) {
 		return domain.POSOrder{}, httpx.Conflict("DUPLICATE", "That order number is taken.")
 	}
@@ -405,13 +414,13 @@ func (r *Repository) SaveOrder(ctx context.Context, o domain.POSOrder) (domain.P
 	saved, err := scanOrder(r.db.QueryRow(ctx, `
 		UPDATE pos.orders SET member_id = $2, status = $3, payment_status = $4,
 			subtotal_idr = $5, discount_idr = $6, tier_discount_idr = $7, discount_reason = $8,
-			tax_idr = $9, service_charge_idr = $10, total_idr = $11, paid_idr = $12,
-			change_idr = $13, cost_idr = $14, gross_profit_idr = $15, xp_earned = $16,
-			note = $17, completed_at = $18, cancelled_at = $19, voided_at = $20, voided_by = $21,
-			void_reason = $22, updated_at = now()
+			tax_idr = $9, total_idr = $10, paid_idr = $11,
+			change_idr = $12, cost_idr = $13, gross_profit_idr = $14, xp_earned = $15,
+			note = $16, completed_at = $17, cancelled_at = $18, voided_at = $19, voided_by = $20,
+			void_reason = $21, updated_at = now()
 		WHERE id = $1 RETURNING `+orderColumns,
 		o.ID, o.MemberID, o.Status, o.PaymentStatus, o.SubtotalIDR, o.DiscountIDR,
-		o.TierDiscountIDR, o.DiscountReason, o.TaxIDR, o.ServiceChargeIDR, o.TotalIDR,
+		o.TierDiscountIDR, o.DiscountReason, o.TaxIDR, o.TotalIDR,
 		o.PaidIDR, o.ChangeIDR, o.CostIDR, o.GrossProfitIDR, o.XPEarned, o.Note,
 		o.CompletedAt, o.CancelledAt, o.VoidedAt, o.VoidedBy, o.VoidReason))
 	if database.IsNoRows(err) {
@@ -427,14 +436,14 @@ func (r *Repository) SaveOrder(ctx context.Context, o domain.POSOrder) (domain.P
 }
 
 const orderItemColumns = `id, order_id, product_id, product_name, product_sku,
-	inventory_item_id, qty, unit_price_idr, discount_idr, tax_percent, line_total_idr,
-	unit_cost_idr, note, created_at`
+	inventory_item_id, qty, pack_unit, pack_factor, qty_base, unit_price_idr, discount_idr,
+	tax_percent, line_total_idr, unit_cost_idr, note, created_at`
 
 func scanOrderItem(row pgx.Row) (domain.POSOrderItem, error) {
 	var i domain.POSOrderItem
 	err := row.Scan(&i.ID, &i.OrderID, &i.ProductID, &i.ProductName, &i.ProductSKU,
-		&i.InventoryItemID, &i.Qty, &i.UnitPriceIDR, &i.DiscountIDR, &i.TaxPercent,
-		&i.LineTotalIDR, &i.UnitCostIDR, &i.Note, &i.CreatedAt)
+		&i.InventoryItemID, &i.Qty, &i.PackUnit, &i.PackFactor, &i.QtyBase, &i.UnitPriceIDR,
+		&i.DiscountIDR, &i.TaxPercent, &i.LineTotalIDR, &i.UnitCostIDR, &i.Note, &i.CreatedAt)
 	return i, err
 }
 
@@ -461,10 +470,11 @@ func (r *Repository) OrderItems(ctx context.Context, orderID string) ([]domain.P
 func (r *Repository) InsertOrderItem(ctx context.Context, i domain.POSOrderItem) (domain.POSOrderItem, error) {
 	created, err := scanOrderItem(r.db.QueryRow(ctx, `
 		INSERT INTO pos.order_items (id, order_id, product_id, product_name, product_sku,
-			inventory_item_id, qty, unit_price_idr, discount_idr, tax_percent, unit_cost_idr, note)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING `+orderItemColumns,
+			inventory_item_id, qty, pack_unit, pack_factor, unit_price_idr, discount_idr,
+			tax_percent, unit_cost_idr, note)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING `+orderItemColumns,
 		i.ID, i.OrderID, i.ProductID, i.ProductName, i.ProductSKU, i.InventoryItemID, i.Qty,
-		i.UnitPriceIDR, i.DiscountIDR, i.TaxPercent, i.UnitCostIDR, i.Note))
+		i.PackUnit, i.PackFactor, i.UnitPriceIDR, i.DiscountIDR, i.TaxPercent, i.UnitCostIDR, i.Note))
 	if database.IsForeignKeyViolation(err) {
 		return domain.POSOrderItem{}, httpx.NotFound("order")
 	}
@@ -656,4 +666,82 @@ func (r *Repository) TopProducts(ctx context.Context, branchID string, from time
 		out = append(out, p)
 	}
 	return out, rows.Err()
+}
+
+// ── Barcode and channel pricing ──────────────────────────────────────────────
+
+// ProductByBarcode resolves a scan.
+//
+// The barcode is on the product rather than the item because that is what
+// distinguishes a single from a six-pack of the same drink, and a till that
+// resolved a scan to the item would have to ask which — at which point it is
+// not a scan any more.
+func (r *Repository) ProductByBarcode(ctx context.Context, barcode string) (domain.POSProduct, error) {
+	p, err := scanProduct(r.db.QueryRow(ctx,
+		`SELECT `+productColumns+` FROM pos.products WHERE barcode = $1`, barcode))
+	if database.IsNoRows(err) {
+		return domain.POSProduct{}, httpx.NotFound("barcode")
+	}
+	if err != nil {
+		return domain.POSProduct{}, fmt.Errorf("pos: resolving barcode: %w", err)
+	}
+	return p, nil
+}
+
+const productPriceColumns = `id, product_id, channel, min_qty, price_idr, active`
+
+func scanProductPrice(row pgx.Row) (domain.ProductPrice, error) {
+	var p domain.ProductPrice
+	err := row.Scan(&p.ID, &p.ProductID, &p.Channel, &p.MinQty, &p.PriceIDR, &p.Active)
+	return p, err
+}
+
+// ProductPrices is every break defined for one product, in every channel. The
+// domain picks between them; this only fetches.
+func (r *Repository) ProductPrices(ctx context.Context, productID string) ([]domain.ProductPrice, error) {
+	rows, err := r.db.Query(ctx,
+		`SELECT `+productPriceColumns+` FROM pos.product_prices
+		 WHERE product_id = $1 ORDER BY channel, min_qty`, productID)
+	if err != nil {
+		return nil, fmt.Errorf("pos: listing product prices: %w", err)
+	}
+	defer rows.Close()
+
+	out := []domain.ProductPrice{}
+	for rows.Next() {
+		p, err := scanProductPrice(rows)
+		if err != nil {
+			return nil, fmt.Errorf("pos: scanning product price: %w", err)
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
+}
+
+func (r *Repository) UpsertProductPrice(ctx context.Context, p domain.ProductPrice) (domain.ProductPrice, error) {
+	saved, err := scanProductPrice(r.db.QueryRow(ctx, `
+		INSERT INTO pos.product_prices (id, product_id, channel, min_qty, price_idr, active)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (product_id, channel, min_qty)
+		DO UPDATE SET price_idr = EXCLUDED.price_idr, active = EXCLUDED.active, updated_at = now()
+		RETURNING `+productPriceColumns,
+		p.ID, p.ProductID, p.Channel, p.MinQty, p.PriceIDR, p.Active))
+	if database.IsForeignKeyViolation(err) {
+		return domain.ProductPrice{}, httpx.NotFound("product")
+	}
+	if err != nil {
+		return domain.ProductPrice{}, fmt.Errorf("pos: saving product price: %w", err)
+	}
+	return saved, nil
+}
+
+func (r *Repository) DeleteProductPrice(ctx context.Context, id string) error {
+	tag, err := r.db.Exec(ctx, `DELETE FROM pos.product_prices WHERE id = $1`, id)
+	if err != nil {
+		return fmt.Errorf("pos: deleting product price: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return httpx.NotFound("price")
+	}
+	return nil
 }

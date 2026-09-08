@@ -48,6 +48,38 @@ func (s *Seeder) seedInventory(ctx context.Context) (int, error) {
 		{"itm_wipes", "SUP-WPE-500", "Equipment Wipes (500)", "ictg_supplies", "TUB", domain.ItemSupply, 145_000, 10, 6, 24},
 	}
 
+	// How each item is handed over. The base pack is the unit the ledger
+	// counts in; the rest are the cartons it is bought by. Barcodes differ per
+	// pack, which is the whole reason a pack is a row and not a column.
+	// Every item has exactly one base pack — the unit its stock is counted in
+	// — and the fast-moving ones also have the carton they are bought by. The
+	// carton's barcode is the piece's with a leading digit, which is how real
+	// GTIN-14 outer cases are numbered.
+	packs := []struct {
+		id, item, unit       string
+		factor               float64
+		barcode              string
+		base, purchase, sale bool
+	}{
+		{"ipk_bar_pcs", "itm_bar", "PCS", 1, "8991234500011", true, false, true},
+		{"ipk_bar_ctn", "itm_bar", "CTN", 24, "18991234500018", false, true, false},
+		{"ipk_iso_pcs", "itm_iso", "PCS", 1, "8991234500028", true, false, true},
+		{"ipk_iso_ctn", "itm_iso", "CTN", 24, "18991234500025", false, true, false},
+		{"ipk_whey_pcs", "itm_whey", "PCS", 1, "8991234500035", true, false, true},
+		{"ipk_whey_box", "itm_whey", "BOX", 6, "18991234500032", false, true, false},
+		{"ipk_tee_pcs", "itm_tee", "PCS", 1, "8991234500042", true, false, true},
+		{"ipk_tee_ctn", "itm_tee", "CTN", 12, "18991234500049", false, true, false},
+		{"ipk_tank_pcs", "itm_tank", "PCS", 1, "8991234500059", true, true, true},
+		{"ipk_bottle_pcs", "itm_bottle", "PCS", 1, "8991234500066", true, false, true},
+		{"ipk_bottle_ctn", "itm_bottle", "CTN", 12, "18991234500063", false, true, false},
+		{"ipk_grips_pair", "itm_grips", "PAIR", 1, "8991234500073", true, true, true},
+		{"ipk_shaker_pcs", "itm_shaker", "PCS", 1, "8991234500080", true, false, true},
+		{"ipk_shaker_ctn", "itm_shaker", "CTN", 24, "18991234500087", false, true, false},
+		{"ipk_towel_pcs", "itm_towel", "PCS", 1, "8991234500097", true, false, true},
+		{"ipk_towel_ctn", "itm_towel", "CTN", 20, "18991234500094", false, true, false},
+		{"ipk_wipes_tub", "itm_wipes", "TUB", 1, "8991234500103", true, true, true},
+	}
+
 	branches := []string{"brn_senopati", "brn_pik"}
 	for _, item := range items {
 		if _, err := s.db.Exec(ctx, `
@@ -92,5 +124,19 @@ func (s *Seeder) seedInventory(ctx context.Context) (int, error) {
 			}
 		}
 	}
+	for _, pack := range packs {
+		if _, err := s.db.Exec(ctx, `
+			INSERT INTO inventory.item_packs (id, item_id, unit_code, factor, barcode, is_base,
+				purchase_default, sale_default)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			ON CONFLICT (item_id, unit_code) DO UPDATE SET factor = EXCLUDED.factor,
+				barcode = EXCLUDED.barcode, purchase_default = EXCLUDED.purchase_default,
+				sale_default = EXCLUDED.sale_default`,
+			pack.id, pack.item, pack.unit, pack.factor, pack.barcode,
+			pack.base, pack.purchase, pack.sale); err != nil {
+			return 0, fmt.Errorf("seed: pack %s: %w", pack.id, err)
+		}
+	}
+
 	return len(items), nil
 }

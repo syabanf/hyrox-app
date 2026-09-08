@@ -131,14 +131,14 @@ func (r *Repository) SaveReceipt(ctx context.Context, g domain.GoodsReceipt) (do
 }
 
 const receiptItemColumns = `id, receipt_id, order_item_id, item_id, qty_accepted, qty_rejected,
-	qty_returned, unit_price_idr, qc_status, batch_number, expires_on, note`
+	qty_returned, unit, pack_factor, unit_price_idr, qc_status, batch_number, expires_on, note`
 
 func scanReceiptItem(row pgx.Row) (domain.GoodsReceiptItem, error) {
 	var i domain.GoodsReceiptItem
 	var expiresOn *time.Time
 	err := row.Scan(&i.ID, &i.ReceiptID, &i.OrderItemID, &i.ItemID, &i.QtyAccepted,
-		&i.QtyRejected, &i.QtyReturned, &i.UnitPriceIDR, &i.QCStatus, &i.BatchNumber,
-		&expiresOn, &i.Note)
+		&i.QtyRejected, &i.QtyReturned, &i.Unit, &i.PackFactor, &i.UnitPriceIDR,
+		&i.QCStatus, &i.BatchNumber, &expiresOn, &i.Note)
 	if err != nil {
 		return domain.GoodsReceiptItem{}, err
 	}
@@ -184,10 +184,12 @@ func (r *Repository) ReceiptItem(ctx context.Context, id string, forUpdate bool)
 func (r *Repository) InsertReceiptItem(ctx context.Context, i domain.GoodsReceiptItem) (domain.GoodsReceiptItem, error) {
 	created, err := scanReceiptItem(r.db.QueryRow(ctx, `
 		INSERT INTO purchasing.goods_receipt_items (id, receipt_id, order_item_id, item_id,
-			qty_accepted, qty_rejected, unit_price_idr, qc_status, batch_number, expires_on, note)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING `+receiptItemColumns,
+			qty_accepted, qty_rejected, unit, pack_factor, unit_price_idr, qc_status,
+			batch_number, expires_on, note)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING `+receiptItemColumns,
 		i.ID, i.ReceiptID, i.OrderItemID, i.ItemID, i.QtyAccepted, i.QtyRejected,
-		i.UnitPriceIDR, i.QCStatus, i.BatchNumber, dateValue(i.ExpiresOn), i.Note))
+		i.Unit, i.PackFactor, i.UnitPriceIDR, i.QCStatus, i.BatchNumber,
+		dateValue(i.ExpiresOn), i.Note))
 	if database.IsCheckViolation(err) {
 		return domain.GoodsReceiptItem{}, httpx.Invalid("A delivery line needs something on it.")
 	}

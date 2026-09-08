@@ -15,7 +15,7 @@ func TestASaleAddsUpAndKnowsWhatItMade(t *testing.T) {
 		soldLine(3, 18_000, 12_000, 0), // three bars
 	}
 
-	totals := ComputeOrderPOSTotals(items, 0, 0)
+	totals := ComputeOrderPOSTotals(items, 0)
 	if totals.SubtotalIDR != 224_000 {
 		t.Fatalf("want a subtotal of 224.000, got %v", totals.SubtotalIDR)
 	}
@@ -36,7 +36,7 @@ func TestTaxIsChargedOnWhatIsActuallyPaid(t *testing.T) {
 	}
 
 	// No discount: tax is 11% of the taxed line only.
-	plain := ComputeOrderPOSTotals(items, 0, 0)
+	plain := ComputeOrderPOSTotals(items, 0)
 	if plain.TaxIDR != 11_000 {
 		t.Fatalf("want 11.000 tax, got %v", plain.TaxIDR)
 	}
@@ -44,7 +44,7 @@ func TestTaxIsChargedOnWhatIsActuallyPaid(t *testing.T) {
 	// A 50.000 discount is spread in proportion, so the taxed line's share is
 	// 25.000 and it is taxed on 75.000. Doing it the other way round
 	// overcharges the customer and the tax return in one stroke.
-	discounted := ComputeOrderPOSTotals(items, 50_000, 0)
+	discounted := ComputeOrderPOSTotals(items, 50_000)
 	if discounted.TaxIDR != 8_250 {
 		t.Fatalf("want 8.250 tax on the discounted line, got %v", discounted.TaxIDR)
 	}
@@ -55,7 +55,7 @@ func TestTaxIsChargedOnWhatIsActuallyPaid(t *testing.T) {
 
 func TestADiscountCannotMakeASaleNegative(t *testing.T) {
 	items := []POSOrderItem{soldLine(1, 50_000, 20_000, 0)}
-	totals := ComputeOrderPOSTotals(items, 999_000, 0)
+	totals := ComputeOrderPOSTotals(items, 999_000)
 	if totals.TotalIDR != 0 || totals.DiscountIDR != 50_000 {
 		t.Fatalf("want a zero total and a capped discount, got %v/%v",
 			totals.TotalIDR, totals.DiscountIDR)

@@ -118,6 +118,12 @@ type StockMovement struct {
 	QtyAfter     Quantity `json:"qtyAfter"`
 	UnitCostIDR  float64  `json:"unitCostIdr"`
 	TotalCostIDR float64  `json:"totalCostIdr"`
+	// What was physically handled, when it was not base units: ten cartons
+	// rather than 240 pieces. The database refuses the pair if it does not
+	// multiply out to Qty.
+	PackUnit   *string   `json:"packUnit"`
+	PackQty    *Quantity `json:"packQty"`
+	PackFactor *float64  `json:"packFactor"`
 	// What caused it — a goods receipt, a sale, a stock take.
 	ReferenceType   *string   `json:"referenceType"`
 	ReferenceID     *string   `json:"referenceId"`

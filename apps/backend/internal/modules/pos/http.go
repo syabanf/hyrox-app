@@ -32,6 +32,12 @@ func (h *Handler) Mount(r *httpx.Router) {
 	r.Put("/api/admin/pos/categories", h.saveCategory, manage)
 	r.Get("/api/admin/pos/products", h.listProducts, view)
 	r.Put("/api/admin/pos/products", h.saveProduct, manage)
+	// The scanner's endpoint. It is a lookup rather than a filter because a
+	// barcode resolves to exactly one product or to nothing at all.
+	r.Get("/api/admin/pos/scan", h.scan, view)
+	r.Get("/api/admin/pos/products/{id}/prices", h.listProductPrices, view)
+	r.Put("/api/admin/pos/products/{id}/prices", h.saveProductPrice, manage)
+	r.Delete("/api/admin/pos/products/{id}/prices/{priceId}", h.deleteProductPrice, manage)
 
 	r.Get("/api/admin/pos/shifts", h.listShifts, view)
 	r.Get("/api/admin/pos/shifts/{id}", h.getShift, view)
@@ -66,7 +72,7 @@ func (h *Handler) overview(w http.ResponseWriter, r *http.Request) {
 	httpx.OK(w, overview)
 }
 
-// ── Menu ─────────────────────────────────────────────────────────────────────
+// ── Catalogue ────────────────────────────────────────────────────────────────
 
 func (h *Handler) listCategories(w http.ResponseWriter, r *http.Request) {
 	categories, err := h.service.Categories(r.Context())
@@ -130,6 +136,9 @@ type productBody struct {
 	InventoryItemID *string `json:"inventoryItemId"`
 	PriceIDR        float64 `json:"priceIdr"`
 	TaxPercent      float64 `json:"taxPercent"`
+	Barcode         *string `json:"barcode"`
+	PackUnit        string  `json:"packUnit"`
+	PackFactor      float64 `json:"packFactor"`
 	BonusXP         int     `json:"bonusXp"`
 	ImageURL        *string `json:"imageUrl"`
 	Active          *bool   `json:"active"`
@@ -149,6 +158,9 @@ func (p *productBody) Validate() error {
 	if p.BonusXP < 0 {
 		return httpx.Invalid("Bonus points cannot be negative.")
 	}
+	if p.PackFactor < 0 {
+		return httpx.Invalid("A pack holds a positive number of units.")
+	}
 	return nil
 }
 
@@ -161,7 +173,9 @@ func (h *Handler) saveProduct(w http.ResponseWriter, r *http.Request) {
 	product, err := h.service.SaveProduct(r.Context(), ProductInput{
 		SKU: body.SKU, Name: body.Name, Description: body.Description,
 		CategoryID: body.CategoryID, InventoryItemID: body.InventoryItemID,
-		PriceIDR: body.PriceIDR, TaxPercent: body.TaxPercent, BonusXP: body.BonusXP,
+		PriceIDR: body.PriceIDR, TaxPercent: body.TaxPercent,
+		Barcode: body.Barcode, PackUnit: body.PackUnit, PackFactor: body.PackFactor,
+		BonusXP:   body.BonusXP,
 		ImageURL:  body.ImageURL,
 		Active:    body.Active == nil || *body.Active,
 		Available: body.Available == nil || *body.Available,
@@ -280,20 +294,20 @@ func (h *Handler) getOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 type openOrderBody struct {
-	BranchID  string  `json:"branchId"`
-	MemberID  *string `json:"memberId"`
-	OrderType string  `json:"orderType"`
-	Note      *string `json:"note"`
+	BranchID string  `json:"branchId"`
+	MemberID *string `json:"memberId"`
+	// Channel is what the customer is buying as, and it decides the price
+	// list. It replaced an order type that described where they were sitting.
+	Channel string  `json:"channel"`
+	Note    *string `json:"note"`
 }
 
 func (o *openOrderBody) Validate() error {
 	if strings.TrimSpace(o.BranchID) == "" {
 		return httpx.Invalid("A branch is required.")
 	}
-	switch strings.ToUpper(o.OrderType) {
-	case "", "COUNTER", "TAKEAWAY", "DINE_IN":
-	default:
-		return httpx.Invalid("%q is not an order type.", o.OrderType)
+	if o.Channel != "" && !domain.IsValidChannel(strings.ToUpper(o.Channel)) {
+		return httpx.Invalid("%q is not a sales channel.", o.Channel)
 	}
 	return nil
 }
@@ -305,7 +319,7 @@ func (h *Handler) openOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	order, err := h.service.OpenOrder(r.Context(), body.BranchID, body.MemberID,
-		body.OrderType, body.Note, actorFrom(r))
+		body.Channel, body.Note, actorFrom(r))
 	if err != nil {
 		httpx.Fail(w, r, err)
 		return
@@ -466,4 +480,73 @@ func (h *Handler) void(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.OK(w, order)
+}
+
+// ── Scanning and price breaks ────────────────────────────────────────────────
+
+func (h *Handler) scan(w http.ResponseWriter, r *http.Request) {
+	product, err := h.service.Scan(r.Context(), httpx.Query(r, "barcode"),
+		httpx.Query(r, "branchId"))
+	if err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	httpx.OK(w, product)
+}
+
+func (h *Handler) listProductPrices(w http.ResponseWriter, r *http.Request) {
+	prices, err := h.service.ProductPrices(r.Context(), httpx.Param(r, "id"))
+	if err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	httpx.OK(w, prices)
+}
+
+type productPriceBody struct {
+	Channel  string          `json:"channel"`
+	MinQty   domain.Quantity `json:"minQty"`
+	PriceIDR float64         `json:"priceIdr"`
+	Active   *bool           `json:"active"`
+}
+
+func (p *productPriceBody) Validate() error {
+	if !domain.IsValidChannel(strings.ToUpper(p.Channel)) {
+		return httpx.Invalid("%q is not a sales channel.", p.Channel)
+	}
+	if p.MinQty <= 0 {
+		return httpx.Invalid("A price break starts at a positive quantity.")
+	}
+	if p.PriceIDR < 0 {
+		return httpx.Invalid("A price cannot be negative.")
+	}
+	return nil
+}
+
+func (h *Handler) saveProductPrice(w http.ResponseWriter, r *http.Request) {
+	body, err := httpx.Decode[productPriceBody](r)
+	if err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	price, err := h.service.SaveProductPrice(r.Context(), ProductPriceInput{
+		ProductID: httpx.Param(r, "id"),
+		Channel:   domain.SalesChannel(strings.ToUpper(body.Channel)),
+		MinQty:    body.MinQty, PriceIDR: body.PriceIDR,
+		Active: body.Active == nil || *body.Active,
+	}, actorFrom(r))
+	if err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	httpx.OK(w, price)
+}
+
+func (h *Handler) deleteProductPrice(w http.ResponseWriter, r *http.Request) {
+	if err := h.service.DeleteProductPrice(r.Context(),
+		httpx.Param(r, "priceId"), actorFrom(r)); err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	httpx.OK(w, map[string]bool{"deleted": true})
 }

@@ -1,12 +1,12 @@
 'use client';
 
 import type { POSOrderView } from '@nuhabit/contracts';
-import { POS_PAYMENT_METHODS } from '@nuhabit/domain';
+import { CHANNEL_LABELS, POS_PAYMENT_METHODS, SALES_CHANNELS, type SalesChannel } from '@nuhabit/domain';
 import { formatIdr, Spinner } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Trash2 } from 'lucide-react';
+import { ScanLine, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ErrorNote,
   Field,
@@ -34,6 +34,12 @@ export default function TillPage() {
   const [error, setError] = useState<string | null>(null);
   const [openingTill, setOpeningTill] = useState(false);
   const [tendering, setTendering] = useState(false);
+  const [barcode, setBarcode] = useState('');
+  // The channel is fixed when the sale opens, because it decides the price
+  // list every line is priced against — changing it halfway would leave lines
+  // priced two different ways on one receipt.
+  const [channel, setChannel] = useState<SalesChannel>('RETAIL');
+  const scanBox = useRef<HTMLInputElement>(null);
 
   const { data: branches } = useQuery({ queryKey: ['branches'], queryFn: api.catalog.branches });
   const effectiveBranch = branch || user?.branchId || branches?.[0]?.id || '';
@@ -63,7 +69,7 @@ export default function TillPage() {
   });
 
   const openOrder = useMutation({
-    mutationFn: () => api.admin.pos.orders.open({ branchId: effectiveBranch }),
+    mutationFn: () => api.admin.pos.orders.open({ branchId: effectiveBranch, channel }),
     onSuccess: (created) => {
       setError(null);
       setOrderId(created.id);
@@ -72,13 +78,36 @@ export default function TillPage() {
   });
 
   const addLine = useMutation({
-    mutationFn: (productId: string) =>
-      api.admin.pos.orders.addLine(orderId!, { productId, qty: 1 }),
+    mutationFn: ({ productId, qty = 1 }: { productId: string; qty?: number }) =>
+      api.admin.pos.orders.addLine(orderId!, { productId, qty }),
     onSuccess: () => {
       setError(null);
       void qc.invalidateQueries({ queryKey: ['pos', 'order', orderId] });
     },
     onError: (e) => setError(e instanceof ApiError ? e.message : 'That line did not add.'),
+  });
+
+  /**
+   * A scan resolves to exactly one product, which is then rung up. A miss is
+   * reported rather than silently ignored: the cashier needs to know the code
+   * found nothing, not watch nothing happen.
+   */
+  const scan = useMutation({
+    mutationFn: async (code: string) => {
+      const product = await api.admin.pos.scan(code, effectiveBranch);
+      return api.admin.pos.orders.addLine(orderId!, { productId: product.id, qty: 1 });
+    },
+    onSuccess: () => {
+      setError(null);
+      setBarcode('');
+      scanBox.current?.focus();
+      void qc.invalidateQueries({ queryKey: ['pos', 'order', orderId] });
+    },
+    onError: (e) => {
+      setError(e instanceof ApiError ? e.message : 'That barcode is not in the catalogue.');
+      setBarcode('');
+      scanBox.current?.focus();
+    },
   });
 
   const removeLine = useMutation({
@@ -174,24 +203,63 @@ export default function TillPage() {
       ) : (
         <div className="grid gap-4 lg:grid-cols-[1fr_22rem]">
           <div className="a-card">
-            <h2 className="mb-3 font-black">What is for sale</h2>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-black">What is for sale</h2>
+              <ChannelPicker
+                value={channel}
+                disabled={Boolean(orderId)}
+                onChange={setChannel}
+              />
+            </div>
+
+            {/*
+              A shop counter is driven by a scanner, not by hunting a grid. The
+              field keeps focus and clears itself, so a scanner — which types
+              the code and presses Enter — rings items up without a hand
+              leaving the goods.
+            */}
+            <form
+              className="mb-3 flex gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const code = barcode.trim();
+                if (!code) return;
+                scan.mutate(code);
+              }}
+            >
+              <input
+                ref={scanBox}
+                className="a-input font-mono"
+                placeholder="Scan or type a barcode…"
+                value={barcode}
+                disabled={!orderId}
+                onChange={(e) => setBarcode(e.target.value)}
+              />
+              <button className="a-btn" type="submit" disabled={!orderId || scan.isPending}>
+                <ScanLine size={16} />
+              </button>
+            </form>
+
             <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
               {(products ?? []).map((product) => (
                 <button
                   key={product.id}
                   disabled={!orderId || addLine.isPending}
-                  onClick={() => addLine.mutate(product.id)}
+                  onClick={() => addLine.mutate({ productId: product.id })}
                   className="rounded-xl border border-line p-3 text-left transition hover:border-brand disabled:opacity-40"
                 >
                   <p className="font-bold">{product.name}</p>
                   <p className="text-sm text-brand">{formatIdr(product.priceIdr)}</p>
                   <p className="text-xs text-muted">
-                    {product.onHand == null ? 'service' : `${product.onHand} in stock`}
+                    {product.packFactor > 1 ? `${product.packUnit} of ${product.packFactor} · ` : ''}
+                    {product.onHand == null
+                      ? 'service'
+                      : `${product.onHand} ${product.packUnit.toLowerCase()} in stock`}
                   </p>
                 </button>
               ))}
               {(products ?? []).length === 0 ? (
-                <p className="text-sm text-muted">Nothing is on the menu yet.</p>
+                <p className="text-sm text-muted">Nothing is in the catalogue yet.</p>
               ) : null}
             </div>
           </div>
@@ -234,7 +302,8 @@ export default function TillPage() {
                       <div className="min-w-0">
                         <p className="truncate text-sm font-bold">{line.productName}</p>
                         <p className="text-xs text-muted">
-                          {line.qty} × {formatIdr(line.unitPriceIdr)}
+                          {line.qty} {line.packUnit.toLowerCase()} × {formatIdr(line.unitPriceIdr)}
+                          {line.packFactor > 1 ? ` · ${line.qtyBase} off the shelf` : ''}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -432,5 +501,38 @@ function TenderModal({
         </div>
       </div>
     </Modal>
+  );
+}
+
+/**
+ * Which price list this sale is rung up against.
+ *
+ * It is locked once a sale is open: a receipt priced half at retail and half
+ * at wholesale is a receipt nobody can check.
+ */
+function ChannelPicker({
+  value,
+  disabled,
+  onChange,
+}: {
+  value: SalesChannel;
+  disabled: boolean;
+  onChange: (channel: SalesChannel) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1 rounded-xl border border-line p-1">
+      {SALES_CHANNELS.map((channel) => (
+        <button
+          key={channel}
+          disabled={disabled}
+          onClick={() => onChange(channel)}
+          className={`rounded-lg px-3 py-1 text-xs font-bold transition disabled:opacity-40 ${
+            value === channel ? 'bg-brand text-white' : 'text-muted hover:text-ink'
+          }`}
+        >
+          {CHANNEL_LABELS[channel]}
+        </button>
+      ))}
+    </div>
   );
 }

@@ -262,9 +262,14 @@ export interface PurchaseOrderItem {
   orderId: string;
   itemId: string;
   description: string;
+  /** In the pack the buyer ordered — ten cartons, not 240 pieces. */
   qtyOrdered: number;
   qtyReceived: number;
   unit: string;
+  /** Base units inside one of them, so the receipt can convert once. */
+  packFactor: number;
+  qtyOrderedBase: number;
+  qtyReceivedBase: number;
   unitPriceIdr: number;
   discountIdr: number;
   subtotalIdr: number;
@@ -514,8 +519,14 @@ export interface POSProduct {
   /** Null means selling it moves no stock, which is correct for a service. */
   inventoryItemId: string | null;
   priceIdr: number;
+  /** Per base unit, so a carton product carries the piece cost. */
   costIdr: number;
   taxPercent: number;
+  /** What the scanner reads. A single and a carton carry different codes. */
+  barcode: string | null;
+  /** How much stock one sold unit takes off the shelf: a carton of 24 is 24. */
+  packUnit: string;
+  packFactor: number;
   bonusXp: number;
   imageUrl: string | null;
   active: boolean;
@@ -548,7 +559,8 @@ export interface POSOrder {
   cashierId: string;
   cashierName: string;
   memberId: string | null;
-  orderType: string;
+  /** What the customer is buying as. It decides which price list applies. */
+  channel: SalesChannel;
   status: POSOrderStatus;
   paymentStatus: POSPaymentStatus;
   subtotalIdr: number;
@@ -558,7 +570,6 @@ export interface POSOrder {
   tierDiscountIdr: number;
   discountReason: string | null;
   taxIdr: number;
-  serviceChargeIdr: number;
   totalIdr: number;
   paidIdr: number;
   changeIdr: number;
@@ -585,6 +596,11 @@ export interface POSOrderItem {
   productSku: string;
   inventoryItemId: string | null;
   qty: number;
+  /** Frozen: "2" has to still mean two six-packs after a repack. */
+  packUnit: string;
+  packFactor: number;
+  /** What this line takes off the shelf, in the item's base unit. */
+  qtyBase: number;
   unitPriceIdr: number;
   discountIdr: number;
   taxPercent: number;
@@ -646,3 +662,88 @@ export const APPROVAL_ROLES: Record<ApprovalLevel, readonly string[]> = {
   FINANCE: ['FINANCE', 'HQ_ADMIN', 'SUPER_ADMIN'],
   DIRECTOR: ['HQ_ADMIN', 'SUPER_ADMIN'],
 };
+
+// ── Packs: the same goods bought by the carton and sold by the piece ─────────
+
+export const UNIT_KINDS = ['COUNT', 'MEASURE'] as const;
+/** COUNT units are whole things; MEASURE units are continuous. */
+export type UnitKind = (typeof UNIT_KINDS)[number];
+
+/** A word for an amount: piece, carton, kilogram. */
+export interface Unit {
+  id: string;
+  code: string;
+  name: string;
+  kind: UnitKind;
+  active: boolean;
+  sortOrder: number;
+}
+
+/**
+ * One way of handing an item over.
+ *
+ * Stock is always counted in the base pack's unit; every other pack says how
+ * many of those it holds. The barcode lives here rather than on the item
+ * because that is the point — a single and a carton scan differently.
+ */
+export interface ItemPack {
+  id: string;
+  itemId: string;
+  unitCode: string;
+  /** Base units inside one of these. The base pack's is always 1. */
+  factor: number;
+  barcode: string | null;
+  isBase: boolean;
+  purchaseDefault: boolean;
+  saleDefault: boolean;
+  active: boolean;
+}
+
+export const SALES_CHANNELS = ['RETAIL', 'WHOLESALE', 'STAFF'] as const;
+/** What a customer is buying as. The only thing that moves a price. */
+export type SalesChannel = (typeof SALES_CHANNELS)[number];
+
+export const CHANNEL_LABELS: Record<SalesChannel, string> = {
+  RETAIL: 'Retail',
+  WHOLESALE: 'Wholesale',
+  STAFF: 'Staff',
+};
+
+/** One price break: this channel, at this quantity and above, pays this. */
+export interface ProductPrice {
+  id: string;
+  productId: string;
+  channel: SalesChannel;
+  minQty: number;
+  priceIdr: number;
+  active: boolean;
+}
+
+/** Pack quantity to base units. Ten cartons of 24 is 240 pieces. */
+export function packToBase(packQty: number, factor: number): number {
+  return round3(packQty * (factor > 0 ? factor : 1));
+}
+
+/**
+ * Base units to pack quantity, deliberately unrounded: three and a half
+ * cartons on hand is a true and useful thing to say.
+ */
+export function baseToPack(baseQty: number, factor: number): number {
+  return round3(baseQty / (factor > 0 ? factor : 1));
+}
+
+/** A price quoted per pack, as a price per base unit. */
+export function packPriceToBase(packPriceIdr: number, factor: number): number {
+  if (factor <= 0) return packPriceIdr;
+  return Math.round((packPriceIdr / factor) * 100) / 100;
+}
+
+/** "CTN (24 PCS)", or just "PCS" when there is nothing to convert. */
+export function packLabel(pack: Pick<ItemPack, 'unitCode' | 'factor' | 'isBase'>, baseUnit: string): string {
+  if (pack.isBase || pack.factor === 1) return pack.unitCode;
+  return `${pack.unitCode} (${round3(pack.factor)} ${baseUnit})`;
+}
+
+function round3(value: number): number {
+  return Math.round(value * 1000) / 1000;
+}

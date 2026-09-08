@@ -106,7 +106,7 @@ const NAV: NavGroup[] = [
     items: [
       { href: '/counter', label: 'Till', icon: Store, permission: 'pos.sell' },
       { href: '/counter/sales', label: 'Sales', icon: Receipt, permission: 'pos.view' },
-      { href: '/counter/products', label: 'Menu', icon: ShoppingCart, permission: 'pos.view' },
+      { href: '/counter/products', label: 'Catalogue', icon: ShoppingCart, permission: 'pos.view' },
       { href: '/counter/shifts', label: 'Till Shifts', icon: ClipboardCheck, permission: 'pos.view' },
     ],
   },

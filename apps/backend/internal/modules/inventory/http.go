@@ -38,6 +38,14 @@ func (h *Handler) Mount(r *httpx.Router) {
 	r.Put("/api/admin/inventory/items/{id}", h.updateItem, manage)
 	r.Put("/api/admin/inventory/items/{id}/reorder", h.setReorderPoint, manage)
 
+	// Units and packs: the conversion between what arrives on a pallet and
+	// what leaves in a hand.
+	r.Get("/api/admin/inventory/units", h.listUnits, view)
+	r.Put("/api/admin/inventory/units", h.saveUnit, manage)
+	r.Get("/api/admin/inventory/items/{id}/packs", h.listPacks, view)
+	r.Put("/api/admin/inventory/items/{id}/packs", h.savePack, manage)
+	r.Delete("/api/admin/inventory/items/{id}/packs/{packId}", h.deletePack, manage)
+
 	r.Get("/api/admin/inventory/stock", h.listStock, view)
 	r.Get("/api/admin/inventory/movements", h.listMovements, view)
 	// Changing a quantity by hand is its own grant, and always carries a reason.

@@ -32,6 +32,14 @@ type POSProduct struct {
 	PriceIDR        float64 `json:"priceIdr"`
 	CostIDR         float64 `json:"costIdr"`
 	TaxPercent      float64 `json:"taxPercent"`
+	// Barcode is what the scanner reads. It belongs to this product and not
+	// to its item, because a single and a six-pack of the same drink are two
+	// products carrying two barcodes.
+	Barcode *string `json:"barcode"`
+	// PackUnit and PackFactor are how much stock one sold unit consumes: a
+	// six-pack has a factor of 6, and selling two moves twelve.
+	PackUnit   string  `json:"packUnit"`
+	PackFactor float64 `json:"packFactor"`
 	// BonusXP is worth extra points on top of whatever the spend earns.
 	BonusXP   int       `json:"bonusXp"`
 	ImageURL  *string   `json:"imageUrl"`
@@ -111,8 +119,10 @@ type POSOrder struct {
 	CashierID   string  `json:"cashierId"`
 	CashierName string  `json:"cashierName"`
 	// MemberID is what earns points and applies a tier discount.
-	MemberID      *string          `json:"memberId"`
-	OrderType     string           `json:"orderType"`
+	MemberID *string `json:"memberId"`
+	// Channel is what the customer is buying as, and the only thing that
+	// moves a price before a discount is applied.
+	Channel       SalesChannel     `json:"channel"`
 	Status        POSOrderStatus   `json:"status"`
 	PaymentStatus POSPaymentStatus `json:"paymentStatus"`
 	SubtotalIDR   float64          `json:"subtotalIdr"`
@@ -120,26 +130,25 @@ type POSOrder struct {
 	// what the member's standing took off. They are separate because the
 	// second is recomputed on every change and the first is not — folding them
 	// into one figure makes the tier's share compound with every line scanned.
-	DiscountIDR      float64    `json:"discountIdr"`
-	TierDiscountIDR  float64    `json:"tierDiscountIdr"`
-	DiscountReason   *string    `json:"discountReason"`
-	TaxIDR           float64    `json:"taxIdr"`
-	ServiceChargeIDR float64    `json:"serviceChargeIdr"`
-	TotalIDR         float64    `json:"totalIdr"`
-	PaidIDR          float64    `json:"paidIdr"`
-	ChangeIDR        float64    `json:"changeIdr"`
-	CostIDR          float64    `json:"costIdr"`
-	GrossProfitIDR   float64    `json:"grossProfitIdr"`
-	XPEarned         int        `json:"xpEarned"`
-	Note             *string    `json:"note"`
-	OpenedAt         time.Time  `json:"openedAt"`
-	CompletedAt      *time.Time `json:"completedAt"`
-	CancelledAt      *time.Time `json:"cancelledAt"`
-	VoidedAt         *time.Time `json:"voidedAt"`
-	VoidedBy         *string    `json:"voidedBy"`
-	VoidReason       *string    `json:"voidReason"`
-	CreatedAt        time.Time  `json:"createdAt"`
-	UpdatedAt        time.Time  `json:"updatedAt"`
+	DiscountIDR     float64    `json:"discountIdr"`
+	TierDiscountIDR float64    `json:"tierDiscountIdr"`
+	DiscountReason  *string    `json:"discountReason"`
+	TaxIDR          float64    `json:"taxIdr"`
+	TotalIDR        float64    `json:"totalIdr"`
+	PaidIDR         float64    `json:"paidIdr"`
+	ChangeIDR       float64    `json:"changeIdr"`
+	CostIDR         float64    `json:"costIdr"`
+	GrossProfitIDR  float64    `json:"grossProfitIdr"`
+	XPEarned        int        `json:"xpEarned"`
+	Note            *string    `json:"note"`
+	OpenedAt        time.Time  `json:"openedAt"`
+	CompletedAt     *time.Time `json:"completedAt"`
+	CancelledAt     *time.Time `json:"cancelledAt"`
+	VoidedAt        *time.Time `json:"voidedAt"`
+	VoidedBy        *string    `json:"voidedBy"`
+	VoidReason      *string    `json:"voidReason"`
+	CreatedAt       time.Time  `json:"createdAt"`
+	UpdatedAt       time.Time  `json:"updatedAt"`
 }
 
 // POSOrderItem is one sold line.
@@ -148,20 +157,25 @@ type POSOrder struct {
 // has to still be true a year later, when the product has been renamed and
 // repriced and the average cost has moved twice.
 type POSOrderItem struct {
-	ID              string    `json:"id"`
-	OrderID         string    `json:"orderId"`
-	ProductID       string    `json:"productId"`
-	ProductName     string    `json:"productName"`
-	ProductSKU      string    `json:"productSku"`
-	InventoryItemID *string   `json:"inventoryItemId"`
-	Qty             Quantity  `json:"qty"`
-	UnitPriceIDR    float64   `json:"unitPriceIdr"`
-	DiscountIDR     float64   `json:"discountIdr"`
-	TaxPercent      float64   `json:"taxPercent"`
-	LineTotalIDR    float64   `json:"lineTotalIdr"`
-	UnitCostIDR     float64   `json:"unitCostIdr"`
-	Note            *string   `json:"note"`
-	CreatedAt       time.Time `json:"createdAt"`
+	ID              string   `json:"id"`
+	OrderID         string   `json:"orderId"`
+	ProductID       string   `json:"productId"`
+	ProductName     string   `json:"productName"`
+	ProductSKU      string   `json:"productSku"`
+	InventoryItemID *string  `json:"inventoryItemId"`
+	Qty             Quantity `json:"qty"`
+	// PackUnit and PackFactor are frozen onto the line: a receipt reading "2"
+	// must still say two six-packs after the product is repacked.
+	PackUnit     string    `json:"packUnit"`
+	PackFactor   float64   `json:"packFactor"`
+	QtyBase      Quantity  `json:"qtyBase"`
+	UnitPriceIDR float64   `json:"unitPriceIdr"`
+	DiscountIDR  float64   `json:"discountIdr"`
+	TaxPercent   float64   `json:"taxPercent"`
+	LineTotalIDR float64   `json:"lineTotalIdr"`
+	UnitCostIDR  float64   `json:"unitCostIdr"`
+	Note         *string   `json:"note"`
+	CreatedAt    time.Time `json:"createdAt"`
 }
 
 // POSPayment is one tender against an order. Several rows is a split payment.
@@ -178,13 +192,12 @@ type POSPayment struct {
 
 // POSTotals is the arithmetic of a sale.
 type POSTotals struct {
-	SubtotalIDR      float64 `json:"subtotalIdr"`
-	DiscountIDR      float64 `json:"discountIdr"`
-	TaxIDR           float64 `json:"taxIdr"`
-	ServiceChargeIDR float64 `json:"serviceChargeIdr"`
-	TotalIDR         float64 `json:"totalIdr"`
-	CostIDR          float64 `json:"costIdr"`
-	GrossProfitIDR   float64 `json:"grossProfitIdr"`
+	SubtotalIDR    float64 `json:"subtotalIdr"`
+	DiscountIDR    float64 `json:"discountIdr"`
+	TaxIDR         float64 `json:"taxIdr"`
+	TotalIDR       float64 `json:"totalIdr"`
+	CostIDR        float64 `json:"costIdr"`
+	GrossProfitIDR float64 `json:"grossProfitIdr"`
 }
 
 // ComputeOrderPOSTotals adds up a sale.
@@ -193,11 +206,14 @@ type POSTotals struct {
 // value before tax is worked out, because tax is charged on what is actually
 // paid. Doing it the other way round overcharges the customer and the studio's
 // tax return in the same stroke.
-func ComputeOrderPOSTotals(items []POSOrderItem, discountIDR, serviceChargePercent float64) POSTotals {
+func ComputeOrderPOSTotals(items []POSOrderItem, discountIDR float64) POSTotals {
 	var subtotal, cost float64
 	for _, item := range items {
 		subtotal += item.LineTotalIDR
-		cost += float64(item.Qty) * item.UnitCostIDR
+		// Cost is carried per base unit, so a six-pack costs six times what
+		// one does. Multiplying by the sold quantity instead is how margin
+		// reports come out six times too healthy.
+		cost += float64(item.BaseQty()) * item.UnitCostIDR
 	}
 	subtotal = round2(subtotal)
 	cost = round2(cost)
@@ -218,13 +234,11 @@ func ComputeOrderPOSTotals(items []POSOrderItem, discountIDR, serviceChargePerce
 	tax = round2(tax)
 
 	taxable := subtotal - discountIDR
-	service := round2(taxable * serviceChargePercent / 100)
-	total := round2(taxable + tax + service)
+	total := round2(taxable + tax)
 
 	return POSTotals{
 		SubtotalIDR: subtotal, DiscountIDR: discountIDR, TaxIDR: tax,
-		ServiceChargeIDR: service, TotalIDR: total,
-		CostIDR: cost, GrossProfitIDR: round2(taxable - cost),
+		TotalIDR: total, CostIDR: cost, GrossProfitIDR: round2(taxable - cost),
 	}
 }
 
@@ -363,4 +377,16 @@ func ExpectedCash(openingCashIDR float64, payments []POSPayment) float64 {
 		total += payment.AmountIDR - payment.ChangeIDR
 	}
 	return round2(total)
+}
+
+// BaseQty is how much stock this line consumes, in the item's base unit.
+//
+// It is the sold quantity times the pack factor, and it is the only quantity
+// inventory is ever told about: the till speaks six-packs, the ledger counts
+// bottles.
+func (i POSOrderItem) BaseQty() Quantity {
+	if i.PackFactor <= 0 {
+		return i.Qty
+	}
+	return PackToBase(i.Qty, i.PackFactor)
 }

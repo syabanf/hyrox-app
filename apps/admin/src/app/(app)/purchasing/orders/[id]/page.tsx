@@ -149,7 +149,14 @@ export default function OrderPage() {
                   <p className="font-bold">{line.itemName || line.description}</p>
                   <p className="text-xs text-muted">{line.unit.toLowerCase()}</p>
                 </td>
-                <td className="text-right tabular-nums">{line.qtyOrdered}</td>
+                <td className="text-right tabular-nums">
+                  {line.qtyOrdered}
+                  {line.packFactor > 1 ? (
+                    <span className="block text-xs font-normal text-muted">
+                      {line.qtyOrderedBase} into stock
+                    </span>
+                  ) : null}
+                </td>
                 <td className="text-right tabular-nums text-sm">{line.qtyReceived}</td>
                 <td className="text-right tabular-nums text-sm">
                   {line.qtyOutstanding > 0 ? (
@@ -261,6 +268,7 @@ function AddLineModal({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [item, setItem] = useState('');
+  const [unit, setUnit] = useState('');
   const [qty, setQty] = useState('');
   const [price, setPrice] = useState('');
 
@@ -269,6 +277,19 @@ function AddLineModal({
     queryFn: () => api.admin.inventory.items.list(),
   });
 
+  // The packs this item is stocked in. A buyer orders cartons, so the form
+  // asks which pack rather than assuming the unit the ledger counts in.
+  const { data: packs } = useQuery({
+    queryKey: ['inventory', 'packs', item],
+    queryFn: () => api.admin.inventory.items.packs(item),
+    enabled: Boolean(item),
+  });
+
+  // Whatever this item is normally bought by, unless the buyer says otherwise.
+  const chosenPack = (packs ?? []).find((p) => p.unitCode === unit)
+    ?? (packs ?? []).find((p) => p.purchaseDefault)
+    ?? (packs ?? []).find((p) => p.isBase);
+
   const save = useMutation({
     mutationFn: () => {
       const chosen = (items ?? []).find((i) => i.id === item);
@@ -276,7 +297,7 @@ function AddLineModal({
         itemId: item,
         description: chosen?.name ?? item,
         qty: Number(qty),
-        unit: chosen?.unit,
+        unit: chosenPack?.unitCode,
         unitPriceIdr: Number(price),
       });
     },
@@ -291,19 +312,54 @@ function AddLineModal({
         <Field label="Item">
           <SearchSelect
             value={item}
-            onChange={setItem}
+            onChange={(v) => {
+              setItem(v);
+              setUnit('');
+            }}
             placeholder="Search item…"
             options={(items ?? []).map((i) => ({ value: i.id, label: i.name, hint: i.sku }))}
           />
         </Field>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-3">
           <Field label="Quantity">
             <input className="a-input" value={qty} onChange={(e) => setQty(e.target.value)} />
           </Field>
-          <Field label="Unit price">
+          <Field label="Ordered in">
+            <select
+              className="a-input"
+              value={chosenPack?.unitCode ?? ''}
+              disabled={!item}
+              onChange={(e) => setUnit(e.target.value)}
+            >
+              {(packs ?? []).map((pack) => (
+                <option key={pack.id} value={pack.unitCode}>
+                  {pack.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={`Price per ${chosenPack?.unitCode.toLowerCase() ?? 'unit'}`}>
             <input className="a-input" value={price} onChange={(e) => setPrice(e.target.value)} />
           </Field>
         </div>
+
+        {/*
+          The conversion, stated before it is committed. This line is where a
+          purchase order for ten cartons quietly becomes ten pieces, so the
+          form says what it is about to mean.
+        */}
+        {chosenPack && chosenPack.factor > 1 && Number(qty) > 0 ? (
+          <p className="rounded-xl bg-subtle px-3 py-2 text-sm text-muted">
+            {qty} × {chosenPack.unitCode} is{' '}
+            <span className="font-bold text-ink">
+              {Number(qty) * chosenPack.factor} into stock
+            </span>
+            {Number(price) > 0
+              ? ` at ${formatIdr(Math.round((Number(price) / chosenPack.factor) * 100) / 100)} each`
+              : ''}
+            .
+          </p>
+        ) : null}
         <div className="mt-2 flex justify-end gap-2">
           <button className="a-btn-ghost" onClick={onClose}>
             Cancel

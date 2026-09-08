@@ -64,8 +64,8 @@ export default function ChallengesPage() {
       />
       <ErrorNote message={error} />
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <StatCard label="Challenges" value={rows.length} />
-        <StatCard label="Live now" value={live.length} />
+        <StatCard tone="ink" label="Challenges" value={rows.length} />
+        <StatCard tone="ok" label="Live now" value={live.length} />
         <StatCard
           label="Participants"
           value={rows.reduce((sum, r) => sum + r.participantCount, 0)}

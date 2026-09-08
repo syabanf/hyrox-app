@@ -34,8 +34,8 @@ export default function ExercisesPage() {
         subtitle="Names, difficulty, and the how-to videos members see in Guides"
       />
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <StatCard label="Exercises" value={(data ?? []).length} />
-        <StatCard label="Race stations" value={(data ?? []).filter((e) => e.hyroxStationOrder !== null).length} />
+        <StatCard tone="ink" label="Exercises" value={(data ?? []).length} />
+        <StatCard tone="ok" label="Race stations" value={(data ?? []).filter((e) => e.hyroxStationOrder !== null).length} />
         <StatCard
           label="With how-to video"
           value={(data ?? []).filter((e) => e.videoUrl).length}

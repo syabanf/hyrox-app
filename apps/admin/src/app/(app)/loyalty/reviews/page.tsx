@@ -47,14 +47,14 @@ export default function ReviewsPage() {
       <QueryError error={error} />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
-        <StatCard label="Showing" value={rows.length} />
+        <StatCard tone="ink" label="Showing" value={rows.length} />
         <StatCard label="Average" value={average || '—'} tone="brand" />
         <StatCard
           label="Unanswered"
           value={rows.filter((r) => !r.reply).length}
           tone={rows.some((r) => !r.reply && r.rating <= 3) ? 'danger' : undefined}
         />
-        <StatCard
+        <StatCard tone="danger"
           label="Backed by a visit"
           value={rows.filter((r) => r.verified).length}
           hint="An average built from unverified reviews means something else"

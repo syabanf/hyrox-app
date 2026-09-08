@@ -116,15 +116,15 @@ export default function LeavePage() {
           value={(leaves ?? []).filter((l) => l.status === 'PENDING').length}
           tone="brand"
         />
-        <StatCard
+        <StatCard tone="lime"
           label="Overtime awaiting a decision"
           value={(overtime ?? []).filter((o) => o.status === 'PENDING').length}
         />
-        <StatCard
+        <StatCard tone="ok"
           label="Days requested"
           value={leaveRows.reduce((sum, l) => sum + l.totalDays, 0).toFixed(1)}
         />
-        <StatCard
+        <StatCard tone="danger"
           label="Overtime hours"
           value={overtimeRows.reduce((sum, o) => sum + o.hours, 0).toFixed(1)}
         />

@@ -52,7 +52,7 @@ export default function BadgesPage() {
       <QueryError error={error} />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <StatCard label="Badges" value={rows.length} />
+        <StatCard tone="ink" label="Badges" value={rows.length} />
         <StatCard
           label="Earned automatically"
           value={rows.filter((b) => b.metric !== 'MANUAL').length}

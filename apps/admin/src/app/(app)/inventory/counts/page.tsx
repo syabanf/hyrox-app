@@ -65,9 +65,9 @@ export default function CountsPage() {
       <QueryError error={listError} />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <StatCard label="Counts" value={rows.length} />
+        <StatCard tone="ink" label="Counts" value={rows.length} />
         <StatCard label="In progress" value={rows.filter((t) => t.status === 'DRAFT').length} tone="brand" />
-        <StatCard label="Applied" value={rows.filter((t) => t.status === 'APPLIED').length} />
+        <StatCard tone="ok" label="Applied" value={rows.filter((t) => t.status === 'APPLIED').length} />
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">

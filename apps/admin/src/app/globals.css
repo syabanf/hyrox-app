@@ -2,12 +2,33 @@
 @import '@nuhabit/ui/tokens.css';
 @source '../../../packages/ui/src';
 
-/* Admin panel shares the member app's NüHabit design language: White Beige
-   surfaces, Deep Forest Green ink, Pale Lime as the signature accent, Outfit
-   titles, and dark green "ink" surfaces for the sidebar and hero cards.
-   Surface tokens come from @nuhabit/ui. */
+/* Admin panel: the NüHabit brand — Deep Forest Green ink, Pale Lime accent,
+   Outfit titles — on a cooler, quieter set of neutrals than the member app.
+   Brand tokens come from @nuhabit/ui; the neutrals are overridden here.
+   ────────────────────────────────────────────────────────────────────────────
+   Why the two apps differ. The member app is a phone screen somebody opens
+   for two minutes, and its warm beige ground suits that. The panel is a
+   spreadsheet somebody stares at for a shift: warmth that reads as friendly
+   at a glance reads as dingy at hour six, and a cream card on a beige ground
+   has so little separation that a table stops looking like an object. These
+   neutrals carry a trace of the brand's green so nothing looks borrowed, and
+   otherwise get out of the way of the data. */
 :root {
   color-scheme: light;
+
+  /* A near-white ground with a breath of green in it, so cards can be white
+     and still read as raised. */
+  --color-beige: #f2f5f2;
+  /* Cards are white. Against the ground above that is a real step, where
+     cream on beige was a suggestion of one. */
+  --color-surface: #ffffff;
+  /* Inputs and quiet fills: one step down from the card, not two. */
+  --color-surface-raised: #eef1ee;
+  /* Hairlines. Cool enough to disappear, dark enough to hold a table. */
+  --color-line: #dfe5e0;
+  /* Secondary text. Darkened from the member app's: at 11px uppercase on
+     white, the old value sat under 4.5:1. */
+  --color-muted: #5a6560;
 }
 
 body {
@@ -46,26 +67,69 @@ body {
   @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold;
 }
 
-/* Admin primitives - info-dense but soft: hairline borders, quiet shadows. */
+/* Admin primitives.
+   Elevation is a hairline plus one tight shadow rather than a wide soft blur:
+   a dozen cards each casting a 30px haze is what makes a dense panel look
+   smudged. The border does the separating; the shadow only lifts. */
 .a-card {
-  @apply rounded-2xl border border-brand/[0.04] bg-surface p-5 shadow-[0_1px_2px_rgb(0_40_26/0.03),0_10px_30px_rgb(0_40_26/0.05)];
+  @apply rounded-2xl border border-line bg-surface p-5 shadow-[0_1px_2px_rgb(19_26_28/0.04),0_1px_1px_rgb(19_26_28/0.03)];
 }
-/* Primary action - Pale Lime with dark ink (matches the member app). */
+
+/* Summary-card tones.
+   These live here, after .a-card, rather than as utility classes on the
+   element: .a-card sets its own background and border, and a utility of equal
+   specificity declared earlier in the stylesheet loses to it. Source order is
+   the whole reason this is CSS and not a Tailwind class list. */
+.stat-brand {
+  background-color: color-mix(in oklab, var(--color-brand) 9%, white);
+  border-color: color-mix(in oklab, var(--color-brand) 20%, transparent);
+}
+.stat-ok {
+  background-color: color-mix(in oklab, var(--color-ok) 11%, white);
+  border-color: color-mix(in oklab, var(--color-ok) 30%, transparent);
+}
+.stat-warn {
+  background-color: color-mix(in oklab, var(--color-warn) 13%, white);
+  border-color: color-mix(in oklab, var(--color-warn) 35%, transparent);
+}
+.stat-danger {
+  background-color: color-mix(in oklab, var(--color-danger) 10%, white);
+  border-color: color-mix(in oklab, var(--color-danger) 30%, transparent);
+}
+.stat-info {
+  background-color: color-mix(in oklab, var(--color-info) 9%, white);
+  border-color: color-mix(in oklab, var(--color-info) 25%, transparent);
+}
+/* The two loud ones paint themselves; they only need the border out of the way. */
+.stat-ink,
+.stat-lime {
+  border-color: transparent;
+}
+
+/* Buttons.
+   The coloured drop-shadows these used to carry are what dated them: a lime
+   button casting a green haze was a 2019 tell. Weight now comes from the fill
+   and a 1px press, which is also honest — a button that moves when you press
+   it tells you it was pressed. */
 .a-btn {
-  @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-lime px-4 py-2 text-sm font-bold text-ink shadow-[0_6px_16px_rgb(0_40_26/0.14)] transition hover:bg-lettuce disabled:pointer-events-none disabled:opacity-40;
+  @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-lime px-4 py-2 text-sm font-bold text-ink transition hover:bg-lettuce active:translate-y-px disabled:pointer-events-none disabled:opacity-40;
 }
-/* Secondary action - Deep Forest Green with lime text. */
 .a-btn-forest {
-  @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand px-4 py-2 text-sm font-bold text-lime shadow-[0_6px_16px_rgb(0_40_26/0.18)] transition hover:bg-brand-press disabled:pointer-events-none disabled:opacity-40;
+  @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-bold text-lime transition hover:bg-brand-press active:translate-y-px disabled:pointer-events-none disabled:opacity-40;
 }
+/* Ghost carries a hairline so it still reads as a button on a white card,
+   where a fill-only ghost disappears. */
 .a-btn-ghost {
-  @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-surface-raised px-4 py-2 text-sm font-bold text-ink transition hover:bg-line disabled:pointer-events-none disabled:opacity-40;
+  @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-line bg-surface px-4 py-2 text-sm font-bold text-ink transition hover:bg-surface-raised active:translate-y-px disabled:pointer-events-none disabled:opacity-40;
 }
 .a-btn-danger {
-  @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-danger/10 px-4 py-2 text-sm font-bold text-danger transition hover:bg-danger/20 disabled:pointer-events-none disabled:opacity-40;
+  @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-danger/20 bg-danger/[0.07] px-4 py-2 text-sm font-bold text-danger transition hover:bg-danger/15 active:translate-y-px disabled:pointer-events-none disabled:opacity-40;
 }
+/* Inputs are bordered rather than filled. A filled field on a filled card is
+   two greys arguing; a hairline says "type here" without needing a second
+   background colour, and the focus ring then has somewhere to land. */
 .a-input {
-  @apply w-full rounded-xl border-2 border-transparent bg-surface-raised px-3.5 py-2 text-sm text-ink placeholder:text-muted focus:border-brand focus:bg-surface focus:outline-none;
+  @apply w-full rounded-lg border border-line bg-surface px-3.5 py-2 text-sm text-ink transition placeholder:text-muted focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15;
 }
 .a-label {
   @apply mb-1.5 block text-[11px] font-extrabold uppercase tracking-[0.12em] text-muted;
@@ -78,24 +142,40 @@ body {
   @apply w-full border-collapse text-sm;
   min-width: 640px;
 }
+/* The header sits on its own band so it holds when a long table scrolls under
+   it, rather than floating over the first row. */
+.a-table thead {
+  background: var(--color-surface-raised);
+}
 .a-table th {
-  @apply border-b border-line px-3 py-2.5 text-left text-[11px] font-extrabold uppercase tracking-[0.12em] text-muted;
+  @apply border-b border-line px-3 py-2.5 text-left text-[11px] font-extrabold uppercase tracking-[0.1em] text-muted;
+}
+.a-table th:first-child {
+  border-top-left-radius: 0.5rem;
+}
+.a-table th:last-child {
+  border-top-right-radius: 0.5rem;
 }
 .a-table td {
-  @apply border-b border-line/60 px-3 py-3 align-middle;
+  @apply border-b border-line/70 px-3 py-3 align-middle;
 }
 .a-table tbody tr:last-child td {
   border-bottom: none;
 }
+/* A neutral hover. The old one tinted the row green, which on a screen full
+   of green accents read as "selected" rather than "the mouse is here". */
 .a-table tbody tr:hover {
-  background: rgb(0 40 26 / 0.025);
+  background: rgb(19 26 28 / 0.022);
 }
 
-/* Keyboard focus: lime ring, only for keyboard users. */
+/* Keyboard focus, for keyboard users only. Forest green rather than lime:
+   lime on white was a ring you had to look for, which defeats the point. */
 button:focus-visible,
-a:focus-visible {
-  outline: 2px solid var(--color-lettuce);
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-brand);
   outline-offset: 2px;
+  border-radius: 0.5rem;
 }
 
 /* ── Motion ─────────────────────────────────────────────────────────────────

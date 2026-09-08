@@ -90,9 +90,9 @@ export default function ItemsPage() {
       <QueryError error={error} />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
-        <StatCard label="Items" value={rows.length} />
+        <StatCard tone="ink" label="Items" value={rows.length} />
         <StatCard label="For sale" value={rows.filter((i) => i.kind === 'RETAIL').length} tone="brand" />
-        <StatCard label="Studio supplies" value={rows.filter((i) => i.kind === 'SUPPLY').length} />
+        <StatCard tone="danger" label="Studio supplies" value={rows.filter((i) => i.kind === 'SUPPLY').length} />
         <StatCard
           label="Stock value"
           value={formatIdr(rows.reduce((sum, i) => sum + i.totalOnHand * i.unitCostIdr, 0))}

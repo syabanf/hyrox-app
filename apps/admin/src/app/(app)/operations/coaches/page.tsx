@@ -57,9 +57,9 @@ export default function CoachesPage() {
       />
       <ErrorNote message={error} />
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <StatCard label="Coaches" value={(coaches ?? []).length} />
-        <StatCard label="Active" value={(coaches ?? []).filter((c) => c.status === 'ACTIVE').length} />
-        <StatCard label="Branches covered" value={[...new Set((coaches ?? []).map((c) => c.branchId))].length} />
+        <StatCard tone="ink" label="Coaches" value={(coaches ?? []).length} />
+        <StatCard tone="ok" label="Active" value={(coaches ?? []).filter((c) => c.status === 'ACTIVE').length} />
+        <StatCard tone="brand" label="Branches covered" value={[...new Set((coaches ?? []).map((c) => c.branchId))].length} />
       </div>
       <div className="mb-4 flex flex-wrap gap-2">
         <input

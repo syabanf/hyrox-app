@@ -69,7 +69,7 @@ export default function ShiftsPage() {
       <ErrorNote message={error} />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <StatCard label="Shifts" value={rows.length} hint={`${rows.filter((s) => s.active).length} active`} />
+        <StatCard tone="ink" label="Shifts" value={rows.length} hint={`${rows.filter((s) => s.active).length} active`} />
         <StatCard label="Holidays this year" value={calendar.length} tone="brand" />
         <StatCard
           label="Collective leave days"

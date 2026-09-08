@@ -180,13 +180,13 @@ function StatementsTab() {
           tone="brand"
           hint="Sum of every coach's statement"
         />
-        <StatCard label="Coaches" value={rows.length} hint="Active coaches with a statement" />
-        <StatCard
+        <StatCard tone="lime" label="Coaches" value={rows.length} hint="Active coaches with a statement" />
+        <StatCard tone="ok"
           label="Sessions"
           value={sum((s) => s.totals.sessions)}
           hint="Completed in period"
         />
-        <StatCard
+        <StatCard tone="warn"
           label="Attendees"
           value={sum((s) => s.totals.attended)}
           hint="Checked-in members"

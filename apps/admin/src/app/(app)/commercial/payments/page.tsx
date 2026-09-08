@@ -59,27 +59,27 @@ export default function PaymentsPage() {
       />
       <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {/* Each card filters the table to what it counts. */}
-        <StatCard
+        <StatCard tone="ok"
           label="Collected"
           value={formatIdr(paidTotal)}
           hint="Paid payments"
           active={statusFilter === 'PAID'}
           onClick={() => setStatusFilter(statusFilter === 'PAID' ? '' : 'PAID')}
         />
-        <StatCard
+        <StatCard tone="lime"
           label="Pending"
           value={(data ?? []).filter((p) => p.payment.status === 'PENDING').length}
           active={statusFilter === 'PENDING'}
           onClick={() => setStatusFilter(statusFilter === 'PENDING' ? '' : 'PENDING')}
         />
-        <StatCard
+        <StatCard tone="warn"
           label="Refunded"
           value={(data ?? []).filter((p) => p.payment.status === 'REFUNDED').length}
           active={statusFilter === 'REFUNDED'}
           onClick={() => setStatusFilter(statusFilter === 'REFUNDED' ? '' : 'REFUNDED')}
         />
         {/* Two statuses behind one card, so it filters to the pair. */}
-        <StatCard
+        <StatCard tone="danger"
           label="Failed / expired"
           value={(data ?? []).filter((p) => ['FAILED', 'EXPIRED'].includes(p.payment.status)).length}
           active={statusFilter === 'FAILED_OR_EXPIRED'}

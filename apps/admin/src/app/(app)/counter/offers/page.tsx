@@ -62,7 +62,7 @@ export default function OffersPage() {
       <QueryError error={error} />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
-        <StatCard label="Offers" value={rows.length} icon={Tag} />
+        <StatCard tone="ink" label="Offers" value={rows.length} icon={Tag} />
         <StatCard label="Running" value={live.length} tone="brand" />
         <StatCard
           label="Automatic"

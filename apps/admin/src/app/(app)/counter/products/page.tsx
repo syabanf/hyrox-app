@@ -65,9 +65,9 @@ export default function CatalogPage() {
       <QueryError error={error} />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
-        <StatCard label="Products" value={rows.length} />
+        <StatCard tone="ink" label="Products" value={rows.length} />
         <StatCard label="On sale today" value={rows.filter((p) => p.available && p.active).length} tone="brand" />
-        <StatCard
+        <StatCard tone="brand"
           label="Multipacks"
           value={rows.filter((p) => p.packFactor > 1).length}
           hint="Sold by the carton, counted by the piece"

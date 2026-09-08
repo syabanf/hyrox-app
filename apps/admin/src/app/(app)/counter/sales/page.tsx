@@ -84,12 +84,12 @@ export default function SalesPage() {
           hint={overview ? `${overview.today.orders} sales` : undefined}
           tone="brand"
         />
-        <StatCard
+        <StatCard tone="ok"
           label="This month"
           value={overview ? formatIdr(overview.month.salesIdr) : '—'}
           hint={overview ? `${overview.month.orders} sales` : undefined}
         />
-        <StatCard
+        <StatCard tone="brand"
           label="Gross profit this month"
           value={overview ? formatIdr(overview.month.grossProfitIdr) : '—'}
           hint={

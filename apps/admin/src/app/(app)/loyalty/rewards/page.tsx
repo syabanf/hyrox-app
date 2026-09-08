@@ -73,8 +73,8 @@ export default function RewardsPage() {
 
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
         <StatCard label="Rewards offered" value={catalogue.filter((r) => r.active).length} tone="brand" />
-        <StatCard label="Claims waiting" value={rows.filter((c) => c.status === 'PENDING').length} />
-        <StatCard label="Fulfilled" value={rows.filter((c) => c.status === 'FULFILLED').length} />
+        <StatCard tone="ok" label="Claims waiting" value={rows.filter((c) => c.status === 'PENDING').length} />
+        <StatCard tone="warn" label="Fulfilled" value={rows.filter((c) => c.status === 'FULFILLED').length} />
         <StatCard
           label="Points committed"
           value={rows

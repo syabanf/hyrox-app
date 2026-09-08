@@ -57,9 +57,9 @@ export default function GiftCardsPage() {
       <QueryError error={error} />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
-        <StatCard label="Cards" value={rows.length} icon={CreditCard} />
+        <StatCard tone="ink" label="Cards" value={rows.length} icon={CreditCard} />
         <StatCard label="Live" value={live.length} tone="brand" />
-        <StatCard
+        <StatCard tone="warn"
           label="Outstanding"
           value={formatIdr(live.reduce((s, c) => s + c.balanceIdr, 0))}
           hint="What the shop still owes on cards"

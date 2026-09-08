@@ -53,8 +53,8 @@ export default function AccessLogsPage() {
       />
       <ErrorNote message={error} />
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <StatCard label="Offline transactions" value={offline.length} />
-        <StatCard label="Synced" value={synced} />
+        <StatCard tone="ink" label="Offline transactions" value={offline.length} />
+        <StatCard tone="ok" label="Synced" value={synced} />
         <StatCard label="Conflicts" value={conflicts} tone={conflicts > 0 ? 'danger' : undefined} hint="Need manual reconciliation" />
       </div>
       <div className="mb-4 flex flex-wrap gap-2">

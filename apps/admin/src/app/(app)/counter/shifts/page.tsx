@@ -49,7 +49,7 @@ export default function ShiftsPage() {
       <QueryError error={error} />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <StatCard label="Shifts" value={rows.length} />
+        <StatCard tone="ink" label="Shifts" value={rows.length} />
         <StatCard label="Open now" value={rows.filter((s) => s.status === 'OPEN').length} tone="brand" />
         <StatCard
           label="Short or over"

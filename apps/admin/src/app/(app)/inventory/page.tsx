@@ -84,8 +84,8 @@ export default function StockPage() {
           value={overview?.valuation.lowStock ?? '—'}
           tone={overview && overview.valuation.lowStock > 0 ? 'danger' : undefined}
         />
-        <StatCard label="Out of stock" value={overview?.valuation.outOfStock ?? '—'} />
-        <StatCard label="Items tracked" value={overview?.valuation.items ?? '—'} />
+        <StatCard tone="danger" label="Out of stock" value={overview?.valuation.outOfStock ?? '—'} />
+        <StatCard tone="ok" label="Items tracked" value={overview?.valuation.items ?? '—'} />
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">

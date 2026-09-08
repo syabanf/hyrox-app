@@ -46,7 +46,7 @@ export default function InboxPage() {
             value={overview.metrics.unassigned}
             tone={overview.metrics.unassigned > 0 ? 'danger' : undefined}
           />
-          <StatCard
+          <StatCard tone="ok"
             label="Typical first reply"
             value={duration(overview.metrics.medianFirstResponseSeconds)}
             hint="A median — one late thread should not sink a good day"

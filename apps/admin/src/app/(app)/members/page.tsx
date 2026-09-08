@@ -52,25 +52,22 @@ export default function MembersPage() {
       />
       <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {/* Each card filters the table to what it counts. */}
-        <StatCard
-          label="Members"
-          value={(data ?? []).length}
-          active={status === ''}
-          onClick={() => setStatus('')}
-        />
+        {/* No `active`: this card clears the filter rather than being one, and
+            a permanent "filtering" ring on the default view says nothing. */}
+        <StatCard tone="ink" label="Members" value={(data ?? []).length} onClick={() => setStatus('')} />
         <StatCard
           label="Active"
           value={(data ?? []).filter((m) => m.member.status === 'ACTIVE').length}
           active={status === 'ACTIVE'}
           onClick={() => setStatus(status === 'ACTIVE' ? '' : 'ACTIVE')}
         />
-        <StatCard
+        <StatCard tone="warn"
           label="Suspended / inactive"
           value={(data ?? []).filter((m) => m.member.status !== 'ACTIVE').length}
           active={status === 'NOT_ACTIVE'}
           onClick={() => setStatus(status === 'NOT_ACTIVE' ? '' : 'NOT_ACTIVE')}
         />
-        <StatCard
+        <StatCard tone="brand"
           label="Credits held"
           value={(data ?? []).reduce((sum, m) => sum + m.balance, 0)}
           hint="Outstanding across listed members"

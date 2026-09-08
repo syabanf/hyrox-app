@@ -60,8 +60,8 @@ export default function PartnersPage() {
       <QueryError error={error} />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <StatCard label="Partners" value={(partners ?? []).length} icon={Link2} />
-        <StatCard
+        <StatCard tone="ink" label="Partners" value={(partners ?? []).length} icon={Link2} />
+        <StatCard tone="ok"
           label="Can post"
           value={(partners ?? []).filter((p) => p.hasSecret && p.active).length}
           hint="A partner without a secret can post nothing"

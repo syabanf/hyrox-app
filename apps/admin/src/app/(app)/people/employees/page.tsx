@@ -67,9 +67,9 @@ export default function EmployeesPage() {
       <QueryError error={error} />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
-        <StatCard label="Records" value={rows.length} />
+        <StatCard tone="ink" label="Records" value={rows.length} />
         <StatCard label="Active" value={rows.filter((e) => e.active).length} tone="brand" />
-        <StatCard
+        <StatCard tone="warn"
           label="Departments"
           value={new Set(rows.map((e) => e.departmentId).filter(Boolean)).size}
         />

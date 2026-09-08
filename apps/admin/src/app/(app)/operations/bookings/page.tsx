@@ -99,7 +99,7 @@ export default function BookingsPage() {
             ['Checked in', 'CHECKED_IN'],
           ] as const
         ).map(([label, status]) => (
-          <StatCard
+          <StatCard tone="ink"
             key={status}
             label={label}
             value={all.filter((r) => r.booking.status === status).length}
@@ -108,7 +108,7 @@ export default function BookingsPage() {
           />
         ))}
         {/* Two statuses behind one card, so it filters to the pair. */}
-        <StatCard
+        <StatCard tone="lime"
           label="Cancelled / no-show"
           value={all.filter((r) => ['CANCELLED', 'NO_SHOW'].includes(r.booking.status)).length}
           active={statusFilter === 'CANCELLED_OR_NO_SHOW'}

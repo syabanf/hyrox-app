@@ -55,14 +55,14 @@ export default function ReturnsPage() {
       <QueryError error={error} />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
-        <StatCard label="Returns" value={rows.length} icon={Undo2} />
+        <StatCard tone="ink" label="Returns" value={rows.length} icon={Undo2} />
         <StatCard
           label="Waiting on a signature"
           value={waiting}
           tone={waiting > 0 ? 'brand' : undefined}
         />
-        <StatCard label="Approved, not yet sent" value={rows.filter((r) => r.status === 'APPROVED').length} />
-        <StatCard
+        <StatCard tone="ok" label="Approved, not yet sent" value={rows.filter((r) => r.status === 'APPROVED').length} />
+        <StatCard tone="brand"
           label="Gone back"
           value={formatIdr(
             rows.filter((r) => r.status === 'POSTED').reduce((s, r) => s + r.totalIdr, 0),

@@ -86,14 +86,14 @@ export default function RequestsPage() {
       <QueryError error={listError} />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
-        <StatCard label="Requests" value={rows.length} />
+        <StatCard tone="ink" label="Requests" value={rows.length} />
         <StatCard label="Awaiting a signature" value={pending.length} tone="brand" />
         <StatCard
           label="Waiting on you"
           value={pending.filter((r) => canSignNow(r.status)).length}
           tone={pending.some((r) => canSignNow(r.status)) ? 'danger' : undefined}
         />
-        <StatCard label="Value requested" value={formatIdr(rows.reduce((s, r) => s + r.totalIdr, 0))} />
+        <StatCard tone="ok" label="Value requested" value={formatIdr(rows.reduce((s, r) => s + r.totalIdr, 0))} />
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">

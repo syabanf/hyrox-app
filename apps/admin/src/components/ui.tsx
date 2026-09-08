@@ -250,24 +250,25 @@ export function StatCard({
   label: string;
   value: ReactNode;
   hint?: string;
-  tone?: 'brand' | 'danger';
+  tone?: StatTone;
   icon?: LucideIcon;
   onClick?: () => void;
   active?: boolean;
 }) {
+  const skin = STAT_TONES[tone ?? 'plain'];
   if (onClick) {
     return (
       <button
         type="button"
         onClick={onClick}
         aria-pressed={active}
-        className={`a-card relative text-left transition hover:border-brand/25 ${
+        className={`a-card relative text-left transition hover:brightness-[0.98] ${skin.card} ${
           active ? 'ring-2 ring-brand ring-offset-2 ring-offset-beige' : ''
         }`}
       >
         <StatBody label={label} value={value} hint={hint} tone={tone} icon={Icon} />
         {active ? (
-          <span className="mt-2 block text-[11px] font-bold uppercase tracking-wider text-brand">
+          <span className={`mt-2 block text-[11px] font-bold uppercase tracking-wider ${skin.accent}`}>
             Filtering · press to clear
           </span>
         ) : null}
@@ -275,11 +276,95 @@ export function StatCard({
     );
   }
   return (
-    <div className="a-card relative">
+    <div className={`a-card relative ${skin.card}`}>
       <StatBody label={label} value={value} hint={hint} tone={tone} icon={Icon} />
     </div>
   );
 }
+
+/**
+ * The colours a summary card can wear.
+ *
+ * The dashboard has always had a dark hero and a lime panel beside plain
+ * white cards, and every other screen had four identical white ones — so the
+ * dashboard looked designed and the rest looked like a spreadsheet. These are
+ * that dashboard's vocabulary, named, so any screen can use it.
+ *
+ * Tone carries meaning, not decoration: `ink` is the headline figure of the
+ * page, `lime` is the thing somebody should act on, `danger` and `warn` are
+ * problems, `ok` is money in. A row where every card shouts says nothing, so
+ * a screen should use one loud tone at most and leave the rest plain.
+ */
+export type StatTone = 'plain' | 'ink' | 'lime' | 'brand' | 'ok' | 'warn' | 'danger' | 'info';
+
+const STAT_TONES: Record<StatTone, { card: string; label: string; value: string; hint: string; icon: string; accent: string }> = {
+  plain: {
+    card: '',
+    label: 'text-muted',
+    value: '',
+    hint: 'text-muted',
+    icon: 'bg-brand/[0.06] text-brand',
+    accent: 'text-brand',
+  },
+  // The page's headline number. Dark, so the eye lands on it first.
+  ink: {
+    card: 'stat-ink surface-ink text-white',
+    label: 'text-white/60',
+    value: 'text-white',
+    hint: 'text-white/45',
+    icon: 'bg-white/10 text-lime',
+    accent: 'text-lime',
+  },
+  // Something waiting on a person.
+  lime: {
+    card: 'stat-lime surface-brand text-ink',
+    label: 'text-ink/60',
+    value: 'text-ink',
+    hint: 'text-ink/55',
+    icon: 'bg-ink/10 text-ink',
+    accent: 'text-ink',
+  },
+  brand: {
+    card: 'stat-brand',
+    label: 'text-brand/70',
+    value: 'text-brand',
+    hint: 'text-brand/60',
+    icon: 'bg-brand text-lime',
+    accent: 'text-brand',
+  },
+  ok: {
+    card: 'stat-ok',
+    label: 'text-ok/80',
+    value: 'text-ok',
+    hint: 'text-muted',
+    icon: 'bg-ok/20 text-ok',
+    accent: 'text-ok',
+  },
+  warn: {
+    card: 'stat-warn',
+    label: 'text-warn/80',
+    value: 'text-warn',
+    hint: 'text-muted',
+    icon: 'bg-warn/20 text-warn',
+    accent: 'text-warn',
+  },
+  danger: {
+    card: 'stat-danger',
+    label: 'text-danger/80',
+    value: 'text-danger',
+    hint: 'text-muted',
+    icon: 'bg-danger/20 text-danger',
+    accent: 'text-danger',
+  },
+  info: {
+    card: 'stat-info',
+    label: 'text-info/80',
+    value: 'text-info',
+    hint: 'text-muted',
+    icon: 'bg-info/20 text-info',
+    accent: 'text-info',
+  },
+};
 
 function StatBody({
   label,
@@ -291,36 +376,29 @@ function StatBody({
   label: string;
   value: ReactNode;
   hint?: string;
-  tone?: 'brand' | 'danger';
+  tone?: StatTone;
   icon?: LucideIcon;
 }) {
+  const skin = STAT_TONES[tone ?? 'plain'];
   return (
     <>
       {Icon ? (
         <span
-          className={`absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full ${
-            tone === 'danger'
-              ? 'bg-danger/10 text-danger'
-              : tone === 'brand'
-                ? 'bg-lime text-ink'
-                : 'bg-brand/[0.06] text-brand'
-          }`}
+          className={`absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full ${skin.icon}`}
         >
           <Icon size={16} />
         </span>
       ) : null}
-      <p className="pr-12 text-sm font-bold text-muted">{label}</p>
+      <p className={`pr-12 text-sm font-bold ${skin.label}`}>{label}</p>
       {/* A rupiah figure runs long. Sizing down at the breakpoint where these
           cards get narrow keeps the number inside its card rather than
           against the edge of it. */}
       <p
-        className={`display mt-2 text-3xl font-black tabular-nums xl:text-[1.75rem] 2xl:text-4xl ${
-          tone === 'danger' ? 'text-danger' : ''
-        }`}
+        className={`display mt-2 text-3xl font-black tabular-nums xl:text-[1.75rem] 2xl:text-4xl ${skin.value}`}
       >
         {value}
       </p>
-      {hint ? <p className="mt-1.5 text-xs text-muted">{hint}</p> : null}
+      {hint ? <p className={`mt-1.5 text-xs ${skin.hint}`}>{hint}</p> : null}
     </>
   );
 }

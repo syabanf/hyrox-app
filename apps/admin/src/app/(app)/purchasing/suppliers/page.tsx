@@ -84,7 +84,7 @@ export default function SuppliersPage() {
       <QueryError error={listError} />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
-        <StatCard label="Suppliers" value={rows.length} />
+        <StatCard tone="ink" label="Suppliers" value={rows.length} />
         <StatCard label="Active" value={rows.filter((s) => s.status === 'ACTIVE').length} tone="brand" />
         <StatCard label="On probation" value={rows.filter((s) => s.status === 'PROBATION').length} />
         <StatCard

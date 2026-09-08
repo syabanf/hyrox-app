@@ -41,8 +41,8 @@ export default function ClassTypesPage() {
       />
       <ErrorNote message={error} />
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <StatCard label="Class types" value={(data ?? []).length} />
-        <StatCard label="Active" value={(data ?? []).filter((t) => t.active).length} />
+        <StatCard tone="ink" label="Class types" value={(data ?? []).length} />
+        <StatCard tone="ok" label="Active" value={(data ?? []).filter((t) => t.active).length} />
         <StatCard
           label="Avg credit cost"
           value={(data ?? []).length > 0 ? ((data ?? []).reduce((sum, t) => sum + t.defaultCreditCost, 0) / (data ?? []).length).toFixed(1) : '-'}

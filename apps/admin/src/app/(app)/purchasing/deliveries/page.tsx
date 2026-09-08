@@ -54,14 +54,14 @@ export default function DeliveriesPage() {
       <QueryError error={error} />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <StatCard label="Arrivals" value={rows.length} icon={Truck} />
+        <StatCard tone="ink" label="Arrivals" value={rows.length} icon={Truck} />
         <StatCard
           label="Waiting to be checked"
           value={waiting}
           tone={waiting > 0 ? 'brand' : undefined}
           hint="Counted at the bay, not yet in stock"
         />
-        <StatCard
+        <StatCard tone="ok"
           label="Checked in"
           value={rows.filter((d) => d.status === 'INSPECTED').length}
         />

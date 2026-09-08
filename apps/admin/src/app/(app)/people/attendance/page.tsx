@@ -96,7 +96,7 @@ export default function AttendancePage() {
       />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
-        <StatCard label="Days on file" value={filtered.length} />
+        <StatCard tone="ink" label="Days on file" value={filtered.length} />
         <StatCard label="Hours worked" value={totalHours.toFixed(1)} tone="brand" />
         <StatCard
           label="Late arrivals"
@@ -104,7 +104,7 @@ export default function AttendancePage() {
           hint={`${lateMinutes} minutes in total`}
           tone={lateMinutes > 0 ? 'danger' : undefined}
         />
-        <StatCard label="Absences" value={filtered.filter((r) => r.status === 'ABSENT').length} />
+        <StatCard tone="danger" label="Absences" value={filtered.filter((r) => r.status === 'ABSENT').length} />
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">

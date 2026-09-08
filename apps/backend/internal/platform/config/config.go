@@ -192,6 +192,24 @@ func (c Config) validate() error {
 	if c.Payments.Provider == "xendit" && c.Payments.XenditAPIKey == "" {
 		return fmt.Errorf("config: XENDIT_API_KEY is required when PAYMENTS_PROVIDER=xendit")
 	}
+	// Only the mock gateway is implemented. Accepting another name and then
+	// wiring the mock anyway would mean a studio believes it is taking card
+	// payments while the server settles every one of them itself.
+	if c.Payments.Provider != "mock" {
+		return fmt.Errorf(
+			"config: PAYMENTS_PROVIDER=%q is not implemented; only \"mock\" exists",
+			c.Payments.Provider)
+	}
+	// The mock settles every invoice without any money moving. That is fine
+	// for a studio whose members top up at the desk and whose staff record it,
+	// and ruinous for one that puts a payment link in front of a member. In
+	// production the operator has to say which they are.
+	if c.IsProduction() && !boolean("PAYMENTS_ALLOW_MOCK", false) {
+		return fmt.Errorf(
+			"config: no payment gateway is implemented — the mock settles every top-up " +
+				"without taking money. Set PAYMENTS_ALLOW_MOCK=true only if top-ups are " +
+				"taken at the desk and recorded by staff. See docs/DEPLOYMENT.md")
+	}
 	return nil
 }
 

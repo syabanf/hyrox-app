@@ -39,6 +39,10 @@ pnpm stack:up       # PostgreSQL + Go API + member app + admin panel, then seede
 One origin serves all three, so the browser never makes a cross-origin call.
 `pnpm stack:down` stops it, `pnpm stack:reset` also drops the data.
 
+For a real server — configuration, the first staff account, seeding, TLS,
+upgrades and backups — see **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**. Read
+its payments section before taking money: no gateway is implemented yet.
+
 Every service reports its own health, and each waits for what it depends on:
 the API waits for a healthy database, the seeder waits for a ready API (so the
 migrations have run), and the front door waits for all three rather than

@@ -46,12 +46,14 @@ export default function InboxPage() {
             value={overview.metrics.unassigned}
             tone={overview.metrics.unassigned > 0 ? 'danger' : undefined}
           />
-          <StatCard tone="ok"
+          <StatCard
+            tone="ok"
             label="Typical first reply"
             value={duration(overview.metrics.medianFirstResponseSeconds)}
             hint="A median — one late thread should not sink a good day"
           />
           <StatCard
+            tone="info"
             label="Longest wait"
             value={duration(overview.metrics.longestWaitSeconds)}
           />

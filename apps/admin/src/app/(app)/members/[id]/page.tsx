@@ -69,7 +69,7 @@ export default function MemberDetailPage() {
       <div className="mb-5 mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Credit balance" value={m.balance} tone="brand" />
         <StatCard label="Expiring soon" value={m.expiringCredits} tone={m.expiringCredits > 0 ? 'danger' : undefined} />
-        <StatCard label="Total visits" value={m.totalVisits} />
+        <StatCard tone="info" label="Total visits" value={m.totalVisits} />
         <StatCard label="Last visit" value={m.lastVisitAt ? formatDay(m.lastVisitAt) : '-'} />
       </div>
 

@@ -62,7 +62,8 @@ export default function ReturnsPage() {
           tone={waiting > 0 ? 'brand' : undefined}
         />
         <StatCard tone="ok" label="Approved, not yet sent" value={rows.filter((r) => r.status === 'APPROVED').length} />
-        <StatCard tone="brand"
+        <StatCard
+          tone="brand"
           label="Gone back"
           value={formatIdr(
             rows.filter((r) => r.status === 'POSTED').reduce((s, r) => s + r.totalIdr, 0),

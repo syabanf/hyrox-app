@@ -52,10 +52,11 @@ export default function PurchasingReportsPage() {
       </div>
 
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
-        <StatCard label="Orders" value={summary?.orders ?? 0} />
+        <StatCard tone="ink" label="Orders" value={summary?.orders ?? 0} />
         <StatCard label="Committed" value={formatIdr(summary?.totalIdr ?? 0)} tone="brand" />
-        <StatCard label="Arrived" value={formatIdr(summary?.receivedIdr ?? 0)} />
+        <StatCard tone="info" label="Arrived" value={formatIdr(summary?.receivedIdr ?? 0)} />
         <StatCard
+          tone="warn"
           label="Still owed"
           value={formatIdr(summary?.outstandingIdr ?? 0)}
           hint="Committed to but not yet arrived"
@@ -183,6 +184,7 @@ export default function PurchasingReportsPage() {
               <div className="mb-3 grid gap-3 sm:grid-cols-2">
                 <StatCard label="Total" value={formatIdr(valuation.totalIdr)} tone="brand" />
                 <StatCard
+                  tone="info"
                   label="In the top five lines"
                   value={`${valuation.concentration}%`}
                   hint="Where the capital actually sits"

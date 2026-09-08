@@ -86,7 +86,7 @@ export default function SuppliersPage() {
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
         <StatCard tone="ink" label="Suppliers" value={rows.length} />
         <StatCard label="Active" value={rows.filter((s) => s.status === 'ACTIVE').length} tone="brand" />
-        <StatCard label="On probation" value={rows.filter((s) => s.status === 'PROBATION').length} />
+        <StatCard tone="info" label="On probation" value={rows.filter((s) => s.status === 'PROBATION').length} />
         <StatCard
           label="Blocked"
           value={rows.filter((s) => s.status === 'BLOCKED').length}

@@ -78,18 +78,21 @@ export default function OrdersPage() {
       <QueryError error={error} />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard tone="ink"
+        <StatCard
+          tone="ink"
           label="Awaiting a signature"
           value={overview?.pendingRequests ?? '—'}
           hint="Purchase requests in the chain"
         />
         <StatCard label="Open orders" value={overview?.openOrders ?? '—'} tone="brand" />
-        <StatCard tone="warn"
+        <StatCard
+          tone="warn"
           label="Committed"
           value={overview ? formatIdr(overview.committedIdr) : '—'}
           hint="Approved but not yet delivered"
         />
-        <StatCard tone="ok"
+        <StatCard
+          tone="ok"
           label="Received this month"
           value={overview ? formatIdr(overview.receivedMonthIdr) : '—'}
         />

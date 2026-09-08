@@ -67,6 +67,7 @@ export default function ChallengesPage() {
         <StatCard tone="ink" label="Challenges" value={rows.length} />
         <StatCard tone="ok" label="Live now" value={live.length} />
         <StatCard
+          tone="info"
           label="Participants"
           value={rows.reduce((sum, r) => sum + r.participantCount, 0)}
           hint="Joins across all challenges"

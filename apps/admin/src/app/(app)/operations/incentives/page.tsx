@@ -181,12 +181,14 @@ function StatementsTab() {
           hint="Sum of every coach's statement"
         />
         <StatCard tone="lime" label="Coaches" value={rows.length} hint="Active coaches with a statement" />
-        <StatCard tone="ok"
+        <StatCard
+          tone="ok"
           label="Sessions"
           value={sum((s) => s.totals.sessions)}
           hint="Completed in period"
         />
-        <StatCard tone="warn"
+        <StatCard
+          tone="warn"
           label="Attendees"
           value={sum((s) => s.totals.attended)}
           hint="Checked-in members"
@@ -362,6 +364,7 @@ function PayoutsTab() {
       <ErrorNote message={error} />
       <div className="grid gap-3 sm:grid-cols-3">
         <StatCard
+          tone="warn"
           label="Awaiting approval"
           value={formatIdr(totalFor('DRAFT'))}
           hint="DRAFT payouts"
@@ -372,7 +375,7 @@ function PayoutsTab() {
           tone="brand"
           hint="Ready for transfer"
         />
-        <StatCard label="Paid out" value={formatIdr(totalFor('PAID'))} hint="All time" />
+        <StatCard tone="ok" label="Paid out" value={formatIdr(totalFor('PAID'))} hint="All time" />
       </div>
       <div className="flex flex-wrap gap-2">
         <div className="w-44">

@@ -79,26 +79,50 @@ body {
    These live here, after .a-card, rather than as utility classes on the
    element: .a-card sets its own background and border, and a utility of equal
    specificity declared earlier in the stylesheet loses to it. Source order is
-   the whole reason this is CSS and not a Tailwind class list. */
+   the whole reason this is CSS and not a Tailwind class list.
+
+   The tints are mixed from the palette's *saturated* accents — lettuce, ochre
+   — and not from --color-brand or --color-info. Those two are near-black inks
+   (#00281a, #203b32); a light mix of a dark ink is grey, so the first version
+   of this had the tone in the markup and nothing on the screen. Depth, not
+   hue, is what the tokens vary, so info is a cool sage against brand's warm
+   lettuce rather than a blue this palette does not contain. */
 .stat-brand {
-  background-color: color-mix(in oklab, var(--color-brand) 9%, white);
-  border-color: color-mix(in oklab, var(--color-brand) 20%, transparent);
+  background-color: color-mix(in oklab, var(--color-lettuce) 34%, white);
+  border-color: color-mix(in oklab, var(--color-lettuce) 65%, transparent);
 }
 .stat-ok {
-  background-color: color-mix(in oklab, var(--color-ok) 11%, white);
-  border-color: color-mix(in oklab, var(--color-ok) 30%, transparent);
+  background-color: color-mix(in oklab, var(--color-ok) 20%, white);
+  border-color: color-mix(in oklab, var(--color-ok) 45%, transparent);
 }
 .stat-warn {
-  background-color: color-mix(in oklab, var(--color-warn) 13%, white);
-  border-color: color-mix(in oklab, var(--color-warn) 35%, transparent);
+  background-color: color-mix(in oklab, var(--color-ochre) 30%, white);
+  border-color: color-mix(in oklab, var(--color-ochre) 55%, transparent);
 }
 .stat-danger {
-  background-color: color-mix(in oklab, var(--color-danger) 10%, white);
-  border-color: color-mix(in oklab, var(--color-danger) 30%, transparent);
+  background-color: color-mix(in oklab, var(--color-danger) 17%, white);
+  border-color: color-mix(in oklab, var(--color-danger) 42%, transparent);
 }
 .stat-info {
-  background-color: color-mix(in oklab, var(--color-info) 9%, white);
-  border-color: color-mix(in oklab, var(--color-info) 25%, transparent);
+  background-color: color-mix(in oklab, var(--color-brand-press) 17%, white);
+  border-color: color-mix(in oklab, var(--color-brand-press) 38%, transparent);
+}
+/* The icon chip sits on a tinted card rather than on white, so it needs a
+   deeper mix of its own or it disappears into the thing it sits on. */
+.stat-brand .stat-chip {
+  background-color: color-mix(in oklab, var(--color-lettuce) 70%, white);
+}
+.stat-ok .stat-chip {
+  background-color: color-mix(in oklab, var(--color-ok) 34%, white);
+}
+.stat-warn .stat-chip {
+  background-color: color-mix(in oklab, var(--color-ochre) 52%, white);
+}
+.stat-danger .stat-chip {
+  background-color: color-mix(in oklab, var(--color-danger) 30%, white);
+}
+.stat-info .stat-chip {
+  background-color: color-mix(in oklab, var(--color-brand-press) 30%, white);
 }
 /* The two loud ones paint themselves; they only need the border out of the way. */
 .stat-ink,

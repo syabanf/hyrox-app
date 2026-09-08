@@ -99,7 +99,8 @@ export default function PeoplePage() {
       <QueryError error={rosterError} />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <StatCard tone="ink"
+        <StatCard
+          tone="ink"
           label="On the payroll"
           value={overview?.activeEmployees ?? '—'}
           hint={overview ? `${overview.totalEmployees} records in total` : undefined}
@@ -113,6 +114,7 @@ export default function PeoplePage() {
         />
         <StatCard tone="warn" label="On leave" value={overview?.onLeaveToday ?? '—'} />
         <StatCard
+          tone="warn"
           label="Waiting on you"
           value={(overview?.pendingLeave ?? 0) + (overview?.pendingOvertime ?? 0)}
           hint={

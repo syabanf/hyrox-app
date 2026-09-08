@@ -1569,7 +1569,8 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
       const byPackage = db().packages.map((pkg) => {
         const pkgPaid = paid.filter((p) => p.packageId === pkg.id);
         return {
-          pkg,
+          packageId: pkg.id,
+          packageName: pkg.name,
           purchaseCount: pkgPaid.length,
           revenueIdr: pkgPaid.reduce((s, p) => s + p.totalIdr, 0),
         };

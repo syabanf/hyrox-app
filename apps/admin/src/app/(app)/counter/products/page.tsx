@@ -67,12 +67,14 @@ export default function CatalogPage() {
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
         <StatCard tone="ink" label="Products" value={rows.length} />
         <StatCard label="On sale today" value={rows.filter((p) => p.available && p.active).length} tone="brand" />
-        <StatCard tone="brand"
+        <StatCard
+          tone="brand"
           label="Multipacks"
           value={rows.filter((p) => p.packFactor > 1).length}
           hint="Sold by the carton, counted by the piece"
         />
         <StatCard
+          tone="info"
           label="Average margin"
           value={
             rows.length

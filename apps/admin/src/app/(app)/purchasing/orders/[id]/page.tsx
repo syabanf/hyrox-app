@@ -109,9 +109,9 @@ export default function OrderPage() {
       <ErrorNote message={error} />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
-        <StatCard label="Status" value={<StatusBadge status={order.status} />} />
+        <StatCard tone="info" label="Status" value={<StatusBadge status={order.status} />} />
         <StatCard label="Subtotal" value={formatIdr(order.subtotalIdr)} />
-        <StatCard label={`Tax (${order.taxPercent}%)`} value={formatIdr(order.taxIdr)} />
+        <StatCard tone="ink" label={`Tax (${order.taxPercent}%)`} value={formatIdr(order.taxIdr)} />
         <StatCard label="Total" value={formatIdr(order.totalIdr)} tone="brand" />
       </div>
 

@@ -53,11 +53,13 @@ export default function RaceEventsPage() {
       <ErrorNote message={error} />
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <StatCard tone="ink" label="Events" value={(races ?? []).length} />
-        <StatCard tone="ok"
+        <StatCard
+          tone="ok"
           label="Registration open"
           value={(races ?? []).filter((r) => r.status === 'REGISTRATION_OPEN').length}
         />
-        <StatCard tone="brand"
+        <StatCard
+          tone="brand"
           label="Athletes registered"
           value={(races ?? []).reduce((sum, r) => sum + r.participants, 0)}
           hint="From this studio"

@@ -99,7 +99,7 @@ export default function SessionDetailPage() {
 
       <div className="my-4 grid gap-3 sm:grid-cols-3">
         <StatCard label="Confirmed" value={`${v.confirmedCount}/${v.session.capacity}`} tone="brand" />
-        <StatCard label="Waitlist" value={v.waitlistCount} />
+        <StatCard tone="info" label="Waitlist" value={v.waitlistCount} />
         <StatCard label="Spots left" value={v.spotsLeft} />
       </div>
 

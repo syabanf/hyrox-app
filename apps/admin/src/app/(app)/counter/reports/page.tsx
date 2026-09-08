@@ -60,8 +60,9 @@ export default function TillReportsPage() {
 
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
         <StatCard label="Takings" value={formatIdr(revenue?.totalIdr ?? 0)} tone="brand" />
-        <StatCard label="Gross profit" value={formatIdr(profit)} />
+        <StatCard tone="ok" label="Gross profit" value={formatIdr(profit)} />
         <StatCard
+          tone="info"
           label="Busiest hour"
           value={rush ? `${String(rush.busiestHour).padStart(2, '0')}:00` : '—'}
           hint={rush ? `${rush.peakShare}% of takings` : undefined}

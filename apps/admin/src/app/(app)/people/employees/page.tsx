@@ -69,11 +69,12 @@ export default function EmployeesPage() {
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
         <StatCard tone="ink" label="Records" value={rows.length} />
         <StatCard label="Active" value={rows.filter((e) => e.active).length} tone="brand" />
-        <StatCard tone="warn"
+        <StatCard
+          tone="warn"
           label="Departments"
           value={new Set(rows.map((e) => e.departmentId).filter(Boolean)).size}
         />
-        <StatCard label="Coaching staff" value={rows.filter((e) => e.coachId).length} />
+        <StatCard tone="info" label="Coaching staff" value={rows.filter((e) => e.coachId).length} />
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">

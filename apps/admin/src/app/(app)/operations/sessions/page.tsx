@@ -77,7 +77,8 @@ export default function SessionsPage() {
       />
       <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {/* Each card filters the table to what it counts. */}
-        <StatCard tone="ink"
+        <StatCard
+          tone="ink"
           label="Upcoming"
           value={(sessions ?? []).filter((v) => new Date(v.session.startsAt).getTime() > Date.now() && ['PUBLISHED', 'FULL', 'DRAFT'].includes(v.session.status)).length}
           active={statusFilter === '' && !showPast}
@@ -88,7 +89,8 @@ export default function SessionsPage() {
           }}
         />
         {(['PUBLISHED', 'FULL', 'DRAFT'] as const).map((status) => (
-          <StatCard tone="ok"
+          <StatCard
+            tone="ok"
             key={status}
             label={status === 'DRAFT' ? 'Draft' : status === 'FULL' ? 'Full' : 'Published'}
             value={(sessions ?? []).filter((v) => v.session.status === status).length}

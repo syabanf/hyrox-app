@@ -61,7 +61,8 @@ export default function DeliveriesPage() {
           tone={waiting > 0 ? 'brand' : undefined}
           hint="Counted at the bay, not yet in stock"
         />
-        <StatCard tone="ok"
+        <StatCard
+          tone="ok"
           label="Checked in"
           value={rows.filter((d) => d.status === 'INSPECTED').length}
         />
@@ -343,8 +344,8 @@ function DeliverySheet({
         </p>
 
         <div className="grid gap-3 sm:grid-cols-3">
-          <StatCard label="Delivered" value={delivery.inspection.delivered} />
-          <StatCard label="Judged" value={delivery.inspection.inspected} />
+          <StatCard tone="brand" label="Delivered" value={delivery.inspection.delivered} />
+          <StatCard tone="info" label="Judged" value={delivery.inspection.inspected} />
           <StatCard
             label="Still to check"
             value={delivery.inspection.outstanding}

@@ -59,12 +59,14 @@ export default function GiftCardsPage() {
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
         <StatCard tone="ink" label="Cards" value={rows.length} icon={CreditCard} />
         <StatCard label="Live" value={live.length} tone="brand" />
-        <StatCard tone="warn"
+        <StatCard
+          tone="warn"
           label="Outstanding"
           value={formatIdr(live.reduce((s, c) => s + c.balanceIdr, 0))}
           hint="What the shop still owes on cards"
         />
         <StatCard
+          tone="info"
           label="Frozen"
           value={rows.filter((c) => c.status === 'FROZEN').length}
           icon={Snowflake}
@@ -324,7 +326,7 @@ function CardSheet({
         <ErrorNote message={error} />
         <div className="grid gap-3 sm:grid-cols-3">
           <StatCard label="Left on it" value={formatIdr(card.balanceIdr)} tone="brand" />
-          <StatCard label="Issued with" value={formatIdr(card.initialIdr)} />
+          <StatCard tone="info" label="Issued with" value={formatIdr(card.initialIdr)} />
           <StatCard label="Status" value={<StatusBadge status={card.status} />} />
         </div>
 

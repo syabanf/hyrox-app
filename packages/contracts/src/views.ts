@@ -224,6 +224,20 @@ export interface PackageStatsView {
   purchaseCount: number;
   revenueIdr: number;
 }
+/**
+ * A package's line in the sales report.
+ *
+ * Flat, unlike {@link PackageStatsView}: the report denormalises the name so
+ * a package deleted since the sale still has one. The two shared a type until
+ * the report had rows in it, at which point the page read `.pkg.name` off an
+ * object that had never had a `pkg`.
+ */
+export interface PackageRevenueView {
+  packageId: string;
+  packageName: string;
+  purchaseCount: number;
+  revenueIdr: number;
+}
 
 // ── Reports / dashboard ─────────────────────────────────────────────────────
 export interface DashboardStatsView {
@@ -246,7 +260,7 @@ export interface SalesReportView {
   totalIdr: number;
   byDay: DailyPointView[];
   byChannel: { channel: string; totalIdr: number }[];
-  byPackage: PackageStatsView[];
+  byPackage: PackageRevenueView[];
 }
 export interface VisitsReportView {
   total: number;

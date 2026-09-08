@@ -46,7 +46,7 @@ export default function MovementsPage() {
       <QueryError error={error} />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
-        <StatCard label="Movements" value={rows.length} />
+        <StatCard tone="info" label="Movements" value={rows.length} />
         <StatCard label="Received" value={rows.filter((m) => m.qty > 0).length} tone="brand" />
         <StatCard label="Issued" value={rows.filter((m) => m.qty < 0).length} />
         <StatCard

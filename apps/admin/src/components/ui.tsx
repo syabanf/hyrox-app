@@ -255,7 +255,7 @@ export function StatCard({
   onClick?: () => void;
   active?: boolean;
 }) {
-  const skin = STAT_TONES[tone ?? 'plain'];
+  const skin = STAT_TONES[settled(tone, value)];
   if (onClick) {
     return (
       <button
@@ -266,7 +266,7 @@ export function StatCard({
           active ? 'ring-2 ring-brand ring-offset-2 ring-offset-beige' : ''
         }`}
       >
-        <StatBody label={label} value={value} hint={hint} tone={tone} icon={Icon} />
+        <StatBody label={label} value={value} hint={hint} tone={settled(tone, value)} icon={Icon} />
         {active ? (
           <span className={`mt-2 block text-[11px] font-bold uppercase tracking-wider ${skin.accent}`}>
             Filtering · press to clear
@@ -296,6 +296,20 @@ export function StatCard({
  * a screen should use one loud tone at most and leave the rest plain.
  */
 export type StatTone = 'plain' | 'ink' | 'lime' | 'brand' | 'ok' | 'warn' | 'danger' | 'info';
+
+/**
+ * The tone a card actually wears.
+ *
+ * A red card reading "Out of stock: 0" says the opposite of what it means —
+ * the alarm colours are for when there is something to be alarmed about, so a
+ * warning or danger tone on a zero steps back to plain. Every other tone is
+ * descriptive rather than an alarm and stands whatever the number is.
+ */
+function settled(tone: StatTone | undefined, value: ReactNode): StatTone {
+  const nothing = value === 0 || value === '0';
+  if (nothing && (tone === 'danger' || tone === 'warn')) return 'plain';
+  return tone ?? 'plain';
+}
 
 const STAT_TONES: Record<StatTone, { card: string; label: string; value: string; hint: string; icon: string; accent: string }> = {
   plain: {
@@ -379,12 +393,12 @@ function StatBody({
   tone?: StatTone;
   icon?: LucideIcon;
 }) {
-  const skin = STAT_TONES[tone ?? 'plain'];
+  const skin = STAT_TONES[settled(tone, value)];
   return (
     <>
       {Icon ? (
         <span
-          className={`absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full ${skin.icon}`}
+          className={`stat-chip absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full ${skin.icon}`}
         >
           <Icon size={16} />
         </span>

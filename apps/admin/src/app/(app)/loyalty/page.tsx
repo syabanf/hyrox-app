@@ -68,12 +68,14 @@ export default function LoyaltyPage() {
 
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Members earning" value={overview?.members ?? '—'} tone="brand" />
-        <StatCard tone="lime"
+        <StatCard
+          tone="lime"
           label="Points outstanding"
           value={overview?.outstandingXp.toLocaleString() ?? '—'}
           hint="What members could still spend"
         />
-        <StatCard tone="ok"
+        <StatCard
+          tone="ok"
           label="Earned this month"
           value={overview?.earnedThisMonth.toLocaleString() ?? '—'}
         />

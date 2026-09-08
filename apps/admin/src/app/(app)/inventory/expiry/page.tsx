@@ -62,13 +62,15 @@ export default function ExpiryPage() {
         <>
           <div className="mb-4 grid gap-3 sm:grid-cols-4">
             <StatCard label="Near expiry" value={report.summary.nearBatches} tone="brand" />
-            <StatCard tone="warn"
+            <StatCard
+              tone="warn"
               label="Still worth"
               value={formatIdr(report.summary.nearValueIdr)}
               hint="Discount it, or move it"
             />
             <StatCard label="Expired" value={report.summary.expiredBatches} tone="danger" />
             <StatCard
+              tone="danger"
               label="Already lost"
               value={formatIdr(report.summary.expiredValueIdr)}
               hint="Waiting to be written off"

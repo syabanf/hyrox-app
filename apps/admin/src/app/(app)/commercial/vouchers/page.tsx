@@ -62,7 +62,8 @@ export default function VouchersPage() {
       <ErrorNote message={error} />
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <StatCard tone="ink" label="Live now" value={(data ?? []).filter((v) => v.voucher.status === 'ACTIVE').length} />
-        <StatCard tone="ok"
+        <StatCard
+          tone="ok"
           label="Draft / scheduled"
           value={(data ?? []).filter((v) => ['DRAFT', 'SCHEDULED'].includes(v.voucher.status)).length}
         />

@@ -54,7 +54,8 @@ export default function ReviewsPage() {
           value={rows.filter((r) => !r.reply).length}
           tone={rows.some((r) => !r.reply && r.rating <= 3) ? 'danger' : undefined}
         />
-        <StatCard tone="danger"
+        <StatCard
+          tone="danger"
           label="Backed by a visit"
           value={rows.filter((r) => r.verified).length}
           hint="An average built from unverified reviews means something else"

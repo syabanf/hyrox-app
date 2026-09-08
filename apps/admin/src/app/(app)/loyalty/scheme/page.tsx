@@ -54,7 +54,7 @@ export default function SchemePage() {
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <StatCard label="Tiers" value={(tiers ?? []).length} tone="brand" />
-        <StatCard label="Earning rules" value={(rules ?? []).filter((r) => r.active).length} />
+        <StatCard tone="info" label="Earning rules" value={(rules ?? []).filter((r) => r.active).length} />
         <StatCard
           label="Channels covered"
           value={new Set((rules ?? []).filter((r) => r.active).map((r) => r.sourceChannel)).size}

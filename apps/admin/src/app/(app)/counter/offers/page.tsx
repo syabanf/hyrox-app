@@ -65,6 +65,7 @@ export default function OffersPage() {
         <StatCard tone="ink" label="Offers" value={rows.length} icon={Tag} />
         <StatCard label="Running" value={live.length} tone="brand" />
         <StatCard
+          tone="info"
           label="Automatic"
           value={live.filter((p) => !p.requiresCode).length}
           hint="Applied without being asked for"

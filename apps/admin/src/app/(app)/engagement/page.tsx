@@ -62,11 +62,13 @@ export default function EngagementPage() {
       <ErrorNote message={error} />
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <StatCard tone="ink" label="Sent" value={(data ?? []).filter((c) => c.status === 'SENT').length} />
-        <StatCard tone="lime"
+        <StatCard
+          tone="lime"
           label="Draft / scheduled"
           value={(data ?? []).filter((c) => ['DRAFT', 'SCHEDULED'].includes(c.status)).length}
         />
-        <StatCard tone="ok"
+        <StatCard
+          tone="ok"
           label="Total reach"
           value={(data ?? []).reduce((sum, c) => sum + (c.sentCount ?? 0), 0)}
           hint="Notifications delivered"

@@ -81,13 +81,15 @@ export default function PayablesPage() {
       <QueryError error={error} />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
-        <StatCard tone="ink"
+        <StatCard
+          tone="ink"
           label="Paid"
           value={formatIdr(posted.reduce((s, p) => s + p.amountIdr - p.creditIdr, 0))}
           hint="Cash that actually left"
           icon={Banknote}
         />
-        <StatCard tone="warn"
+        <StatCard
+          tone="warn"
           label="Settled by credit"
           value={formatIdr(posted.reduce((s, p) => s + p.creditIdr, 0))}
           hint="Debt gone, no money moved"

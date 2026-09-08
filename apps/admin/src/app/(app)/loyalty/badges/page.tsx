@@ -51,6 +51,7 @@ export default function BadgesPage() {
           tone="brand"
         />
         <StatCard
+          tone="info"
           label="Given by hand"
           value={rows.filter((b) => b.metric === 'MANUAL').length}
           hint="For what no counter can see"

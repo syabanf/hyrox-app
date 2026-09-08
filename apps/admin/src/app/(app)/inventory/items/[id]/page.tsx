@@ -42,11 +42,13 @@ export default function ItemPage() {
           tone="brand"
         />
         <StatCard
+          tone="info"
           label="Average cost"
           value={formatIdr(item.unitCostIdr)}
           hint="What the stock on hand actually cost"
         />
         <StatCard
+          tone="ok"
           label="Stock value"
           value={formatIdr(item.totalOnHand * item.unitCostIdr)}
         />

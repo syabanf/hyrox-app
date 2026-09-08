@@ -94,6 +94,7 @@ export default function ItemsPage() {
         <StatCard label="For sale" value={rows.filter((i) => i.kind === 'RETAIL').length} tone="brand" />
         <StatCard tone="danger" label="Studio supplies" value={rows.filter((i) => i.kind === 'SUPPLY').length} />
         <StatCard
+          tone="ok"
           label="Stock value"
           value={formatIdr(rows.reduce((sum, i) => sum + i.totalOnHand * i.unitCostIdr, 0))}
         />

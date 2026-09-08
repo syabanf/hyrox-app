@@ -76,6 +76,7 @@ export default function RewardsPage() {
         <StatCard tone="ok" label="Claims waiting" value={rows.filter((c) => c.status === 'PENDING').length} />
         <StatCard tone="warn" label="Fulfilled" value={rows.filter((c) => c.status === 'FULFILLED').length} />
         <StatCard
+          tone="info"
           label="Points committed"
           value={rows
             .filter((c) => c.status !== 'CANCELLED')

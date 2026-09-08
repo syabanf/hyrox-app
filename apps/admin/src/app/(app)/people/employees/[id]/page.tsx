@@ -76,14 +76,14 @@ export default function EmployeePage() {
       <ErrorNote message={error} />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
-        <StatCard label="Employee number" value={employee.employeeNumber} />
+        <StatCard tone="ink" label="Employee number" value={employee.employeeNumber} />
         <StatCard
           label="Annual leave left"
           value={annualRemaining(balance).toFixed(1)}
           hint={`of ${balance.annualTotal} days in ${balance.year}`}
           tone="brand"
         />
-        <StatCard label="Sick days taken" value={balance.sickUsed.toFixed(1)} />
+        <StatCard tone="info" label="Sick days taken" value={balance.sickUsed.toFixed(1)} />
         <StatCard
           label="Employment"
           value={<StatusBadge status={employee.active ? employee.employmentStatusCode : 'INACTIVE'} />}

@@ -120,7 +120,7 @@ function SalesReport() {
       <div className="grid gap-3 sm:grid-cols-3">
         <StatCard label="Revenue (30d)" value={formatIdr(data.totalIdr)} tone="brand" />
         {data.byChannel.slice(0, 2).map((c) => (
-          <StatCard key={c.channel} label={`via ${c.channel}`} value={formatIdr(c.totalIdr)} />
+          <StatCard tone="info" key={c.channel} label={`via ${c.channel}`} value={formatIdr(c.totalIdr)} />
         ))}
       </div>
       <div className="a-card">
@@ -150,8 +150,8 @@ function SalesReport() {
           </thead>
           <tbody>
             {data.byPackage.map((p) => (
-              <tr key={p.pkg.id}>
-                <td className="font-bold">{p.pkg.name}</td>
+              <tr key={p.packageId}>
+                <td className="font-bold">{p.packageName}</td>
                 <td className="text-right">{p.purchaseCount}</td>
                 <td className="text-right font-bold">{formatIdr(p.revenueIdr)}</td>
               </tr>
@@ -170,8 +170,8 @@ function VisitsReport() {
     <div className="flex flex-col gap-4">
       <div className="grid gap-3 sm:grid-cols-3">
         <StatCard label="Visits (30d)" value={data.total} tone="brand" />
-        <StatCard label="Denied attempts" value={data.denied} />
-        <StatCard label="Offline transactions" value={data.offline} />
+        <StatCard tone="danger" label="Denied attempts" value={data.denied} />
+        <StatCard tone="info" label="Offline transactions" value={data.offline} />
       </div>
       <div className="a-card">
         <p className="a-label">Visits by day</p>

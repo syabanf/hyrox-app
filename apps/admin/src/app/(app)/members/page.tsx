@@ -56,18 +56,21 @@ export default function MembersPage() {
             a permanent "filtering" ring on the default view says nothing. */}
         <StatCard tone="ink" label="Members" value={(data ?? []).length} onClick={() => setStatus('')} />
         <StatCard
+          tone="brand"
           label="Active"
           value={(data ?? []).filter((m) => m.member.status === 'ACTIVE').length}
           active={status === 'ACTIVE'}
           onClick={() => setStatus(status === 'ACTIVE' ? '' : 'ACTIVE')}
         />
-        <StatCard tone="warn"
+        <StatCard
+          tone="warn"
           label="Suspended / inactive"
           value={(data ?? []).filter((m) => m.member.status !== 'ACTIVE').length}
           active={status === 'NOT_ACTIVE'}
           onClick={() => setStatus(status === 'NOT_ACTIVE' ? '' : 'NOT_ACTIVE')}
         />
-        <StatCard tone="brand"
+        <StatCard
+          tone="brand"
           label="Credits held"
           value={(data ?? []).reduce((sum, m) => sum + m.balance, 0)}
           hint="Outstanding across listed members"

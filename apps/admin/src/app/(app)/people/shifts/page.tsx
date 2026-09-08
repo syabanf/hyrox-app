@@ -72,6 +72,7 @@ export default function ShiftsPage() {
         <StatCard tone="ink" label="Shifts" value={rows.length} hint={`${rows.filter((s) => s.active).length} active`} />
         <StatCard label="Holidays this year" value={calendar.length} tone="brand" />
         <StatCard
+          tone="info"
           label="Collective leave days"
           value={calendar.filter((h) => h.deductsLeave).length}
           hint="Drawn from the annual allowance"

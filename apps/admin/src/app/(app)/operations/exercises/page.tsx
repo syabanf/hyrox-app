@@ -37,6 +37,7 @@ export default function ExercisesPage() {
         <StatCard tone="ink" label="Exercises" value={(data ?? []).length} />
         <StatCard tone="ok" label="Race stations" value={(data ?? []).filter((e) => e.hyroxStationOrder !== null).length} />
         <StatCard
+          tone="info"
           label="With how-to video"
           value={(data ?? []).filter((e) => e.videoUrl).length}
           hint="Shown in the member Guides tab"

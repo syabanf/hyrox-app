@@ -44,6 +44,7 @@ export default function ClassTypesPage() {
         <StatCard tone="ink" label="Class types" value={(data ?? []).length} />
         <StatCard tone="ok" label="Active" value={(data ?? []).filter((t) => t.active).length} />
         <StatCard
+          tone="info"
           label="Avg credit cost"
           value={(data ?? []).length > 0 ? ((data ?? []).reduce((sum, t) => sum + t.defaultCreditCost, 0) / (data ?? []).length).toFixed(1) : '-'}
         />

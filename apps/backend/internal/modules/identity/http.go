@@ -50,6 +50,10 @@ func (h *Handler) Mount(r *httpx.Router) {
 	r.Post("/api/admin/users", h.createAdminUser, admin(domain.PermUsersManage))
 	r.Patch("/api/admin/users/{id}", h.updateAdminUser, admin(domain.PermUsersManage))
 	r.Delete("/api/admin/users/{id}", h.deleteAdminUser, admin(domain.PermUsersManage))
+	// A supervisor's PIN for authorising at a till. Managing logins is the
+	// grant, because a PIN is a credential like any other.
+	r.Put("/api/admin/users/{id}/supervisor-pin", h.setSupervisorPIN,
+		admin(domain.PermUsersManage))
 }
 
 func actorFrom(r *http.Request) Actor {
@@ -470,4 +474,23 @@ func (h *Handler) deleteAdminUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.OK(w, map[string]bool{"ok": true})
+}
+
+type supervisorPINBody struct {
+	// Empty takes the PIN away, which is how somebody stops being able to
+	// authorise at a till without their login changing.
+	PIN string `json:"pin"`
+}
+
+func (h *Handler) setSupervisorPIN(w http.ResponseWriter, r *http.Request) {
+	body, err := httpx.Decode[supervisorPINBody](r)
+	if err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	if err := h.service.SetSupervisorPIN(r.Context(), httpx.Param(r, "id"), body.PIN); err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	httpx.OK(w, map[string]bool{"set": body.PIN != ""})
 }

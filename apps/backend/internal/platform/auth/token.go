@@ -139,3 +139,24 @@ func (i *Issuer) sign(input string) string {
 	mac.Write([]byte(input))
 	return base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
 }
+
+// PINHash is a keyed digest of a supervisor's PIN.
+//
+// Keyed rather than bare, so a leaked database is not a list of PINs: without
+// the server's secret, four digits of search space is no protection at all.
+// This is deliberately not a password hash — a PIN authorises a void at a
+// till, not a login, and it is checked server-side against an account that
+// already has the permission. If PINs ever guard anything larger, this is the
+// function to replace with a slow KDF.
+func (i *Issuer) PINHash(pin string) string {
+	mac := hmac.New(sha256.New, i.secret)
+	mac.Write([]byte("supervisor-pin:"))
+	mac.Write([]byte(pin))
+	return base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+}
+
+// PINMatches compares in constant time, so a wrong PIN does not leak how much
+// of it was right.
+func (i *Issuer) PINMatches(pin, hash string) bool {
+	return hmac.Equal([]byte(i.PINHash(pin)), []byte(hash))
+}

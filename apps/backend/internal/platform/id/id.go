@@ -96,6 +96,16 @@ const (
 	POSShift     = "psh"
 	ProductPrice = "ppr"
 
+	// The rest of the counter.
+	Promotion      = "prm"
+	PromoTarget    = "ptg"
+	OrderPromotion = "opr"
+	GiftCard       = "gft"
+	GiftCardEntry  = "gfe"
+	PaymentMethod  = "pmm"
+	PrintJob       = "prj"
+	ReceiptSend    = "rcs"
+
 	// Packs: how the same goods are bought by the carton and sold by the piece.
 	Unit     = "unt"
 	ItemPack = "ipk"

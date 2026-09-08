@@ -132,7 +132,8 @@ func New(cfg config.Config, db *database.DB) *App {
 	crmService := crm.NewService(db, crm.NewRepository(db), identityService,
 		ids, now, auditor, cfg.StudioLocation())
 	posService := pos.NewService(db, pos.NewRepository(db), posStock{inventoryService},
-		crmService, identityService, ids, now, auditor, cfg.StudioLocation())
+		crmService, identityService, posSupervisors{identityService},
+		ids, now, auditor, cfg.StudioLocation())
 	trainingService := training.NewService(training.NewRepository(db), now)
 
 	reportingService := reporting.NewService(reporting.Deps{

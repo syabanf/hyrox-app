@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/syabanf/nuhabit-backend/internal/domain"
+	"github.com/syabanf/nuhabit-backend/internal/modules/identity"
 	"github.com/syabanf/nuhabit-backend/internal/modules/inventory"
 	"github.com/syabanf/nuhabit-backend/internal/modules/pos"
 	"github.com/syabanf/nuhabit-backend/internal/modules/purchasing"
@@ -90,4 +91,19 @@ func (a purchasingStock) PackFor(ctx context.Context, itemID, unitCode string) (
 
 func (a posStock) PackFor(ctx context.Context, itemID, unitCode string) (domain.ItemPack, error) {
 	return a.inventory.PackFor(ctx, itemID, unitCode, domain.DefaultSalePack)
+}
+
+// posSupervisors is the till's side of the override: it asks identity whether
+// somebody holding a permission typed that PIN, and identity answers without
+// the till ever seeing a hash.
+type posSupervisors struct{ identity *identity.Service }
+
+func (a posSupervisors) VerifyPIN(ctx context.Context, pin string,
+	permission domain.Permission) (pos.SupervisorRef, bool, error) {
+
+	supervisor, ok, err := a.identity.VerifyPIN(ctx, pin, permission)
+	if err != nil || !ok {
+		return pos.SupervisorRef{}, false, err
+	}
+	return pos.SupervisorRef{ID: supervisor.ID, Name: supervisor.Name}, true, nil
 }

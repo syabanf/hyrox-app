@@ -52,6 +52,16 @@ type Stock interface {
 	PackFor(ctx context.Context, itemID, unitCode string) (domain.ItemPack, error)
 }
 
+// Supervisors is the port the till needs for an override.
+//
+// A permission answers "may this person do it"; a PIN answers "is a manager
+// standing here right now". Voiding a paid sale is the second question, and
+// handing a cashier a manager's login to answer it is how a manager's login
+// ends up on a sticky note under the till.
+type Supervisors interface {
+	VerifyPIN(ctx context.Context, pin string, permission domain.Permission) (SupervisorRef, bool, error)
+}
+
 // Loyalty is the port the till needs from CRM: what a member's tier takes off
 // the price, and what the sale earns them.
 type Loyalty interface {
@@ -74,6 +84,7 @@ type Service struct {
 	stock   Stock
 	loyalty Loyalty
 	members Members
+	supers  Supervisors
 	ids     id.Generator
 	clock   clock.Clock
 	auditor audit.Recorder
@@ -81,19 +92,21 @@ type Service struct {
 }
 
 func NewService(db *database.DB, repo *Repository, stock Stock, loyalty Loyalty,
-	members Members, ids id.Generator, c clock.Clock, auditor audit.Recorder,
-	studio *time.Location) *Service {
+	members Members, supers Supervisors, ids id.Generator, c clock.Clock,
+	auditor audit.Recorder, studio *time.Location) *Service {
 	if studio == nil {
 		studio = time.UTC
 	}
 	return &Service{db: db, repo: repo, stock: stock, loyalty: loyalty, members: members,
-		ids: ids, clock: c, auditor: auditor, studio: studio}
+		supers: supers, ids: ids, clock: c, auditor: auditor, studio: studio}
 }
 
 // Actor is the cashier.
 type Actor struct {
 	ID   string
 	Name string
+	// Role decides what they may do without a manager standing there.
+	Role domain.AdminRole
 }
 
 func (s *Service) record(ctx context.Context, entity, entityID, action string, actor Actor, reason *string) {
@@ -471,4 +484,10 @@ func (s *Service) DeleteProductPrice(ctx context.Context, priceID string, actor 
 	}
 	s.record(ctx, "pos.price", priceID, "DELETE", actor, nil)
 	return nil
+}
+
+// SupervisorRef is who a PIN turned out to belong to.
+type SupervisorRef struct {
+	ID   string
+	Name string
 }

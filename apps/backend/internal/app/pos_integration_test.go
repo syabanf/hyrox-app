@@ -143,7 +143,7 @@ func TestSellingAServiceMovesNoStock(t *testing.T) {
 		t.Fatalf("reading the sale returned %d", status)
 	}
 	h.request(http.MethodPost, "/api/admin/pos/orders/"+orderID+"/tender", token,
-		map[string]any{"method": "QRIS", "amountIdr": order["totalIdr"]})
+		map[string]any{"method": "QRIS", "amountIdr": order["totalIdr"], "reference": "QR-0001"})
 
 	status, completed := h.request(http.MethodPost, "/api/admin/pos/orders/"+orderID+"/complete",
 		token, map[string]any{})
@@ -206,7 +206,7 @@ func TestACardCannotOverpayButCashGivesChange(t *testing.T) {
 
 	// A card has no change to give, so the difference would simply be lost.
 	status, refused := h.request(http.MethodPost, "/api/admin/pos/orders/"+orderID+"/tender",
-		token, map[string]any{"method": "QRIS", "amountIdr": total + 50_000})
+		token, map[string]any{"method": "QRIS", "amountIdr": total + 50_000, "reference": "QR-0002"})
 	if status != http.StatusConflict || errorCode(refused) != "OVER_TENDERED" {
 		t.Fatalf("want OVER_TENDERED, got %d: %v", status, refused)
 	}
@@ -318,8 +318,12 @@ func TestTheDrawerCountsOnlyCash(t *testing.T) {
 		if status != http.StatusOK {
 			t.Fatalf("reading the sale returned %d", status)
 		}
-		h.request(http.MethodPost, "/api/admin/pos/orders/"+orderID+"/tender", token,
-			map[string]any{"method": method, "amountIdr": order["totalIdr"]})
+		tender := map[string]any{"method": method, "amountIdr": order["totalIdr"]}
+		// A card tender carries the terminal's approval code; cash does not.
+		if method != "CASH" {
+			tender["reference"] = "QR-" + method
+		}
+		h.request(http.MethodPost, "/api/admin/pos/orders/"+orderID+"/tender", token, tender)
 		h.request(http.MethodPost, "/api/admin/pos/orders/"+orderID+"/complete", token, map[string]any{})
 	}
 

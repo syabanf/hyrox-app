@@ -578,3 +578,79 @@ func (s *Service) PurgeExpiredChallenges(ctx context.Context) (int64, error) {
 }
 
 func strPtr(value string) *string { return &value }
+
+// ── Supervisor PINs ──────────────────────────────────────────────────────────
+
+// SetSupervisorPIN gives somebody a PIN for authorising at a till, or takes it
+// away when the PIN is empty.
+//
+// Four digits minimum and six maximum: shorter is guessable over a cashier's
+// shoulder in one glance, and longer is a password somebody will write down.
+func (s *Service) SetSupervisorPIN(ctx context.Context, userID, pin string) error {
+	user, err := s.repo.AdminUser(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	if strings.TrimSpace(pin) == "" {
+		return s.repo.SetSupervisorPIN(ctx, userID, nil)
+	}
+	if len(pin) < 4 || len(pin) > 6 {
+		return httpx.Invalid("A supervisor PIN is four to six digits.")
+	}
+	for _, c := range pin {
+		if c < '0' || c > '9' {
+			return httpx.Invalid("A supervisor PIN is digits only.")
+		}
+	}
+	// A PIN on an account that cannot authorise anything is a PIN that will be
+	// typed at a till and silently refused.
+	if !domain.HasPermission(user.Role, domain.PermPOSVoid) {
+		return httpx.Conflict("CANNOT_AUTHORISE",
+			"%s cannot authorise at a till, so a PIN would do nothing.",
+			strings.ToLower(strings.ReplaceAll(string(user.Role), "_", " ")))
+	}
+
+	hash := s.issuer.PINHash(pin)
+	return s.repo.SetSupervisorPIN(ctx, userID, &hash)
+}
+
+// Supervisor is who a PIN turned out to belong to.
+type Supervisor struct {
+	ID   string
+	Name string
+	Role domain.AdminRole
+}
+
+// VerifyPIN works out which manager typed a PIN, if any of them did.
+//
+// It checks every candidate rather than stopping at the first match, so the
+// time taken does not depend on where in the list the right one is. The
+// permission is checked here too: a PIN is only an answer to "is somebody who
+// may do this standing here".
+func (s *Service) VerifyPIN(ctx context.Context, pin string, permission domain.Permission) (Supervisor, bool, error) {
+	if strings.TrimSpace(pin) == "" {
+		return Supervisor{}, false, nil
+	}
+
+	candidates, err := s.repo.SupervisorsWithPIN(ctx)
+	if err != nil {
+		return Supervisor{}, false, err
+	}
+
+	var found Supervisor
+	matched := false
+	for _, candidate := range candidates {
+		if !s.issuer.PINMatches(pin, candidate.PINHash) {
+			continue
+		}
+		if !domain.HasPermission(candidate.Role, permission) {
+			continue
+		}
+		if !matched {
+			found = Supervisor{ID: candidate.ID, Name: candidate.Name, Role: candidate.Role}
+			matched = true
+		}
+	}
+	return found, matched, nil
+}

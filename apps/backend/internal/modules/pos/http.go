@@ -24,7 +24,6 @@ func (h *Handler) Mount(r *httpx.Router) {
 	view := admin(domain.PermPOSView)
 	sell := admin(domain.PermPOSSell)
 	manage := admin(domain.PermPOSManage)
-	void := admin(domain.PermPOSVoid)
 
 	r.Get("/api/admin/pos/overview", h.overview, view)
 
@@ -53,12 +52,37 @@ func (h *Handler) Mount(r *httpx.Router) {
 	r.Post("/api/admin/pos/orders/{id}/tender", h.tender, sell)
 	r.Post("/api/admin/pos/orders/{id}/complete", h.complete, sell)
 	r.Post("/api/admin/pos/orders/{id}/cancel", h.cancel, sell)
-	// Unwinding a paid sale is the one action that makes money disappear, so
-	// it needs a manager rather than whoever is at the till.
-	r.Post("/api/admin/pos/orders/{id}/void", h.void, void)
+	// Unwinding a paid sale is the one action that makes money disappear. A
+	// manager may do it outright; anybody else needs one standing beside them
+	// with a PIN, which the guard cannot express and the service checks.
+	r.Post("/api/admin/pos/orders/{id}/void", h.void, sell)
 
 	// What the counter did. Reading a report is a wider grant than selling —
 	// a manager who never touches a till still needs the numbers.
+	// Offers, cards, tenders and paper.
+	r.Get("/api/admin/pos/promotions", h.listPromotions, view)
+	r.Put("/api/admin/pos/promotions", h.savePromotion, manage)
+	r.Post("/api/admin/pos/orders/{id}/code", h.applyCode, sell)
+
+	r.Get("/api/admin/pos/gift-cards", h.listGiftCards, view)
+	r.Post("/api/admin/pos/gift-cards", h.issueGiftCard, sell)
+	r.Get("/api/admin/pos/gift-cards/{code}", h.getGiftCard, view)
+	r.Post("/api/admin/pos/gift-cards/{code}/top-up", h.topUpGiftCard, sell)
+	// Freezing a card is a manager's call: it is somebody's money.
+	r.Put("/api/admin/pos/gift-cards/{code}/status", h.setGiftCardStatus, manage)
+
+	r.Get("/api/admin/pos/payment-methods", h.listMethods, view)
+	r.Put("/api/admin/pos/payment-methods", h.saveMethod, manage)
+
+	r.Get("/api/admin/pos/receipt-settings", h.getReceiptSettings, view)
+	r.Put("/api/admin/pos/receipt-settings", h.saveReceiptSettings, manage)
+	r.Get("/api/admin/pos/orders/{id}/receipt", h.previewReceipt, view)
+	r.Post("/api/admin/pos/orders/{id}/print", h.printReceipt, sell)
+	r.Post("/api/admin/pos/orders/{id}/send", h.sendReceipt, sell)
+	r.Get("/api/admin/pos/print-jobs", h.listPrintJobs, view)
+	r.Post("/api/admin/pos/print-jobs/claim", h.claimPrintJobs, sell)
+	r.Put("/api/admin/pos/print-jobs/{id}", h.finishPrintJob, sell)
+
 	r.Get("/api/admin/pos/reports/transactions", h.reportTransactions, view)
 	r.Get("/api/admin/pos/reports/product-sales", h.reportProductSales, view)
 	r.Get("/api/admin/pos/reports/revenue-composition", h.reportRevenue, view)
@@ -69,7 +93,10 @@ func (h *Handler) Mount(r *httpx.Router) {
 
 func actorFrom(r *http.Request) Actor {
 	principal, _ := auth.Admin(r.Context())
-	return Actor{ID: principal.ID, Name: principal.Role}
+	return Actor{
+		ID: principal.ID, Name: principal.Role,
+		Role: domain.AdminRole(principal.Role),
+	}
 }
 
 func (h *Handler) overview(w http.ResponseWriter, r *http.Request) {
@@ -422,8 +449,11 @@ type tenderBody struct {
 }
 
 func (t *tenderBody) Validate() error {
-	if !domain.IsValidPaymentMethod(strings.ToUpper(t.Method)) {
-		return httpx.Invalid("%q is not a payment method.", t.Method)
+	// Which methods exist is a row in the database now, not a constant here,
+	// so the service checks it against what the counter is actually set up to
+	// take. All this can say is that something was named.
+	if strings.TrimSpace(t.Method) == "" {
+		return httpx.Invalid("A tender needs a method.")
 	}
 	if t.AmountIDR <= 0 {
 		return httpx.Invalid("A tender needs a positive amount.")
@@ -468,6 +498,8 @@ func (h *Handler) cancel(w http.ResponseWriter, r *http.Request) {
 
 type voidBody struct {
 	Reason string `json:"reason"`
+	// A manager's PIN, for a cashier who cannot void on their own.
+	SupervisorPIN string `json:"supervisorPin"`
 }
 
 func (v *voidBody) Validate() error {
@@ -483,7 +515,8 @@ func (h *Handler) void(w http.ResponseWriter, r *http.Request) {
 		httpx.Fail(w, r, err)
 		return
 	}
-	order, err := h.service.Void(r.Context(), httpx.Param(r, "id"), body.Reason, actorFrom(r))
+	order, err := h.service.Void(r.Context(), httpx.Param(r, "id"), body.Reason,
+		body.SupervisorPIN, actorFrom(r))
 	if err != nil {
 		httpx.Fail(w, r, err)
 		return

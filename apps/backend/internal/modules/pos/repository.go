@@ -301,18 +301,20 @@ func (r *Repository) SaveShift(ctx context.Context, s domain.CashierShift) (doma
 
 const orderColumns = `id, order_number, branch_id, shift_id, cashier_id, cashier_name,
 	member_id, order_type, status, payment_status, subtotal_idr, discount_idr,
-	tier_discount_idr, discount_reason,
+	tier_discount_idr, discount_reason, promo_discount_idr, promo_code,
 	tax_idr, total_idr, paid_idr, change_idr, cost_idr, gross_profit_idr,
 	xp_earned, note, opened_at, completed_at, cancelled_at, voided_at, voided_by, void_reason,
-	created_at, updated_at`
+	authorised_by, authorised_by_name, created_at, updated_at`
 
 func scanOrder(row pgx.Row) (domain.POSOrder, error) {
 	var o domain.POSOrder
 	err := row.Scan(&o.ID, &o.OrderNumber, &o.BranchID, &o.ShiftID, &o.CashierID, &o.CashierName,
 		&o.MemberID, &o.Channel, &o.Status, &o.PaymentStatus, &o.SubtotalIDR, &o.DiscountIDR,
-		&o.TierDiscountIDR, &o.DiscountReason, &o.TaxIDR, &o.TotalIDR, &o.PaidIDR, &o.ChangeIDR,
+		&o.TierDiscountIDR, &o.DiscountReason, &o.PromoDiscountIDR, &o.PromoCode,
+		&o.TaxIDR, &o.TotalIDR, &o.PaidIDR, &o.ChangeIDR,
 		&o.CostIDR, &o.GrossProfitIDR, &o.XPEarned, &o.Note, &o.OpenedAt, &o.CompletedAt,
-		&o.CancelledAt, &o.VoidedAt, &o.VoidedBy, &o.VoidReason, &o.CreatedAt, &o.UpdatedAt)
+		&o.CancelledAt, &o.VoidedAt, &o.VoidedBy, &o.VoidReason,
+		&o.AuthorisedBy, &o.AuthorisedByName, &o.CreatedAt, &o.UpdatedAt)
 	return o, err
 }
 
@@ -417,12 +419,14 @@ func (r *Repository) SaveOrder(ctx context.Context, o domain.POSOrder) (domain.P
 			tax_idr = $9, total_idr = $10, paid_idr = $11,
 			change_idr = $12, cost_idr = $13, gross_profit_idr = $14, xp_earned = $15,
 			note = $16, completed_at = $17, cancelled_at = $18, voided_at = $19, voided_by = $20,
-			void_reason = $21, updated_at = now()
+			void_reason = $21, promo_discount_idr = $22, promo_code = $23,
+			authorised_by = $24, authorised_by_name = $25, updated_at = now()
 		WHERE id = $1 RETURNING `+orderColumns,
 		o.ID, o.MemberID, o.Status, o.PaymentStatus, o.SubtotalIDR, o.DiscountIDR,
 		o.TierDiscountIDR, o.DiscountReason, o.TaxIDR, o.TotalIDR,
 		o.PaidIDR, o.ChangeIDR, o.CostIDR, o.GrossProfitIDR, o.XPEarned, o.Note,
-		o.CompletedAt, o.CancelledAt, o.VoidedAt, o.VoidedBy, o.VoidReason))
+		o.CompletedAt, o.CancelledAt, o.VoidedAt, o.VoidedBy, o.VoidReason,
+		o.PromoDiscountIDR, o.PromoCode, o.AuthorisedBy, o.AuthorisedByName))
 	if database.IsNoRows(err) {
 		return domain.POSOrder{}, httpx.NotFound("order")
 	}
@@ -497,12 +501,13 @@ func (r *Repository) DeleteOrderItem(ctx context.Context, id string) error {
 
 // ── Payments ─────────────────────────────────────────────────────────────────
 
-const paymentColumns = `id, order_id, method, amount_idr, change_idr, reference, cashier_id, taken_at`
+const paymentColumns = `id, order_id, method, amount_idr, change_idr, reference,
+	gift_card_id, cashier_id, taken_at`
 
 func scanPayment(row pgx.Row) (domain.POSPayment, error) {
 	var p domain.POSPayment
 	err := row.Scan(&p.ID, &p.OrderID, &p.Method, &p.AmountIDR, &p.ChangeIDR, &p.Reference,
-		&p.CashierID, &p.TakenAt)
+		&p.GiftCardID, &p.CashierID, &p.TakenAt)
 	return p, err
 }
 

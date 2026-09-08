@@ -130,25 +130,34 @@ type POSOrder struct {
 	// what the member's standing took off. They are separate because the
 	// second is recomputed on every change and the first is not — folding them
 	// into one figure makes the tier's share compound with every line scanned.
-	DiscountIDR     float64    `json:"discountIdr"`
-	TierDiscountIDR float64    `json:"tierDiscountIdr"`
-	DiscountReason  *string    `json:"discountReason"`
-	TaxIDR          float64    `json:"taxIdr"`
-	TotalIDR        float64    `json:"totalIdr"`
-	PaidIDR         float64    `json:"paidIdr"`
-	ChangeIDR       float64    `json:"changeIdr"`
-	CostIDR         float64    `json:"costIdr"`
-	GrossProfitIDR  float64    `json:"grossProfitIdr"`
-	XPEarned        int        `json:"xpEarned"`
-	Note            *string    `json:"note"`
-	OpenedAt        time.Time  `json:"openedAt"`
-	CompletedAt     *time.Time `json:"completedAt"`
-	CancelledAt     *time.Time `json:"cancelledAt"`
-	VoidedAt        *time.Time `json:"voidedAt"`
-	VoidedBy        *string    `json:"voidedBy"`
-	VoidReason      *string    `json:"voidReason"`
-	CreatedAt       time.Time  `json:"createdAt"`
-	UpdatedAt       time.Time  `json:"updatedAt"`
+	DiscountIDR     float64 `json:"discountIdr"`
+	TierDiscountIDR float64 `json:"tierDiscountIdr"`
+	DiscountReason  *string `json:"discountReason"`
+	// PromoDiscountIDR is what the offers took off, kept apart from the manual
+	// and tier discounts for the same reason those are apart from each other:
+	// each is recomputed by a different rule, and one column would make them
+	// compound.
+	PromoDiscountIDR float64    `json:"promoDiscountIdr"`
+	PromoCode        *string    `json:"promoCode"`
+	TaxIDR           float64    `json:"taxIdr"`
+	TotalIDR         float64    `json:"totalIdr"`
+	PaidIDR          float64    `json:"paidIdr"`
+	ChangeIDR        float64    `json:"changeIdr"`
+	CostIDR          float64    `json:"costIdr"`
+	GrossProfitIDR   float64    `json:"grossProfitIdr"`
+	XPEarned         int        `json:"xpEarned"`
+	Note             *string    `json:"note"`
+	OpenedAt         time.Time  `json:"openedAt"`
+	CompletedAt      *time.Time `json:"completedAt"`
+	CancelledAt      *time.Time `json:"cancelledAt"`
+	VoidedAt         *time.Time `json:"voidedAt"`
+	VoidedBy         *string    `json:"voidedBy"`
+	VoidReason       *string    `json:"voidReason"`
+	// Who stood at the till and authorised what the cashier could not.
+	AuthorisedBy     *string   `json:"authorisedBy"`
+	AuthorisedByName *string   `json:"authorisedByName"`
+	CreatedAt        time.Time `json:"createdAt"`
+	UpdatedAt        time.Time `json:"updatedAt"`
 }
 
 // POSOrderItem is one sold line.
@@ -186,8 +195,10 @@ type POSPayment struct {
 	AmountIDR float64          `json:"amountIdr"`
 	ChangeIDR float64          `json:"changeIdr"`
 	Reference *string          `json:"reference"`
-	CashierID string           `json:"cashierId"`
-	TakenAt   time.Time        `json:"takenAt"`
+	// GiftCardID is the card a tender came off, when it came off one.
+	GiftCardID *string   `json:"giftCardId"`
+	CashierID  string    `json:"cashierId"`
+	TakenAt    time.Time `json:"takenAt"`
 }
 
 // POSTotals is the arithmetic of a sale.

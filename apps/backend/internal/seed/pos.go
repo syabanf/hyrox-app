@@ -98,5 +98,92 @@ func (s *Seeder) seedPOS(ctx context.Context) (int, error) {
 		return 0, fmt.Errorf("seed: towel hire: %w", err)
 	}
 
+	// A few offers, so the promotion engine has something to decide between on
+	// a fresh install rather than being a screen nobody has ever seen work.
+	// The automatic ones ship switched off. An offer that applies by itself
+	// from the moment the shop opens means every demo sale is quietly
+	// discounted and nobody knows why; switching one on should be a decision
+	// somebody makes and then sees take effect.
+	promotions := []struct {
+		id, code, name, kind string
+		percent, amount      float64
+		buy, free            float64
+		bundlePrice          float64
+		minSpend             float64
+		requiresCode         bool
+		exclusive            bool
+		active               bool
+		priority             int
+	}{
+		{id: "prm_3for2", code: "BAR3FOR2", name: "Protein bars: three for two",
+			kind: "BUY_X_GET_Y", buy: 2, free: 1, priority: 10},
+		{id: "prm_starter", code: "STARTER", name: "Shaker and a bar",
+			kind: "BUNDLE", bundlePrice: 100_000, priority: 8},
+		// The ones somebody has to ask for are on from the start: they change
+		// nothing until a code is typed.
+		{id: "prm_weekend", code: "WEEKEND10", name: "Weekend 10% off",
+			kind: "PERCENT", percent: 10, minSpend: 200_000, requiresCode: true,
+			active: true, priority: 5},
+		// Exclusive: it is generous enough that stacking it with the rest
+		// would sell below cost.
+		{id: "prm_launch", code: "LAUNCH25", name: "Launch weekend: 25% off",
+			kind: "PERCENT", percent: 25, requiresCode: true, exclusive: true,
+			active: true, priority: 20},
+	}
+	for _, p := range promotions {
+		var percent, amount, buy, free, bundle any
+		if p.percent > 0 {
+			percent = p.percent
+		}
+		if p.amount > 0 {
+			amount = p.amount
+		}
+		if p.buy > 0 {
+			buy, free = p.buy, p.free
+		}
+		if p.bundlePrice > 0 {
+			bundle = p.bundlePrice
+		}
+		if _, err := s.db.Exec(ctx, `
+			INSERT INTO pos.promotions (id, code, name, kind, percent, amount_idr, buy_qty,
+				free_qty, bundle_price_idr, min_spend_idr, requires_code, exclusive,
+				active, priority)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+			ON CONFLICT (id) DO NOTHING`,
+			p.id, p.code, p.name, p.kind, percent, amount, buy, free, bundle,
+			p.minSpend, p.requiresCode, p.exclusive, p.active, p.priority); err != nil {
+			return 0, fmt.Errorf("seed: promotion %s: %w", p.id, err)
+		}
+	}
+
+	targets := []struct {
+		id, promotion, product string
+		qty                    float64
+	}{
+		{"ptg_3for2", "prm_3for2", "prd_bar", 1},
+		{"ptg_starter_shaker", "prm_starter", "prd_shaker", 1},
+		{"ptg_starter_bar", "prm_starter", "prd_bar", 1},
+	}
+	for _, t := range targets {
+		if _, err := s.db.Exec(ctx, `
+			INSERT INTO pos.promotion_targets (id, promotion_id, product_id, qty)
+			VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO NOTHING`,
+			t.id, t.promotion, t.product, t.qty); err != nil {
+			return 0, fmt.Errorf("seed: promotion target %s: %w", t.id, err)
+		}
+	}
+
+	// What a receipt says, so the first sale prints something a customer would
+	// recognise rather than a blank header.
+	for _, branch := range []string{"brn_senopati", "brn_pik"} {
+		if _, err := s.db.Exec(ctx, `
+			INSERT INTO pos.receipt_settings (branch_id, business_name, address, header, footer)
+			VALUES ($1, 'NuHabit Studio', 'Jakarta Selatan', '',
+				'Thank you. Keep the habit.')
+			ON CONFLICT (branch_id) DO NOTHING`, branch); err != nil {
+			return 0, fmt.Errorf("seed: receipt settings %s: %w", branch, err)
+		}
+	}
+
 	return len(products) + 1, nil
 }

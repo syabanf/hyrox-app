@@ -397,3 +397,52 @@ func (r *Repository) PurgeExpiredChallenges(ctx context.Context, before time.Tim
 	}
 	return tag.RowsAffected(), nil
 }
+
+// ── Supervisor PINs ──────────────────────────────────────────────────────────
+
+// SetSupervisorPIN stores the keyed digest of somebody's PIN, or clears it.
+func (r *Repository) SetSupervisorPIN(ctx context.Context, userID string, hash *string) error {
+	tag, err := r.db.Exec(ctx, `
+		UPDATE identity.admin_users
+		SET supervisor_pin_hash = $2::text,
+		    supervisor_pin_set_at = CASE WHEN $2::text IS NULL THEN NULL ELSE now() END
+		WHERE id = $1`, userID, hash)
+	if err != nil {
+		return fmt.Errorf("identity: setting supervisor PIN: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return httpx.NotFound("user")
+	}
+	return nil
+}
+
+// SupervisorCandidate is somebody who has a PIN set.
+type SupervisorCandidate struct {
+	domain.AdminUser
+	PINHash string
+}
+
+// SupervisorsWithPIN is everybody who could authorise something at a till.
+//
+// The whole list is fetched and compared in memory because a PIN is not a
+// username: nobody types who they are, they just type four digits, and the
+// server has to work out which of a handful of managers that was.
+func (r *Repository) SupervisorsWithPIN(ctx context.Context) ([]SupervisorCandidate, error) {
+	rows, err := r.db.Query(ctx,
+		`SELECT `+adminColumns+`, supervisor_pin_hash FROM identity.admin_users
+		 WHERE supervisor_pin_hash IS NOT NULL`)
+	if err != nil {
+		return nil, fmt.Errorf("identity: listing supervisors: %w", err)
+	}
+	defer rows.Close()
+
+	out := []SupervisorCandidate{}
+	for rows.Next() {
+		var c SupervisorCandidate
+		if err := rows.Scan(&c.ID, &c.Name, &c.Email, &c.Role, &c.BranchID, &c.PINHash); err != nil {
+			return nil, fmt.Errorf("identity: scanning supervisor: %w", err)
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}

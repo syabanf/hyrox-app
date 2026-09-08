@@ -220,7 +220,24 @@ func (s *Service) retotal(ctx context.Context, order domain.POSOrder) (domain.PO
 		order.TierDiscountIDR = domain.TierDiscount(subtotal, percent)
 	}
 
-	totals := domain.ComputeOrderPOSTotals(items, order.DiscountIDR+order.TierDiscountIDR)
+	// Offers are evaluated on every retotal rather than once at completion, so
+	// the price on the screen is the price that will be charged.
+	outcome, err := s.promotionsFor(ctx, order, items)
+	if err != nil {
+		return domain.POSOrder{}, err
+	}
+	order.PromoDiscountIDR = outcome.DiscountIDR
+
+	ids := make([]string, len(outcome.Applied))
+	for i := range outcome.Applied {
+		ids[i] = s.ids.New(id.OrderPromotion)
+	}
+	if err := s.repo.ReplaceOrderPromotions(ctx, order.ID, outcome.Applied, ids); err != nil {
+		return domain.POSOrder{}, err
+	}
+
+	totals := domain.ComputeOrderPOSTotals(items,
+		order.DiscountIDR+order.TierDiscountIDR+order.PromoDiscountIDR)
 	order.SubtotalIDR = totals.SubtotalIDR
 	order.TaxIDR = totals.TaxIDR
 	order.TotalIDR = totals.TotalIDR
@@ -306,26 +323,51 @@ func (s *Service) Tender(ctx context.Context, orderID string, in TenderInput, ac
 			alreadyPaid += payment.AmountIDR
 		}
 
-		if rejection := domain.EvaluateTender(order, in.Method, in.AmountIDR, alreadyPaid); rejection != "" {
+		methods, err := s.repo.MethodsByCode(ctx)
+		if err != nil {
+			return err
+		}
+		method, known := methods[string(in.Method)]
+		if !known || !method.Active {
+			return httpx.Invalid("%q is not a payment this counter takes.", in.Method)
+		}
+		if method.NeedsReference && method.Kind != domain.MethodGiftCard &&
+			(in.Reference == nil || strings.TrimSpace(*in.Reference) == "") {
+			return httpx.Invalid("%s needs a reference — the approval code or transfer id.", method.Name)
+		}
+
+		if rejection := domain.EvaluateTenderWith(order, method, in.AmountIDR, alreadyPaid); rejection != "" {
 			return tenderRejectionError(rejection, order, alreadyPaid)
+		}
+
+		// A gift card is money already paid for, so taking it is a movement on
+		// the card's own ledger rather than a note on the receipt.
+		var cardID *string
+		if method.Kind == domain.MethodGiftCard {
+			card, err := s.spendGiftCard(ctx, order, in, actor)
+			if err != nil {
+				return err
+			}
+			cardID = &card
 		}
 
 		saved, err := s.repo.InsertPayment(ctx, domain.POSPayment{
 			ID: s.ids.New(id.POSPayment), OrderID: orderID, Method: in.Method,
 			AmountIDR: in.AmountIDR, Reference: in.Reference, CashierID: actor.ID,
+			GiftCardID: cardID,
 		})
 		if err != nil {
 			return err
 		}
 
 		payments = append(payments, saved)
-		outcome := domain.Settle(order.TotalIDR, payments)
+		outcome := domain.SettleWith(order.TotalIDR, payments, methods)
 		order.PaidIDR = outcome.PaidIDR
 		order.ChangeIDR = outcome.ChangeIDR
 		order.PaymentStatus = outcome.PaymentStatus
 		// Change is recorded against the tender that overpaid, so the drawer
-		// count can subtract it from the cash actually taken.
-		if outcome.ChangeIDR > 0 && saved.Method == domain.PayCash {
+		// count can subtract it from what was actually taken.
+		if outcome.ChangeIDR > 0 && method.GivesChange {
 			if err := s.repo.SetChange(ctx, saved.ID, outcome.ChangeIDR); err != nil {
 				return err
 			}
@@ -482,9 +524,25 @@ func (s *Service) Cancel(ctx context.Context, orderID string, actor Actor) (Orde
 // Void unwinds a completed sale: the stock goes back on the shelf and the
 // points come off. It needs a reason and a permission the counter does not
 // have, because it is the one action that makes money disappear.
-func (s *Service) Void(ctx context.Context, orderID, reason string, actor Actor) (OrderView, error) {
+func (s *Service) Void(ctx context.Context, orderID, reason, supervisorPIN string, actor Actor) (OrderView, error) {
 	if strings.TrimSpace(reason) == "" {
 		return OrderView{}, httpx.Invalid("Voiding a sale needs a reason.")
+	}
+
+	// A permission answers "may this person do it"; a PIN answers "is a
+	// manager standing here right now". A cashier who cannot void may still
+	// void one with a manager beside them, and the manager is recorded.
+	var supervisor *SupervisorRef
+	if !domain.HasPermission(actor.Role, domain.PermPOSVoid) {
+		found, ok, err := s.supers.VerifyPIN(ctx, supervisorPIN, domain.PermPOSVoid)
+		if err != nil {
+			return OrderView{}, err
+		}
+		if !ok {
+			return OrderView{}, httpx.ErrForbidden.WithMessage(
+				"Voiding a paid sale needs a supervisor. Ask a manager for their PIN.")
+		}
+		supervisor = &found
 	}
 
 	var view OrderView
@@ -492,6 +550,9 @@ func (s *Service) Void(ctx context.Context, orderID, reason string, actor Actor)
 		order, err := s.repo.Order(ctx, orderID, true)
 		if err != nil {
 			return err
+		}
+		if supervisor != nil {
+			order.AuthorisedBy, order.AuthorisedByName = &supervisor.ID, &supervisor.Name
 		}
 		next, err := domain.Transition(domain.POSOrderTransitions, order.Status, domain.POSVoided)
 		if err != nil {

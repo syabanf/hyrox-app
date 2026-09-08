@@ -1,5 +1,5 @@
-import type { EmergencyContact, Member, MemberStatus, Result } from '@hyrox/domain';
-import { MEMBER_TRANSITIONS, err, ok, transition } from '@hyrox/domain';
+import type { EmergencyContact, Member, MemberStatus, Result } from '@nuhabit/domain';
+import { MEMBER_TRANSITIONS, err, ok, transition } from '@nuhabit/domain';
 import type { Actor, AppError } from '../common';
 import { appError, recordAudit } from '../common';
 import type { UseCaseDeps } from '../ports';

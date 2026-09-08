@@ -1,5 +1,5 @@
-import type { Exercise } from '@hyrox/domain';
-import { Spinner } from '@hyrox/ui';
+import type { Exercise } from '@nuhabit/domain';
+import { Spinner } from '@nuhabit/ui';
 import { CirclePlay } from 'lucide-react';
 import { useState } from 'react';
 import { VideoSheet } from '../../components/video-sheet';

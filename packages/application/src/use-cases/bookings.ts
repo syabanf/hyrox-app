@@ -1,4 +1,4 @@
-import type { Booking, ClassSession, CreditLedgerEntry, Result } from '@hyrox/domain';
+import type { Booking, ClassSession, CreditLedgerEntry, Result } from '@nuhabit/domain';
 import {
   ACTIVE_BOOKING_STATUSES,
   BOOKING_TRANSITIONS,
@@ -14,7 +14,7 @@ import {
   packageCoversClass,
   pickWaitlistPromotion,
   transition,
-} from '@hyrox/domain';
+} from '@nuhabit/domain';
 import type { Actor, AppError } from '../common';
 import { appError, balanceOf, maybeNotifyLowBalance, notify, recordAudit, rulesFor } from '../common';
 import type { UseCaseDeps } from '../ports';

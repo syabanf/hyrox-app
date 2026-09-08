@@ -28,7 +28,7 @@ import type {
   VoucherQuoteView,
   VoucherView,
   WalletView,
-} from '@hyrox/contracts';
+} from '@nuhabit/contracts';
 import type {
   AdjustCreditsInput,
   AdminBookInput,
@@ -52,7 +52,7 @@ import type {
   UpsertIncentiveSchemeInput,
   UpsertPackageInput,
   UpsertVoucherInput,
-} from '@hyrox/contracts';
+} from '@nuhabit/contracts';
 import type {
   ActivityCardView,
   ActivityCommentView,
@@ -85,7 +85,7 @@ import type {
   UpsertGearInput,
   WorkoutHistoryItemView,
   WorkoutSessionView,
-} from '@hyrox/contracts';
+} from '@nuhabit/contracts';
 import type {
   AdminUser,
   AthleteSettings,
@@ -111,7 +111,7 @@ import type {
   SubstitutionRule,
   UserRace,
   VoucherStatus,
-} from '@hyrox/domain';
+} from '@nuhabit/domain';
 
 export class ApiError extends Error {
   constructor(

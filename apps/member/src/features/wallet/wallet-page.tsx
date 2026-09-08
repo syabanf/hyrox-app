@@ -1,4 +1,4 @@
-import { Spinner, StatusBadge, formatDay, formatDayTime } from '@hyrox/ui';
+import { Spinner, StatusBadge, formatDay, formatDayTime } from '@nuhabit/ui';
 import { Link } from 'react-router';
 import { useWallet } from '../../lib/queries';
 

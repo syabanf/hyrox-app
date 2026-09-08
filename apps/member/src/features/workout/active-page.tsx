@@ -1,5 +1,5 @@
-import type { WorkoutSessionView } from '@hyrox/contracts';
-import { Spinner, formatDuration } from '@hyrox/ui';
+import type { WorkoutSessionView } from '@nuhabit/contracts';
+import { Spinner, formatDuration } from '@nuhabit/ui';
 import { CheckCircle2, CirclePlay, Pause, Play, Square } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';

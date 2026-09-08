@@ -1,7 +1,7 @@
-import { ApiError } from '@hyrox/api-client';
-import type { MyRaceView, RaceEventView } from '@hyrox/contracts';
-import type { Division } from '@hyrox/domain';
-import { Spinner, StatusBadge, formatDay, formatDuration } from '@hyrox/ui';
+import { ApiError } from '@nuhabit/api-client';
+import type { MyRaceView, RaceEventView } from '@nuhabit/contracts';
+import type { Division } from '@nuhabit/domain';
+import { Spinner, StatusBadge, formatDay, formatDuration } from '@nuhabit/ui';
 import { Flag, MapPin, Trophy } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';

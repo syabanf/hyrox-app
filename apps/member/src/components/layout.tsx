@@ -1,5 +1,5 @@
 import { Activity, Bell, CalendarDays, Home, QrCode, Search, User } from 'lucide-react';
-import { Spinner } from '@hyrox/ui';
+import { Spinner } from '@nuhabit/ui';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation, Navigate } from 'react-router';
 import { api } from '../lib/api';

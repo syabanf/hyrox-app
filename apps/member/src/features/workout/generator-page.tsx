@@ -1,6 +1,6 @@
-import { ApiError } from '@hyrox/api-client';
-import type { Division, WorkoutType } from '@hyrox/domain';
-import { Spinner, StatusBadge, formatDayTime, formatDuration } from '@hyrox/ui';
+import { ApiError } from '@nuhabit/api-client';
+import type { Division, WorkoutType } from '@nuhabit/domain';
+import { Spinner, StatusBadge, formatDayTime, formatDuration } from '@nuhabit/ui';
 import { CirclePlay, Dumbbell } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';

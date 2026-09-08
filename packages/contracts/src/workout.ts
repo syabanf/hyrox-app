@@ -5,7 +5,7 @@ import type {
   SubstitutionRule,
   WorkoutSession,
   WorkoutType,
-} from '@hyrox/domain';
+} from '@nuhabit/domain';
 import { z } from 'zod';
 
 // ── Requests ────────────────────────────────────────────────────────────────

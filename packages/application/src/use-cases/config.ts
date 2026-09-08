@@ -1,5 +1,5 @@
-import type { BusinessRules, Result } from '@hyrox/domain';
-import { ok } from '@hyrox/domain';
+import type { BusinessRules, Result } from '@nuhabit/domain';
+import { ok } from '@nuhabit/domain';
 import type { Actor, AppError } from '../common';
 import { recordAudit } from '../common';
 import type { UseCaseDeps } from '../ports';

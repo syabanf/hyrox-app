@@ -1,4 +1,4 @@
-import { monthPeriod, periodMonthOf } from '@hyrox/domain';
+import { monthPeriod, periodMonthOf } from '@nuhabit/domain';
 import { getResponse } from 'msw';
 import { createMockApi, type MockApi } from '../index';
 import type { MockDb } from '../db';

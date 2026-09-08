@@ -1,5 +1,5 @@
 {
-  "name": "@hyrox/admin",
+  "name": "@nuhabit/admin",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,11 +10,11 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.0",
-    "@hyrox/api-client": "workspace:*",
-    "@hyrox/contracts": "workspace:*",
-    "@hyrox/domain": "workspace:*",
-    "@hyrox/mock-api": "workspace:*",
-    "@hyrox/ui": "workspace:*",
+    "@nuhabit/api-client": "workspace:*",
+    "@nuhabit/contracts": "workspace:*",
+    "@nuhabit/domain": "workspace:*",
+    "@nuhabit/mock-api": "workspace:*",
+    "@nuhabit/ui": "workspace:*",
     "@tanstack/react-query": "^5.60.0",
     "@tanstack/react-table": "^8.20.0",
     "date-fns": "^4.1.0",
@@ -28,7 +28,7 @@
     "zustand": "^5.0.0"
   },
   "devDependencies": {
-    "@hyrox/tsconfig": "workspace:*",
+    "@nuhabit/tsconfig": "workspace:*",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",

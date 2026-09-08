@@ -1,4 +1,4 @@
 {
-  "extends": "@hyrox/tsconfig/base.json",
+  "extends": "@nuhabit/tsconfig/base.json",
   "include": ["src"]
 }

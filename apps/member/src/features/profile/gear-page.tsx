@@ -1,5 +1,5 @@
-import { ApiError } from '@hyrox/api-client';
-import { Spinner, formatDistanceM } from '@hyrox/ui';
+import { ApiError } from '@nuhabit/api-client';
+import { Spinner, formatDistanceM } from '@nuhabit/ui';
 import { ArrowLeft, Bike, Check, Footprints, Pencil, Plus, X } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';

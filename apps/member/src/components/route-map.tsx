@@ -1,4 +1,4 @@
-import type { TrackPoint } from '@hyrox/domain';
+import type { TrackPoint } from '@nuhabit/domain';
 
 /**
  * Dependency-free route renderer: projects the GPS polyline into an SVG.

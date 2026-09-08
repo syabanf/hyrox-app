@@ -49,7 +49,7 @@ pnpm dev:admin      # http://localhost:3000
 pnpm dev:backend    # http://localhost:8080 (needs PostgreSQL: make -C apps/backend db)
 ```
 
-Demo sign-in: the member app signs itself in as `demo@hyrox.id`; staff pick a
+Demo sign-in: the member app signs itself in as `demo@nuhabit.id`; staff pick a
 role card (`adm_super`, `adm_hq`, `adm_branch`, `adm_desk`, `adm_coach`,
 `adm_finance`).
 
@@ -59,11 +59,11 @@ Verification suite:
 pnpm turbo typecheck test build && pnpm lint
 ```
 
-PWA check: `pnpm --filter @hyrox/member build && pnpm --filter @hyrox/member preview` (service worker + manifest are production-build only).
+PWA check: `pnpm --filter @nuhabit/member build && pnpm --filter @nuhabit/member preview` (service worker + manifest are production-build only).
 
 ## Demo accounts
 
-- **Member app**: opens straight on Home as `demo@hyrox.id` (Fahmi Syaban) with no OTP step. The login screen (any 6-digit OTP works, e.g. `123456`) only appears after **Sign out**; from there you can sign in as another member or register a fresh one.
+- **Member app**: opens straight on Home as `demo@nuhabit.id` (Fahmi Syaban) with no OTP step. The login screen (any 6-digit OTP works, e.g. `123456`) only appears after **Sign out**; from there you can sign in as another member or register a fresh one.
 - **Admin**: one-click login cards, one per role (Super Admin, HQ Admin, Branch Manager, Front Desk, Coach, Finance). RBAC is enforced by the mock server - a Front Desk token gets a real `403` on finance endpoints, not just hidden buttons.
 - **Voucher codes**: `WELCOME10` (10%, new members), `HYROX100` (Rp100k, 10/20-packs).
 

@@ -1,4 +1,4 @@
-import { Spinner, formatDay, formatDayTime } from '@hyrox/ui';
+import { Spinner, formatDay, formatDayTime } from '@nuhabit/ui';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, ChevronRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router';

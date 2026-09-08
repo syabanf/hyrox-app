@@ -1,7 +1,7 @@
-import { ApiError } from '@hyrox/api-client';
-import type { ActivityType, ActivityVisibility, Division, Route, TrackPoint } from '@hyrox/domain';
-import { haversineM } from '@hyrox/domain';
-import { formatDistanceM, formatDuration, formatPace } from '@hyrox/ui';
+import { ApiError } from '@nuhabit/api-client';
+import type { ActivityType, ActivityVisibility, Division, Route, TrackPoint } from '@nuhabit/domain';
+import { haversineM } from '@nuhabit/domain';
+import { formatDistanceM, formatDuration, formatPace } from '@nuhabit/ui';
 import {
   Bike,
   Bluetooth,

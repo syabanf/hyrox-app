@@ -11,8 +11,8 @@ import {
   updateActivity,
   updateAthleteSettings,
   upsertGear,
-} from '@hyrox/application';
-import type { AppError } from '@hyrox/application';
+} from '@nuhabit/application';
+import type { AppError } from '@nuhabit/application';
 import {
   ActivityCommentSchema,
   SaveActivitySchema,
@@ -20,7 +20,7 @@ import {
   UpdateActivitySchema,
   UpdateAthleteSettingsSchema,
   UpsertGearSchema,
-} from '@hyrox/contracts';
+} from '@nuhabit/contracts';
 import type {
   ActivityCardView,
   ActivityDetailView,
@@ -32,8 +32,8 @@ import type {
   SegmentDetailView,
   SegmentListView,
   SocialView,
-} from '@hyrox/contracts';
-import type { Activity, SegmentEffort } from '@hyrox/domain';
+} from '@nuhabit/contracts';
+import type { Activity, SegmentEffort } from '@nuhabit/domain';
 import {
   canViewActivity,
   challengeProgressKm,
@@ -42,7 +42,7 @@ import {
   msOf,
   personalRecords,
   weeklyBuckets,
-} from '@hyrox/domain';
+} from '@nuhabit/domain';
 import { HttpResponse, http, type HttpHandler } from 'msw';
 import type { MockDb } from '../db';
 import type { MockApiState } from './handlers';

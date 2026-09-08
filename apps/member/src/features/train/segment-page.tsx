@@ -1,4 +1,4 @@
-import { Spinner, formatDay, formatDistanceM, formatDuration } from '@hyrox/ui';
+import { Spinner, formatDay, formatDistanceM, formatDuration } from '@nuhabit/ui';
 import { ArrowLeft, Crown } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router';
 import { useSegment, useUnits } from '../../lib/athlete-queries';

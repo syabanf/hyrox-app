@@ -1,7 +1,7 @@
-import { ApiError } from '@hyrox/api-client';
-import type { WorkoutBlock } from '@hyrox/domain';
-import { listSubstitutes } from '@hyrox/domain';
-import { Spinner, formatDuration } from '@hyrox/ui';
+import { ApiError } from '@nuhabit/api-client';
+import type { WorkoutBlock } from '@nuhabit/domain';
+import { listSubstitutes } from '@nuhabit/domain';
+import { Spinner, formatDuration } from '@nuhabit/ui';
 import { ArrowLeft, CirclePlay, Footprints, Play, RefreshCcw } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';

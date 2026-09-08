@@ -1,6 +1,6 @@
 'use client';
 
-import { Spinner, formatDay, formatIdr } from '@hyrox/ui';
+import { Spinner, formatDay, formatIdr } from '@nuhabit/ui';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';

@@ -4,14 +4,14 @@
     {
       "name": "member",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@hyrox/member", "dev"],
+      "runtimeArgs": ["--filter", "@nuhabit/member", "dev"],
       "port": 5173,
       "autoPort": true
     },
     {
       "name": "admin",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@hyrox/admin", "dev"],
+      "runtimeArgs": ["--filter", "@nuhabit/admin", "dev"],
       "port": 3000,
       "autoPort": true
     }

@@ -1,7 +1,7 @@
 'use client';
 
-import type { Exercise } from '@hyrox/domain';
-import { Spinner } from '@hyrox/ui';
+import type { Exercise } from '@nuhabit/domain';
+import { Spinner } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';

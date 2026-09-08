@@ -4,9 +4,9 @@ import type {
   CoachStatementView,
   IncentivePayoutView,
   IncentiveSchemeView,
-} from '@hyrox/contracts';
-import type { CoachStatementLine, IncentiveScheme, PayoutStatus } from '@hyrox/domain';
-import { Spinner, StatusBadge, formatDay, formatDayTime, formatIdr } from '@hyrox/ui';
+} from '@nuhabit/contracts';
+import type { CoachStatementLine, IncentiveScheme, PayoutStatus } from '@nuhabit/domain';
+import { Spinner, StatusBadge, formatDay, formatDayTime, formatIdr } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ban, Banknote, Check, ChevronDown, ChevronRight, Pencil } from 'lucide-react';
 import { useState, type ReactNode } from 'react';

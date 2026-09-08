@@ -1,6 +1,6 @@
 'use client';
 
-import type { Permission } from '@hyrox/domain';
+import type { Permission } from '@nuhabit/domain';
 import {
   BarChart3,
   CalendarDays,

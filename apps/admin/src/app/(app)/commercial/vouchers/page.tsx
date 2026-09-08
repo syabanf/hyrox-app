@@ -1,7 +1,7 @@
 'use client';
 
-import type { Voucher, VoucherStatus } from '@hyrox/domain';
-import { Spinner, StatusBadge, formatDay, formatIdr } from '@hyrox/ui';
+import type { Voucher, VoucherStatus } from '@nuhabit/domain';
+import { Spinner, StatusBadge, formatDay, formatIdr } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';

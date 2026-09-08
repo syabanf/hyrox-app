@@ -1,5 +1,5 @@
-import type { CoachStatementResult, UseCaseDeps } from '@hyrox/application';
-import { balanceOf, buildStatements, expiringCreditsFor } from '@hyrox/application';
+import type { CoachStatementResult, UseCaseDeps } from '@nuhabit/application';
+import { balanceOf, buildStatements, expiringCreditsFor } from '@nuhabit/application';
 import type {
   AccessLogView,
   BookingView,
@@ -14,7 +14,7 @@ import type {
   RosterEntryView,
   SessionView,
   VoucherView,
-} from '@hyrox/contracts';
+} from '@nuhabit/contracts';
 import type {
   AccessLog,
   Booking,
@@ -24,8 +24,8 @@ import type {
   Member,
   Payment,
   Voucher,
-} from '@hyrox/domain';
-import { msOf, periodMonthOf } from '@hyrox/domain';
+} from '@nuhabit/domain';
+import { msOf, periodMonthOf } from '@nuhabit/domain';
 import type { MockDb } from '../db';
 
 export function sessionView(db: MockDb, session: ClassSession, memberId?: string): SessionView {

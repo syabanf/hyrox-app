@@ -1,6 +1,6 @@
 'use client';
 
-import type { AdminRole } from '@hyrox/domain';
+import type { AdminRole } from '@nuhabit/domain';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';

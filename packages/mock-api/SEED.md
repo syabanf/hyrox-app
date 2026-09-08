@@ -9,7 +9,7 @@ demo data itself is inspectable in the repo without running the apps.
 Regenerate it after seed changes with:
 
 ```bash
-pnpm --filter @hyrox/mock-api dump-seed
+pnpm --filter @nuhabit/mock-api dump-seed
 ```
 
 Two things to know when editing the seed:

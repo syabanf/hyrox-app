@@ -1,6 +1,6 @@
 'use client';
 
-import { Spinner, StatusBadge, formatDay } from '@hyrox/ui';
+import { Spinner, StatusBadge, formatDay } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';

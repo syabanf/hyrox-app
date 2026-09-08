@@ -13,12 +13,12 @@ const nextConfig: NextConfig = {
     ];
   },
   transpilePackages: [
-    '@hyrox/domain',
-    '@hyrox/application',
-    '@hyrox/contracts',
-    '@hyrox/api-client',
-    '@hyrox/mock-api',
-    '@hyrox/ui',
+    '@nuhabit/domain',
+    '@nuhabit/application',
+    '@nuhabit/contracts',
+    '@nuhabit/api-client',
+    '@nuhabit/mock-api',
+    '@nuhabit/ui',
   ],
 };
 

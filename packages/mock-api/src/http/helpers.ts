@@ -1,5 +1,5 @@
-import type { AdminUser, Member, Permission } from '@hyrox/domain';
-import { hasPermission } from '@hyrox/domain';
+import type { AdminUser, Member, Permission } from '@nuhabit/domain';
+import { hasPermission } from '@nuhabit/domain';
 import { HttpResponse } from 'msw';
 import type { z } from 'zod';
 import type { MockDb } from '../db';

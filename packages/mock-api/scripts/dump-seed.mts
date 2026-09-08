@@ -5,7 +5,7 @@
  * every browser); this snapshot is a frozen, inspectable export of one run —
  * dates are anchored to the moment it was generated.
  *
- * Regenerate with: pnpm --filter @hyrox/mock-api dump-seed
+ * Regenerate with: pnpm --filter @nuhabit/mock-api dump-seed
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

@@ -1,4 +1,4 @@
-import { ApiError } from '@hyrox/api-client';
+import { ApiError } from '@nuhabit/api-client';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';

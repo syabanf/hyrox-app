@@ -1,5 +1,5 @@
 {
-  "extends": "@hyrox/tsconfig/react.json",
+  "extends": "@nuhabit/tsconfig/react.json",
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {

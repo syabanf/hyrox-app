@@ -8,7 +8,7 @@ RUN pnpm install --frozen-lockfile
 # Baked in at build time by Next. Empty keeps the in-process mock.
 ARG NEXT_PUBLIC_API_BASE_URL=""
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
-RUN pnpm --filter @hyrox/admin build
+RUN pnpm --filter @nuhabit/admin build
 
 FROM node:22-alpine
 ENV NODE_ENV=production

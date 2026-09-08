@@ -1,4 +1,4 @@
-import { Spinner, formatDay } from '@hyrox/ui';
+import { Spinner, formatDay } from '@nuhabit/ui';
 import { ArrowLeft, Trophy } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router';
 import { api } from '../../lib/api';

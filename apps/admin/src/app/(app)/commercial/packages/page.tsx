@@ -1,7 +1,7 @@
 'use client';
 
-import type { ClassType, CreditPackage } from '@hyrox/domain';
-import { Spinner, StatusBadge, formatIdr } from '@hyrox/ui';
+import type { ClassType, CreditPackage } from '@nuhabit/domain';
+import { Spinner, StatusBadge, formatIdr } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';

@@ -1,8 +1,8 @@
 'use client';
 
-import type { RaceEvent, RaceRegion, RaceStatus } from '@hyrox/domain';
-import { RACE_REGIONS, RACE_STATUSES } from '@hyrox/domain';
-import { Spinner, StatusBadge, formatDayTime } from '@hyrox/ui';
+import type { RaceEvent, RaceRegion, RaceStatus } from '@nuhabit/domain';
+import { RACE_REGIONS, RACE_STATUSES } from '@nuhabit/domain';
+import { Spinner, StatusBadge, formatDayTime } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';

@@ -1,5 +1,5 @@
-import type { MemberNotificationType } from '@hyrox/domain';
-import { EmptyState, Spinner, formatDayTime } from '@hyrox/ui';
+import type { MemberNotificationType } from '@nuhabit/domain';
+import { EmptyState, Spinner, formatDayTime } from '@nuhabit/ui';
 import { useMutation } from '@tanstack/react-query';
 import {
   AlertTriangle,

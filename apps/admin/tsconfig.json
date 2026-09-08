@@ -1,5 +1,5 @@
 {
-  "extends": "@hyrox/tsconfig/next.json",
+  "extends": "@nuhabit/tsconfig/next.json",
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {

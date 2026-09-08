@@ -1,4 +1,4 @@
-import { ApiError } from '@hyrox/api-client';
+import { ApiError } from '@nuhabit/api-client';
 import { ArrowRight } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
@@ -43,7 +43,7 @@ function OtpBoxes({ value, onChange }: { value: string; onChange: (next: string)
 export function LoginPage() {
   const navigate = useNavigate();
   const setSession = useAuthStore((s) => s.setSession);
-  const [identifier, setIdentifier] = useState('demo@hyrox.id');
+  const [identifier, setIdentifier] = useState('demo@nuhabit.id');
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [hint, setHint] = useState('');
   const [code, setCode] = useState('');
@@ -181,7 +181,7 @@ export function LoginPage() {
 
         <p className="mt-6 text-center">
           <span className="chip bg-surface-raised text-muted">
-            Demo: demo@hyrox.id · any 6-digit code
+            Demo: demo@nuhabit.id · any 6-digit code
           </span>
         </p>
       </div>

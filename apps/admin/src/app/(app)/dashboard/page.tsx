@@ -1,7 +1,7 @@
 'use client';
 
-import type { DailyPointView } from '@hyrox/contracts';
-import { Spinner, StatusBadge, formatDay, formatDayTime, formatIdr, formatTime } from '@hyrox/ui';
+import type { DailyPointView } from '@nuhabit/contracts';
+import { Spinner, StatusBadge, formatDay, formatDayTime, formatIdr, formatTime } from '@nuhabit/ui';
 import { AlertTriangle, ChevronRight, CreditCard, Hourglass } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';

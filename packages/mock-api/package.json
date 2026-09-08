@@ -1,5 +1,5 @@
 {
-  "name": "@hyrox/mock-api",
+  "name": "@nuhabit/mock-api",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -15,14 +15,14 @@
   },
   "dependencies": {
     "@faker-js/faker": "^9.0.0",
-    "@hyrox/application": "workspace:*",
-    "@hyrox/contracts": "workspace:*",
-    "@hyrox/domain": "workspace:*",
+    "@nuhabit/application": "workspace:*",
+    "@nuhabit/contracts": "workspace:*",
+    "@nuhabit/domain": "workspace:*",
     "msw": "^2.7.0",
     "zod": "^4.0.0"
   },
   "devDependencies": {
-    "@hyrox/tsconfig": "workspace:*",
+    "@nuhabit/tsconfig": "workspace:*",
     "typescript": "^5.8.0",
     "vitest": "^3.0.0"
   }

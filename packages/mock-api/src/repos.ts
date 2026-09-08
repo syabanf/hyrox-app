@@ -1,5 +1,5 @@
-import type { UseCaseDeps } from '@hyrox/application';
-import { DEFAULT_ATHLETE_SETTINGS, msOf } from '@hyrox/domain';
+import type { UseCaseDeps } from '@nuhabit/application';
+import { DEFAULT_ATHLETE_SETTINGS, msOf } from '@nuhabit/domain';
 import type { MockDb } from './db';
 
 /**

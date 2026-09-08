@@ -1,6 +1,6 @@
 'use client';
 
-import type { AdminUser, Permission } from '@hyrox/domain';
+import type { AdminUser, Permission } from '@nuhabit/domain';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -21,7 +21,7 @@ export const useAdminAuth = create<AdminAuthState>()(
       setSession: (token, user, permissions) => set({ token, user, permissions: [...permissions] }),
       clear: () => set({ token: null, user: null, permissions: [] }),
     }),
-    { name: 'hyrox.admin.session' },
+    { name: 'nuhabit.admin.session' },
   ),
 );
 

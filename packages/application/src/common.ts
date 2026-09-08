@@ -1,5 +1,5 @@
-import type { BusinessRules, IsoDate, MemberNotificationType } from '@hyrox/domain';
-import { computeBalance, resolveRules } from '@hyrox/domain';
+import type { BusinessRules, IsoDate, MemberNotificationType } from '@nuhabit/domain';
+import { computeBalance, resolveRules } from '@nuhabit/domain';
 import type { UseCaseDeps } from './ports';
 
 export interface AppError {

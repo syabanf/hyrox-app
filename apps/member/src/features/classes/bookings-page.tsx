@@ -1,4 +1,4 @@
-import { EmptyState, Spinner, StatusBadge, formatDayTime } from '@hyrox/ui';
+import { EmptyState, Spinner, StatusBadge, formatDayTime } from '@nuhabit/ui';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useMyBookings } from '../../lib/queries';

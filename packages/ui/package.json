@@ -1,5 +1,5 @@
 {
-  "name": "@hyrox/ui",
+  "name": "@nuhabit/ui",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -14,7 +14,7 @@
     "react": "^19.0.0"
   },
   "devDependencies": {
-    "@hyrox/tsconfig": "workspace:*",
+    "@nuhabit/tsconfig": "workspace:*",
     "@types/react": "^19.0.0",
     "react": "^19.0.0",
     "typescript": "^5.8.0"

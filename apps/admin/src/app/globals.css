@@ -1,11 +1,11 @@
 @import 'tailwindcss';
-@import '@hyrox/ui/tokens.css';
+@import '@nuhabit/ui/tokens.css';
 @source '../../../packages/ui/src';
 
 /* Admin panel shares the member app's NüHabit design language: White Beige
    surfaces, Deep Forest Green ink, Pale Lime as the signature accent, Outfit
    titles, and dark green "ink" surfaces for the sidebar and hero cards.
-   Surface tokens come from @hyrox/ui. */
+   Surface tokens come from @nuhabit/ui. */
 :root {
   color-scheme: light;
 }

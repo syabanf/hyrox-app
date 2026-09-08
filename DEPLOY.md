@@ -30,8 +30,8 @@ After pulling new commits: `docker compose up -d --build` again.
 ## Without Docker
 
 ```bash
-pnpm --filter @hyrox/member build   # apps/member/dist → serve at /
-pnpm --filter @hyrox/admin build && pnpm --filter @hyrox/admin start
+pnpm --filter @nuhabit/member build   # apps/member/dist → serve at /
+pnpm --filter @nuhabit/admin build && pnpm --filter @nuhabit/admin start
 ```
 
 Reverse proxy: `location /admin { proxy_pass http://127.0.0.1:3000; }` —
@@ -46,4 +46,4 @@ for a domain-root deploy).
   reset in one also resets the other after reload.
 - Seed data ships as `packages/mock-api/seed-snapshot.json` (committed).
   After changing the seed code, regenerate it with
-  `pnpm --filter @hyrox/mock-api dump-seed` and bump `SEED_VERSION`.
+  `pnpm --filter @nuhabit/mock-api dump-seed` and bump `SEED_VERSION`.

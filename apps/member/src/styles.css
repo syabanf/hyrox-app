@@ -1,9 +1,9 @@
 @import 'tailwindcss';
-@import '@hyrox/ui/tokens.css';
+@import '@nuhabit/ui/tokens.css';
 @source '../../../packages/ui/src';
 
 /* Member app: LIGHT mode on White Beige, Deep Forest Green ink, Pale Lime accents -
-   the NüHabit "built for movement" look. Surface tokens come from @hyrox/ui. */
+   the NüHabit "built for movement" look. Surface tokens come from @nuhabit/ui. */
 :root {
   color-scheme: light;
 }

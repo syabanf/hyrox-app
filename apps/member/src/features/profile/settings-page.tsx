@@ -1,4 +1,4 @@
-import { Spinner } from '@hyrox/ui';
+import { Spinner } from '@nuhabit/ui';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { api } from '../../lib/api';

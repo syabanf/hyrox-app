@@ -1,5 +1,5 @@
 {
-  "name": "@hyrox/application",
+  "name": "@nuhabit/application",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -11,10 +11,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@hyrox/domain": "workspace:*"
+    "@nuhabit/domain": "workspace:*"
   },
   "devDependencies": {
-    "@hyrox/tsconfig": "workspace:*",
+    "@nuhabit/tsconfig": "workspace:*",
     "typescript": "^5.8.0",
     "vitest": "^3.0.0"
   }

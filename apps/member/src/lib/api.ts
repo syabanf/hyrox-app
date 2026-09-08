@@ -1,5 +1,5 @@
-import { createApiClient } from '@hyrox/api-client';
-import { inProcessTransport } from '@hyrox/mock-api/in-process';
+import { createApiClient } from '@nuhabit/api-client';
+import { inProcessTransport } from '@nuhabit/mock-api/in-process';
 import { useAuthStore } from './auth';
 
 /**
@@ -25,4 +25,4 @@ export const api = createApiClient({
   ...(usingRealBackend ? { baseUrl } : { transport: inProcessTransport }),
 });
 
-export { ApiError } from '@hyrox/api-client';
+export { ApiError } from '@nuhabit/api-client';

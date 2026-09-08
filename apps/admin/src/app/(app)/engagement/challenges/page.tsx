@@ -1,7 +1,7 @@
 'use client';
 
-import type { Challenge } from '@hyrox/domain';
-import { Spinner, formatDay } from '@hyrox/ui';
+import type { Challenge } from '@nuhabit/domain';
+import { Spinner, formatDay } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';

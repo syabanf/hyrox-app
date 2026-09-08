@@ -1,4 +1,4 @@
 {
-  "extends": "@hyrox/tsconfig/react.json",
+  "extends": "@nuhabit/tsconfig/react.json",
   "include": ["src"]
 }

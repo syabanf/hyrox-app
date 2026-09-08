@@ -7,8 +7,8 @@ import {
   replaceWorkoutBlock,
   startWorkoutSession,
   updateUserRace,
-} from '@hyrox/application';
-import type { AppError } from '@hyrox/application';
+} from '@nuhabit/application';
+import type { AppError } from '@nuhabit/application';
 import {
   BlockResultSchema,
   FinishSessionSchema,
@@ -16,8 +16,8 @@ import {
   RegisterRaceSchema,
   ReplaceBlockSchema,
   UpdateUserRaceSchema,
-} from '@hyrox/contracts';
-import type { MyRaceView, RaceEventView, WorkoutHistoryItemView, WorkoutSessionView } from '@hyrox/contracts';
+} from '@nuhabit/contracts';
+import type { MyRaceView, RaceEventView, WorkoutHistoryItemView, WorkoutSessionView } from '@nuhabit/contracts';
 import {
   analyzeRace,
   msOf,
@@ -25,7 +25,7 @@ import {
   raceReadinessScore,
   sessionActiveSec,
   sessionCompletionPct,
-} from '@hyrox/domain';
+} from '@nuhabit/domain';
 import { HttpResponse, http, type HttpHandler } from 'msw';
 import type { MockApiState } from './handlers';
 import { jsonError, parseBody, requireMember } from './helpers';

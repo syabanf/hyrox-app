@@ -4,7 +4,7 @@ import type {
   Result,
   WorkoutSession,
   WorkoutType,
-} from '@hyrox/domain';
+} from '@nuhabit/domain';
 import {
   WORKOUT_SESSION_TRANSITIONS,
   canTransition,
@@ -14,7 +14,7 @@ import {
   replaceBlockExercise,
   sessionActiveSec,
   sessionCompletionPct,
-} from '@hyrox/domain';
+} from '@nuhabit/domain';
 import type { AppError } from '../common';
 import { appError } from '../common';
 import type { UseCaseDeps } from '../ports';

@@ -14,7 +14,7 @@ import type {
   RaceEvent,
   TopUpLot,
   TrackPoint,
-} from '@hyrox/domain';
+} from '@nuhabit/domain';
 import {
   computeActivityStats,
   computeCoachStatement,
@@ -23,7 +23,7 @@ import {
   monthPeriod,
   periodMonthOf,
   resolveScheme,
-} from '@hyrox/domain';
+} from '@nuhabit/domain';
 import type { MockDb } from './db';
 import { createEmptyDb } from './db';
 
@@ -324,12 +324,12 @@ export function createSeedDb(nowIso: string): MockDb {
 
   // ── Admin users (one per role) ───────────────────────────────────────────
   db.adminUsers = [
-    { id: 'adm_super', name: 'Alya Santoso', email: 'alya@hyrox.id', role: 'SUPER_ADMIN', branchId: null },
-    { id: 'adm_hq', name: 'Raka Wibowo', email: 'raka@hyrox.id', role: 'HQ_ADMIN', branchId: null },
-    { id: 'adm_bm', name: 'Bima Prasetyo', email: 'bima@hyrox.id', role: 'BRANCH_MANAGER', branchId: 'brn_senopati' },
-    { id: 'adm_fd', name: 'Nadia Putri', email: 'nadia@hyrox.id', role: 'FRONT_DESK', branchId: 'brn_senopati' },
-    { id: 'adm_coach', name: 'Kevin Hartono', email: 'kevin@hyrox.id', role: 'COACH', branchId: 'brn_senopati' },
-    { id: 'adm_fin', name: 'Sinta Halim', email: 'sinta@hyrox.id', role: 'FINANCE', branchId: null },
+    { id: 'adm_super', name: 'Alya Santoso', email: 'alya@nuhabit.id', role: 'SUPER_ADMIN', branchId: null },
+    { id: 'adm_hq', name: 'Raka Wibowo', email: 'raka@nuhabit.id', role: 'HQ_ADMIN', branchId: null },
+    { id: 'adm_bm', name: 'Bima Prasetyo', email: 'bima@nuhabit.id', role: 'BRANCH_MANAGER', branchId: 'brn_senopati' },
+    { id: 'adm_fd', name: 'Nadia Putri', email: 'nadia@nuhabit.id', role: 'FRONT_DESK', branchId: 'brn_senopati' },
+    { id: 'adm_coach', name: 'Kevin Hartono', email: 'kevin@nuhabit.id', role: 'COACH', branchId: 'brn_senopati' },
+    { id: 'adm_fin', name: 'Sinta Halim', email: 'sinta@nuhabit.id', role: 'FINANCE', branchId: null },
   ];
 
   // ── Members ──────────────────────────────────────────────────────────────
@@ -367,7 +367,7 @@ export function createSeedDb(nowIso: string): MockDb {
   const demo = mkMember(
     'mem_demo',
     'Fahmi Syaban',
-    'demo@hyrox.id',
+    'demo@nuhabit.id',
     '+628123456789',
     'ACTIVE',
     70,

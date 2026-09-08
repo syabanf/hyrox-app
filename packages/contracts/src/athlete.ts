@@ -10,7 +10,7 @@ import type {
   Segment,
   TrackPoint,
   WeekBucket,
-} from '@hyrox/domain';
+} from '@nuhabit/domain';
 import { z } from 'zod';
 
 // ── Requests ────────────────────────────────────────────────────────────────

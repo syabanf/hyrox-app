@@ -39,7 +39,7 @@ import type {
   Voucher,
   VoucherRedemption,
   WorkoutSession,
-} from '@hyrox/domain';
+} from '@nuhabit/domain';
 
 /**
  * Repository ports. The mock infrastructure implements them over an in-memory

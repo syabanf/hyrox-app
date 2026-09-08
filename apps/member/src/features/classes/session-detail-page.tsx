@@ -1,5 +1,5 @@
-import { ApiError } from '@hyrox/api-client';
-import { Spinner, formatDayTime } from '@hyrox/ui';
+import { ApiError } from '@nuhabit/api-client';
+import { Spinner, formatDayTime } from '@nuhabit/ui';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';

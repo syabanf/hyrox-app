@@ -1,7 +1,7 @@
 'use client';
 
-import type { Coach } from '@hyrox/domain';
-import { Spinner, StatusBadge } from '@hyrox/ui';
+import type { Coach } from '@nuhabit/domain';
+import { Spinner, StatusBadge } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';

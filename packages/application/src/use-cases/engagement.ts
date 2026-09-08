@@ -1,5 +1,5 @@
-import type { Campaign, Member, MemberSegment, Result, SegmentFilter } from '@hyrox/domain';
-import { CAMPAIGN_TRANSITIONS, canTransition, err, msOf, ok } from '@hyrox/domain';
+import type { Campaign, Member, MemberSegment, Result, SegmentFilter } from '@nuhabit/domain';
+import { CAMPAIGN_TRANSITIONS, canTransition, err, msOf, ok } from '@nuhabit/domain';
 import type { AppError } from '../common';
 import { appError, balanceOf, notify } from '../common';
 import type { UseCaseDeps } from '../ports';

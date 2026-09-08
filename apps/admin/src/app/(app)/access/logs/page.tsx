@@ -1,6 +1,6 @@
 'use client';
 
-import { Spinner, StatusBadge, formatDayTime, gateReasonLabel } from '@hyrox/ui';
+import { Spinner, StatusBadge, formatDayTime, gateReasonLabel } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';

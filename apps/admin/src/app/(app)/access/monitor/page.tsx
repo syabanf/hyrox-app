@@ -1,7 +1,7 @@
 'use client';
 
-import type { ScanResultView } from '@hyrox/contracts';
-import { Spinner, StatusBadge, formatTime, gateEntryKindLabel, gateReasonLabel } from '@hyrox/ui';
+import type { ScanResultView } from '@nuhabit/contracts';
+import { Spinner, StatusBadge, formatTime, gateEntryKindLabel, gateReasonLabel } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';

@@ -1,4 +1,4 @@
-import { Spinner, StatusBadge, formatDay } from '@hyrox/ui';
+import { Spinner, StatusBadge, formatDay } from '@nuhabit/ui';
 import { BookMarked, Camera, ChevronRight, Footprints, HeartPulse, IdCard, LogOut, Settings, Wallet } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';

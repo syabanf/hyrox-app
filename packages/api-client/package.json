@@ -1,5 +1,5 @@
 {
-  "name": "@hyrox/api-client",
+  "name": "@nuhabit/api-client",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,11 +10,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@hyrox/contracts": "workspace:*",
-    "@hyrox/domain": "workspace:*"
+    "@nuhabit/contracts": "workspace:*",
+    "@nuhabit/domain": "workspace:*"
   },
   "devDependencies": {
-    "@hyrox/tsconfig": "workspace:*",
+    "@nuhabit/tsconfig": "workspace:*",
     "typescript": "^5.8.0"
   }
 }

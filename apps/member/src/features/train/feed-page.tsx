@@ -1,4 +1,4 @@
-import type { ActivityCardView } from '@hyrox/contracts';
+import type { ActivityCardView } from '@nuhabit/contracts';
 import {
   EmptyState,
   Spinner,
@@ -7,7 +7,7 @@ import {
   formatDuration,
   formatPace,
   formatSpeedKmh,
-} from '@hyrox/ui';
+} from '@nuhabit/ui';
 import { MessageCircle, ThumbsUp } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';

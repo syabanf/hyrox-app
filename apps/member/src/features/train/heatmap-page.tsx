@@ -1,5 +1,5 @@
-import type { ActivityCardView } from '@hyrox/contracts';
-import { Spinner, formatDayTime, formatDistanceM, formatDuration } from '@hyrox/ui';
+import type { ActivityCardView } from '@nuhabit/contracts';
+import { Spinner, formatDayTime, formatDistanceM, formatDuration } from '@nuhabit/ui';
 import { ArrowLeft, Bike, Footprints, PersonStanding } from 'lucide-react';
 import { Link, useNavigate } from 'react-router';
 import { GeoMap } from '../../components/geo-map';

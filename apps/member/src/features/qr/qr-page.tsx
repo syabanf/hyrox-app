@@ -1,5 +1,5 @@
-import type { BookingView } from '@hyrox/contracts';
-import { Spinner, formatDayTime, formatTime } from '@hyrox/ui';
+import type { BookingView } from '@nuhabit/contracts';
+import { Spinner, formatDayTime, formatTime } from '@nuhabit/ui';
 import { useQuery } from '@tanstack/react-query';
 import { QRCodeSVG } from 'qrcode.react';
 import { useEffect, useState } from 'react';

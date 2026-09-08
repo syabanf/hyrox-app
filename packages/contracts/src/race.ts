@@ -1,4 +1,4 @@
-import type { RaceAnalysis, RaceEvent, UserRace } from '@hyrox/domain';
+import type { RaceAnalysis, RaceEvent, UserRace } from '@nuhabit/domain';
 import { z } from 'zod';
 
 // ── Requests ────────────────────────────────────────────────────────────────

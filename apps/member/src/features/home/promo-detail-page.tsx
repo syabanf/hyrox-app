@@ -1,4 +1,4 @@
-import { Spinner, formatDay } from '@hyrox/ui';
+import { Spinner, formatDay } from '@nuhabit/ui';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Copy } from 'lucide-react';
 import { useState } from 'react';

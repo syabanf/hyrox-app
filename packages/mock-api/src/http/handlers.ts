@@ -23,8 +23,8 @@ import {
   updateProfile,
   updateRules,
   walletSnapshot,
-} from '@hyrox/application';
-import type { UseCaseDeps, AppError } from '@hyrox/application';
+} from '@nuhabit/application';
+import type { UseCaseDeps, AppError } from '@nuhabit/application';
 import {
   AdjustCreditsSchema,
   AdminBookSchema,
@@ -61,9 +61,9 @@ import {
   UpsertVoucherSchema,
   ValidateVoucherSchema,
   VoucherStatusActionSchema,
-} from '@hyrox/contracts';
-import type { QrView, ScanResultView } from '@hyrox/contracts';
-import type { Payment, PayoutAction, SessionStatus, VoucherStatus } from '@hyrox/domain';
+} from '@nuhabit/contracts';
+import type { QrView, ScanResultView } from '@nuhabit/contracts';
+import type { Payment, PayoutAction, SessionStatus, VoucherStatus } from '@nuhabit/domain';
 import {
   PAYOUT_ACTIONS,
   ROLE_PERMISSIONS,
@@ -73,7 +73,7 @@ import {
   challengeProgressKm,
   msOf,
   qrSecondsRemaining,
-} from '@hyrox/domain';
+} from '@nuhabit/domain';
 import { HttpResponse, http, type HttpHandler } from 'msw';
 import {
   buildStatements,
@@ -85,7 +85,7 @@ import {
   segmentMembers,
   transitionPayout,
   upsertScheme,
-} from '@hyrox/application';
+} from '@nuhabit/application';
 import type { MockDb } from '../db';
 import { createAthleteHandlers } from './athlete';
 import { createWorkoutRaceHandlers } from './workout-race';

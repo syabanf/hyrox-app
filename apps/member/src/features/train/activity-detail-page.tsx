@@ -1,5 +1,5 @@
-import { ApiError } from '@hyrox/api-client';
-import type { ActivityVisibility } from '@hyrox/domain';
+import { ApiError } from '@nuhabit/api-client';
+import type { ActivityVisibility } from '@nuhabit/domain';
 import {
   Spinner,
   formatDayTime,
@@ -7,7 +7,7 @@ import {
   formatDuration,
   formatPace,
   formatSpeedKmh,
-} from '@hyrox/ui';
+} from '@nuhabit/ui';
 import { ArrowLeft, Award, MessageCircle, MoreHorizontal, ThumbsUp, Users } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';

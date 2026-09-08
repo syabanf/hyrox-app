@@ -1,4 +1,4 @@
-import { Spinner, formatDay, formatDayTime, formatDuration, formatTime } from '@hyrox/ui';
+import { Spinner, formatDay, formatDayTime, formatDuration, formatTime } from '@nuhabit/ui';
 import { useQuery } from '@tanstack/react-query';
 import { BookMarked, CalendarDays, CirclePlay, Dumbbell, Flag, QrCode, Trophy } from 'lucide-react';
 import { useState, type ReactNode } from 'react';

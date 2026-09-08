@@ -1,5 +1,5 @@
-import type { Division, Result, UserRace, UserRaceStatus } from '@hyrox/domain';
-import { USER_RACE_TRANSITIONS, canTransition, err, ok } from '@hyrox/domain';
+import type { Division, Result, UserRace, UserRaceStatus } from '@nuhabit/domain';
+import { USER_RACE_TRANSITIONS, canTransition, err, ok } from '@nuhabit/domain';
 import type { AppError } from '../common';
 import { appError } from '../common';
 import type { UseCaseDeps } from '../ports';

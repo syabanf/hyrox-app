@@ -1,4 +1,4 @@
-import type { TrackPoint } from '@hyrox/domain';
+import type { TrackPoint } from '@nuhabit/domain';
 import Feature from 'ol/Feature';
 import Map from 'ol/Map';
 import View from 'ol/View';

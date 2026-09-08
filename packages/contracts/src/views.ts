@@ -26,7 +26,7 @@ import type {
   Permission,
   TopUpLot,
   Voucher,
-} from '@hyrox/domain';
+} from '@nuhabit/domain';
 
 /** Response envelope for errors. */
 export interface ApiErrorBody {

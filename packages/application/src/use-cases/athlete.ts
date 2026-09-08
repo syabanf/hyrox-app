@@ -9,8 +9,8 @@ import type {
   Route,
   SegmentEffort,
   TrackPoint,
-} from '@hyrox/domain';
-import { computeActivityStats, err, matchSegments, msOf, ok } from '@hyrox/domain';
+} from '@nuhabit/domain';
+import { computeActivityStats, err, matchSegments, msOf, ok } from '@nuhabit/domain';
 import type { AppError } from '../common';
 import { appError, notify } from '../common';
 import type { UseCaseDeps } from '../ports';

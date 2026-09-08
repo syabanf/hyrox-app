@@ -7,7 +7,7 @@ import type {
   PayoutAction,
   Result,
   StatementPeriod,
-} from '@hyrox/domain';
+} from '@nuhabit/domain';
 import {
   PAYOUT_ACTION_TARGET,
   PAYOUT_TRANSITIONS,
@@ -16,8 +16,8 @@ import {
   monthPeriod,
   periodMonthOf,
   resolveScheme,
-} from '@hyrox/domain';
-import { err, ok } from '@hyrox/domain';
+} from '@nuhabit/domain';
+import { err, ok } from '@nuhabit/domain';
 import type { Actor, AppError } from '../common';
 import { appError, recordAudit } from '../common';
 import type { UseCaseDeps } from '../ports';

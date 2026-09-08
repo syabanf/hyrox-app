@@ -1,6 +1,6 @@
-import { ApiError } from '@hyrox/api-client';
-import type { PaymentChannel } from '@hyrox/domain';
-import { Spinner, formatIdr } from '@hyrox/ui';
+import { ApiError } from '@nuhabit/api-client';
+import type { PaymentChannel } from '@nuhabit/domain';
+import { Spinner, formatIdr } from '@nuhabit/ui';
 import { ArrowLeft, Check } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';

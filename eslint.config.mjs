@@ -42,7 +42,7 @@ export default tseslint.config(
     rules: {
       'no-restricted-imports': [
         'error',
-        { patterns: [{ group: ['@hyrox/*', 'zod', 'msw', 'react*'], message: 'domain depends on nothing.' }] },
+        { patterns: [{ group: ['@nuhabit/*', 'zod', 'msw', 'react*'], message: 'domain depends on nothing.' }] },
       ],
     },
   },
@@ -54,8 +54,8 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['@hyrox/*', '!@hyrox/domain'],
-              message: 'application may only import @hyrox/domain.',
+              group: ['@nuhabit/*', '!@nuhabit/domain'],
+              message: 'application may only import @nuhabit/domain.',
             },
           ],
         },
@@ -70,8 +70,8 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['@hyrox/*', '!@hyrox/contracts', '!@hyrox/domain'],
-              message: 'api-client may only import @hyrox/contracts (and domain types).',
+              group: ['@nuhabit/*', '!@nuhabit/contracts', '!@nuhabit/domain'],
+              message: 'api-client may only import @nuhabit/contracts (and domain types).',
             },
           ],
         },
@@ -86,7 +86,7 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['@hyrox/application', '@hyrox/application/*'],
+              group: ['@nuhabit/application', '@nuhabit/application/*'],
               message: 'apps must go through the API client, not use cases directly.',
             },
           ],

@@ -1,5 +1,5 @@
 {
-  "name": "@hyrox/contracts",
+  "name": "@nuhabit/contracts",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,11 +10,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@hyrox/domain": "workspace:*",
+    "@nuhabit/domain": "workspace:*",
     "zod": "^4.0.0"
   },
   "devDependencies": {
-    "@hyrox/tsconfig": "workspace:*",
+    "@nuhabit/tsconfig": "workspace:*",
     "typescript": "^5.8.0"
   }
 }

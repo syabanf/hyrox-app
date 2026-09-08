@@ -252,7 +252,7 @@ describe('Admin deepening', () => {
 
     const user = await call('POST', '/api/admin/users', {
       token,
-      body: { name: 'New Staff', email: 'staff@hyrox.id', role: 'FRONT_DESK', branchId: 'brn_pik' },
+      body: { name: 'New Staff', email: 'staff@nuhabit.id', role: 'FRONT_DESK', branchId: 'brn_pik' },
     });
     expect(user.status).toBe(201);
 

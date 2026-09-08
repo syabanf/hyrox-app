@@ -1,5 +1,5 @@
 {
-  "name": "@hyrox/backend",
+  "name": "@nuhabit/backend",
   "version": "0.1.0",
   "private": true,
   "description": "Go + PostgreSQL API for the NuHabit studio operating system",

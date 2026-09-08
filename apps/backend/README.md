@@ -28,7 +28,7 @@ make db                          # just PostgreSQL
 make migrate && make seed && make run
 ```
 
-Demo credentials: any member email from the seed (`demo@hyrox.id`) — the
+Demo credentials: any member email from the seed (`demo@nuhabit.id`) — the
 sign-in code comes back in the response while `AUTH_DEMO_OTP=true`. Staff sign
 in by id: `adm_super`, `adm_hq`, `adm_branch`, `adm_desk`, `adm_coach`,
 `adm_finance`.
@@ -40,7 +40,7 @@ API=http://localhost:9080
 
 # 1. Sign in (demo mode returns the code instead of sending an SMS)
 CH=$(curl -s -X POST $API/api/auth/otp/request -H 'content-type: application/json' \
-      -d '{"identifier":"demo@hyrox.id"}')
+      -d '{"identifier":"demo@nuhabit.id"}')
 TOKEN=$(curl -s -X POST $API/api/auth/otp/verify -H 'content-type: application/json' \
       -d "{\"challengeId\":\"$(jq -r .challengeId <<<"$CH")\",\"code\":\"$(jq -r .code <<<"$CH")\"}" | jq -r .token)
 

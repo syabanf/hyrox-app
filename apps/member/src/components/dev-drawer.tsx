@@ -1,5 +1,5 @@
-import type { ScanResultView } from '@hyrox/contracts';
-import { gateEntryKindLabel, gateReasonLabel } from '@hyrox/ui';
+import type { ScanResultView } from '@nuhabit/contracts';
+import { gateEntryKindLabel, gateReasonLabel } from '@nuhabit/ui';
 import { FlaskConical, X } from 'lucide-react';
 import { useState } from 'react';
 import { api } from '../lib/api';

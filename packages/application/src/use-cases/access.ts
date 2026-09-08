@@ -6,8 +6,8 @@ import type {
   Member,
   QrToken,
   Result,
-} from '@hyrox/domain';
-import { checkQrToken, err, evaluateGateScan, issueQrToken, msOf, ok } from '@hyrox/domain';
+} from '@nuhabit/domain';
+import { checkQrToken, err, evaluateGateScan, issueQrToken, msOf, ok } from '@nuhabit/domain';
 import type { AppError } from '../common';
 import { appError, balanceOf, maybeNotifyLowBalance, notify, rulesFor } from '../common';
 import type { UseCaseDeps } from '../ports';

@@ -1,5 +1,5 @@
 {
-  "extends": "@hyrox/tsconfig/base.json",
+  "extends": "@nuhabit/tsconfig/base.json",
   "compilerOptions": {
     "lib": ["ES2022", "DOM"]
   },

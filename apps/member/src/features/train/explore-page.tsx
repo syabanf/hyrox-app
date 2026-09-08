@@ -1,4 +1,4 @@
-import { Spinner, formatDay, formatDistanceM, formatDuration } from '@hyrox/ui';
+import { Spinner, formatDay, formatDistanceM, formatDuration } from '@nuhabit/ui';
 import { Check, Play, Trash2, Trophy, Users } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';

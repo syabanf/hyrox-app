@@ -1,7 +1,7 @@
 'use client';
 
-import type { MemberStatus } from '@hyrox/domain';
-import { Spinner, StatusBadge, formatDay, formatDayTime, formatIdr, gateReasonLabel } from '@hyrox/ui';
+import type { MemberStatus } from '@nuhabit/domain';
+import { Spinner, StatusBadge, formatDay, formatDayTime, formatIdr, gateReasonLabel } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';

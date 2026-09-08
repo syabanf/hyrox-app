@@ -1,6 +1,6 @@
 'use client';
 
-import { Spinner, formatTime } from '@hyrox/ui';
+import { Spinner, formatTime } from '@nuhabit/ui';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';

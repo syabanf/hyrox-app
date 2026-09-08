@@ -1,4 +1,4 @@
-import { Spinner, StatusBadge, formatDayTime, formatDuration } from '@hyrox/ui';
+import { Spinner, StatusBadge, formatDayTime, formatDuration } from '@nuhabit/ui';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, ExternalLink, MapPin } from 'lucide-react';
 import { useState } from 'react';

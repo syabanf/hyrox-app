@@ -5,7 +5,7 @@ import type {
   Result,
   TopUpLot,
   Voucher,
-} from '@hyrox/domain';
+} from '@nuhabit/domain';
 import {
   PAYMENT_TRANSITIONS,
   buildReversalEntry,
@@ -16,7 +16,7 @@ import {
   transition,
   validateVoucher,
   addDaysIso,
-} from '@hyrox/domain';
+} from '@nuhabit/domain';
 import type { Actor, AppError } from '../common';
 import { appError, balanceOf, notify, recordAudit } from '../common';
 import type { UseCaseDeps } from '../ports';

@@ -1,4 +1,4 @@
-import { EmptyState, Spinner, StatusBadge, formatDayTime, gateReasonLabel } from '@hyrox/ui';
+import { EmptyState, Spinner, StatusBadge, formatDayTime, gateReasonLabel } from '@nuhabit/ui';
 import { useMyVisits } from '../../lib/queries';
 
 export function VisitsPage() {

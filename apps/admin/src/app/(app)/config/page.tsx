@@ -1,8 +1,8 @@
 'use client';
 
-import type { AdminRole, AdminUser, Branch, BusinessRules } from '@hyrox/domain';
-import { ADMIN_ROLES, PERMISSIONS, ROLE_PERMISSIONS } from '@hyrox/domain';
-import { Spinner, StatusBadge, formatDayTime } from '@hyrox/ui';
+import type { AdminRole, AdminUser, Branch, BusinessRules } from '@nuhabit/domain';
+import { ADMIN_ROLES, PERMISSIONS, ROLE_PERMISSIONS } from '@nuhabit/domain';
+import { Spinner, StatusBadge, formatDayTime } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../lib/api';

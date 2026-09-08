@@ -39,8 +39,8 @@ import type {
   Voucher,
   VoucherRedemption,
   WorkoutSession,
-} from '@hyrox/domain';
-import { DEFAULT_BUSINESS_RULES } from '@hyrox/domain';
+} from '@nuhabit/domain';
+import { DEFAULT_BUSINESS_RULES } from '@nuhabit/domain';
 
 /** Bump to invalidate persisted localStorage snapshots after seed/schema changes. */
 export const SEED_VERSION = 11;
@@ -102,7 +102,7 @@ export function createEmptyDb(now: string): MockDb {
   return {
     seedVersion: SEED_VERSION,
     seededAt: now,
-    organization: { id: 'org_hyrox', name: 'HYROX Studio Jakarta' },
+    organization: { id: 'org_nuhabit', name: 'NuHabit Studio Jakarta' },
     branches: [],
     gates: [],
     coaches: [],

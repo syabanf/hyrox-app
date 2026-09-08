@@ -1,4 +1,4 @@
-import { Spinner, formatDuration } from '@hyrox/ui';
+import { Spinner, formatDuration } from '@nuhabit/ui';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, UserCheck, UserPlus } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router';

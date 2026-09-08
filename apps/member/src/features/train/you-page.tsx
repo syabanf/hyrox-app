@@ -1,10 +1,10 @@
-import { ApiError } from '@hyrox/api-client';
+import { ApiError } from '@nuhabit/api-client';
 import {
   Spinner,
   formatDistanceM,
   formatDuration,
   formatPace,
-} from '@hyrox/ui';
+} from '@nuhabit/ui';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';

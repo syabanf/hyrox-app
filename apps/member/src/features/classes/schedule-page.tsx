@@ -1,4 +1,4 @@
-import { Spinner, formatTime } from '@hyrox/ui';
+import { Spinner, formatTime } from '@nuhabit/ui';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { useBranches, useSessions } from '../../lib/queries';

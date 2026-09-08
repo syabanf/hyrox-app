@@ -1,7 +1,7 @@
 'use client';
 
-import type { Campaign, MemberSegment, SegmentFilter } from '@hyrox/domain';
-import { Spinner, StatusBadge, formatDayTime } from '@hyrox/ui';
+import type { Campaign, MemberSegment, SegmentFilter } from '@nuhabit/domain';
+import { Spinner, StatusBadge, formatDayTime } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../lib/api';

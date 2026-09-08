@@ -1,4 +1,4 @@
-import { ApiError } from '@hyrox/api-client';
+import { ApiError } from '@nuhabit/api-client';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { api } from '../../lib/api';

@@ -330,7 +330,7 @@ describe('seed integrity', () => {
 
   it('demo member exists with a coherent ledger', async () => {
     const otp = await call('POST', '/api/auth/otp/request', {
-      body: { identifier: 'demo@hyrox.id' },
+      body: { identifier: 'demo@nuhabit.id' },
     });
     expect(otp.data.memberExists).toBe(true);
     const verify = await call('POST', '/api/auth/otp/verify', {

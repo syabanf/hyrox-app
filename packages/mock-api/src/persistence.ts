@@ -1,7 +1,7 @@
 import type { MockDb } from './db';
 import { SEED_VERSION } from './db';
 
-const storageKey = () => `hyrox.mockdb.v${SEED_VERSION}`;
+const storageKey = () => `nuhabit.mockdb.v${SEED_VERSION}`;
 
 const hasStorage = (): boolean => {
   try {

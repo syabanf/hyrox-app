@@ -71,6 +71,11 @@ func (h *Handler) Mount(r *httpx.Router) {
 	r.Get("/api/admin/purchasing/returns/{id}", h.getReturn, view)
 	r.Post("/api/admin/purchasing/returns/{id}/lines", h.addReturnLine, receive)
 	r.Post("/api/admin/purchasing/returns/{id}/post", h.postReturn, receive)
+
+	// What buying cost, and how suppliers actually behaved.
+	r.Get("/api/admin/purchasing/reports/orders", h.reportOrders, view)
+	r.Get("/api/admin/purchasing/reports/suppliers", h.reportSuppliers, view)
+	r.Get("/api/admin/purchasing/reports/price-history", h.reportPriceHistory, view)
 }
 
 // actorFrom carries the role as well as the identity: the approval chain is

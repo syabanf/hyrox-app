@@ -3,6 +3,7 @@ package inventory
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/syabanf/nuhabit-backend/internal/domain"
 	"github.com/syabanf/nuhabit-backend/internal/platform/httpx"
@@ -153,4 +154,53 @@ func parseOptionalDate(raw *string) *domain.Date {
 		return nil
 	}
 	return &parsed
+}
+
+// ── Reports ──────────────────────────────────────────────────────────────────
+
+func (h *Handler) reportValuation(w http.ResponseWriter, r *http.Request) {
+	report, err := h.service.Valuation(r.Context(), httpx.Query(r, "branchId"))
+	if err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	httpx.OK(w, report)
+}
+
+func (h *Handler) reportStockCard(w http.ResponseWriter, r *http.Request) {
+	itemID := httpx.Query(r, "itemId")
+	if itemID == "" {
+		httpx.Fail(w, r, httpx.Invalid("A stock card is about one item."))
+		return
+	}
+
+	// Ninety days by default: long enough to explain a discrepancy somebody
+	// has just noticed, short enough not to scan a year of a busy item.
+	now := h.service.clock.Now().In(h.service.studio)
+	to := now.AddDate(0, 0, 1)
+	from := to.AddDate(0, 0, -91)
+
+	if raw := httpx.Query(r, "from"); raw != "" {
+		parsed, err := time.ParseInLocation("2006-01-02", raw, h.service.studio)
+		if err != nil {
+			httpx.Fail(w, r, httpx.Invalid("from must be a date as YYYY-MM-DD."))
+			return
+		}
+		from = parsed
+	}
+	if raw := httpx.Query(r, "to"); raw != "" {
+		parsed, err := time.ParseInLocation("2006-01-02", raw, h.service.studio)
+		if err != nil {
+			httpx.Fail(w, r, httpx.Invalid("to must be a date as YYYY-MM-DD."))
+			return
+		}
+		to = parsed.AddDate(0, 0, 1)
+	}
+
+	entries, err := h.service.StockCard(r.Context(), itemID, httpx.Query(r, "branchId"), from, to)
+	if err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	httpx.OK(w, entries)
 }

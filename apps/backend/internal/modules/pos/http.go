@@ -56,6 +56,15 @@ func (h *Handler) Mount(r *httpx.Router) {
 	// Unwinding a paid sale is the one action that makes money disappear, so
 	// it needs a manager rather than whoever is at the till.
 	r.Post("/api/admin/pos/orders/{id}/void", h.void, void)
+
+	// What the counter did. Reading a report is a wider grant than selling —
+	// a manager who never touches a till still needs the numbers.
+	r.Get("/api/admin/pos/reports/transactions", h.reportTransactions, view)
+	r.Get("/api/admin/pos/reports/product-sales", h.reportProductSales, view)
+	r.Get("/api/admin/pos/reports/revenue-composition", h.reportRevenue, view)
+	r.Get("/api/admin/pos/reports/rush-hour", h.reportRushHour, view)
+	r.Get("/api/admin/pos/reports/voids", h.reportVoids, view)
+	r.Get("/api/admin/pos/reports/closing/{id}", h.reportClosing, view)
 }
 
 func actorFrom(r *http.Request) Actor {

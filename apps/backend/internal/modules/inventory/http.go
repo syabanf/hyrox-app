@@ -41,6 +41,10 @@ func (h *Handler) Mount(r *httpx.Router) {
 	// Units and packs: the conversion between what arrives on a pallet and
 	// what leaves in a hand.
 	// Dated stock: what is on the shelf, and how long it has left.
+	// What the shelf is worth, and how every quantity got there.
+	r.Get("/api/admin/inventory/reports/valuation", h.reportValuation, view)
+	r.Get("/api/admin/inventory/reports/stock-card", h.reportStockCard, view)
+
 	r.Get("/api/admin/inventory/batches", h.listBatches, view)
 	r.Get("/api/admin/inventory/expiry", h.expiryReport, view)
 	// Writing off expired goods is a stock adjustment, so it takes the same

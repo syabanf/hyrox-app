@@ -54,6 +54,28 @@ import type {
   UpsertVoucherInput,
 } from '@nuhabit/contracts';
 import type {
+  AssignShiftInput,
+  AttendanceView,
+  ClockInput,
+  EmployeeDetailView,
+  EmployeeView,
+  HrOverviewView,
+  HrSelfView,
+  LeaveView,
+  MarkAttendanceInput,
+  OvertimeView,
+  RequestLeaveInput,
+  RequestOvertimeInput,
+  ScheduleRowView,
+  SetLeaveAllowanceInput,
+  StaffRosterEntryView,
+  UpsertDepartmentInput,
+  UpsertEmployeeInput,
+  UpsertHolidayInput,
+  UpsertPositionInput,
+  UpsertShiftInput,
+} from '@nuhabit/contracts';
+import type {
   ActivityCardView,
   ActivityCommentView,
   ActivityDetailView,
@@ -89,6 +111,7 @@ import type {
 import type {
   AdminUser,
   AthleteSettings,
+  Attendance,
   AuditEvent,
   Booking,
   Branch,
@@ -105,8 +128,14 @@ import type {
   GeneratedWorkout,
   Member,
   MemberNotification,
+  Department,
+  EmploymentStatus,
+  Holiday,
+  LeaveBalance,
   Payment,
+  Position,
   RaceEvent,
+  Shift,
   Route,
   SubstitutionRule,
   UserRace,
@@ -416,6 +445,122 @@ export function createApiClient(options: ApiClientOptions) {
             input: Partial<PayoutActionInput> = {},
           ) =>
             post<IncentivePayoutView>(`/api/admin/incentives/payouts/${id}/${action}`, input),
+        },
+      },
+      /**
+       * The people side. Everything lives under /api/admin/hris because an
+       * employee record carries a home address, a bank account and next of
+       * kin — `hris.view` is a narrower grant than `members.view`.
+       */
+      hris: {
+        overview: () => get<HrOverviewView>('/api/admin/hris/overview'),
+        /** Your own working day. Any staff login may read and punch this. */
+        me: () => get<HrSelfView>('/api/admin/hris/me'),
+        clockInSelf: (notes?: string) =>
+          post<AttendanceView>('/api/admin/hris/me/clock-in', { notes: notes ?? null }),
+        clockOutSelf: (notes?: string) =>
+          post<AttendanceView>('/api/admin/hris/me/clock-out', { notes: notes ?? null }),
+
+        departments: {
+          list: () => get<Department[]>('/api/admin/hris/departments'),
+          create: (input: UpsertDepartmentInput) =>
+            post<Department>('/api/admin/hris/departments', input),
+          update: (id: string, input: UpsertDepartmentInput) =>
+            put<Department>(`/api/admin/hris/departments/${id}`, input),
+          remove: (id: string) => del(`/api/admin/hris/departments/${id}`),
+        },
+        positions: {
+          list: () => get<Position[]>('/api/admin/hris/positions'),
+          create: (input: UpsertPositionInput) =>
+            post<Position>('/api/admin/hris/positions', input),
+          update: (id: string, input: UpsertPositionInput) =>
+            put<Position>(`/api/admin/hris/positions/${id}`, input),
+          remove: (id: string) => del(`/api/admin/hris/positions/${id}`),
+        },
+        employmentStatuses: () =>
+          get<EmploymentStatus[]>('/api/admin/hris/employment-statuses'),
+
+        employees: {
+          list: (query?: {
+            query?: string;
+            departmentId?: string;
+            branchId?: string;
+            activeOnly?: string;
+            limit?: number;
+          }) => get<EmployeeView[]>('/api/admin/hris/employees', query),
+          get: (id: string) => get<EmployeeDetailView>(`/api/admin/hris/employees/${id}`),
+          create: (input: UpsertEmployeeInput) =>
+            post<EmployeeView>('/api/admin/hris/employees', input),
+          /** A whole record, not a patch: see UpsertEmployeeInput. */
+          update: (id: string, input: UpsertEmployeeInput) =>
+            put<EmployeeView>(`/api/admin/hris/employees/${id}`, input),
+          schedule: (id: string) =>
+            get<ScheduleRowView[]>(`/api/admin/hris/employees/${id}/schedule`),
+          assignShift: (id: string, input: AssignShiftInput) =>
+            post<ScheduleRowView>(`/api/admin/hris/employees/${id}/schedule`, input),
+          removeScheduleRow: (id: string, rowId: string) =>
+            del(`/api/admin/hris/employees/${id}/schedule/${rowId}`),
+          balance: (id: string, year?: number) =>
+            get<LeaveBalance>(`/api/admin/hris/employees/${id}/balance`, { year }),
+          setAllowance: (id: string, input: SetLeaveAllowanceInput) =>
+            put<LeaveBalance>(`/api/admin/hris/employees/${id}/balance`, input),
+        },
+
+        shifts: {
+          list: (activeOnly = false) =>
+            get<Shift[]>('/api/admin/hris/shifts', { activeOnly: activeOnly ? 'true' : '' }),
+          create: (input: UpsertShiftInput) => post<Shift>('/api/admin/hris/shifts', input),
+          update: (id: string, input: UpsertShiftInput) =>
+            put<Shift>(`/api/admin/hris/shifts/${id}`, input),
+        },
+
+        roster: (query?: { date?: string; branchId?: string }) =>
+          get<StaffRosterEntryView[]>('/api/admin/hris/roster', query),
+        attendance: {
+          list: (query?: {
+            employeeId?: string;
+            from?: string;
+            to?: string;
+            status?: string;
+            limit?: number;
+          }) => get<AttendanceView[]>('/api/admin/hris/attendance', query),
+          clockIn: (input: ClockInput) =>
+            post<AttendanceView>('/api/admin/hris/attendance/clock-in', input),
+          clockOut: (input: ClockInput) =>
+            post<AttendanceView>('/api/admin/hris/attendance/clock-out', input),
+          /** The escape hatch for everything a clock cannot express. */
+          mark: (input: MarkAttendanceInput) =>
+            post<AttendanceView>('/api/admin/hris/attendance/mark', input),
+        },
+
+        leaves: {
+          list: (query?: {
+            employeeId?: string;
+            status?: string;
+            type?: string;
+            from?: string;
+            to?: string;
+            limit?: number;
+          }) => get<LeaveView[]>('/api/admin/hris/leaves', query),
+          request: (input: RequestLeaveInput) => post<LeaveView>('/api/admin/hris/leaves', input),
+          decide: (id: string, action: 'approve' | 'reject' | 'cancel', reason = '') =>
+            post<LeaveView>(`/api/admin/hris/leaves/${id}/${action}`, { reason }),
+        },
+
+        overtime: {
+          list: (query?: { employeeId?: string; status?: string; limit?: number }) =>
+            get<OvertimeView[]>('/api/admin/hris/overtime', query),
+          request: (input: RequestOvertimeInput) =>
+            post<OvertimeView>('/api/admin/hris/overtime', input),
+          decide: (id: string, action: 'approve' | 'reject' | 'cancel', reason = '') =>
+            post<OvertimeView>(`/api/admin/hris/overtime/${id}/${action}`, { reason }),
+        },
+
+        holidays: {
+          list: (query?: { from?: string; to?: string; includeDrafts?: string }) =>
+            get<Holiday[]>('/api/admin/hris/holidays', query),
+          create: (input: UpsertHolidayInput) => post<Holiday>('/api/admin/hris/holidays', input),
+          remove: (id: string) => del(`/api/admin/hris/holidays/${id}`),
         },
       },
     },

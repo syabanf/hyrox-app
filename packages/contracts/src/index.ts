@@ -4,3 +4,4 @@ export * from './routes';
 export * from './athlete';
 export * from './workout';
 export * from './race';
+export * from './hris';

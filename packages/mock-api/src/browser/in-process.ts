@@ -2,6 +2,7 @@ import { monthPeriod, periodMonthOf } from '@nuhabit/domain';
 import { getResponse } from 'msw';
 import { createMockApi, type MockApi } from '../index';
 import type { MockDb } from '../db';
+import { seedHris } from '../hris-seed';
 import snapshotJson from '../../seed-snapshot.json';
 
 const DAY_MS = 86_400_000;
@@ -40,6 +41,13 @@ function reanchoredSnapshot(): MockDb {
     live.bookingOpensAt = move(live.bookingOpensAt);
     live.bookingClosesAt = move(live.bookingClosesAt);
   }
+  // HRIS keys its rows by calendar date ("2026-09-08"), which the ISO shift
+  // above deliberately leaves alone — a birth date must not move. Rather than
+  // teach the walk which bare dates are safe to shift, the whole slice is
+  // regenerated against today: it is deterministic and depends on nothing else
+  // in the snapshot.
+  seedHris(db, new Date().toISOString());
+
   for (const payout of db.incentivePayouts ?? []) {
     const midpoint = (new Date(payout.periodStart).getTime() + new Date(payout.periodEnd).getTime()) / 2;
     const period = monthPeriod(periodMonthOf(new Date(midpoint).toISOString()));

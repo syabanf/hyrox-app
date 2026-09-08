@@ -112,6 +112,7 @@ Excluded by request: Strava's paid features (subscriptions, training plans, Beac
 - **Reports › Classes**: attendance per class type + recent no-shows.
 - **Coach Incentives**: schemes (default + per-coach overrides), monthly statements from completed sessions, payout state machine DRAFT → APPROVED → PAID (or VOID), audited.
 - **Access Logs**: offline CONFLICT rows can be approved (the booked class is deducted and checked in, audited) or rejected. A conflict with no matching booking cannot be approved - there is no open gym to charge.
+- **People (HRIS)**: staff directory, weekly shift patterns, the daily roster, timesheets, leave and overtime. See its own walkthrough below.
 
 ## Walkthrough - Coach incentives (pembagian insentif pelatih)
 
@@ -121,6 +122,37 @@ Coach pay is IDR payroll computed from completed sessions - separate from the me
 2. **Statements**: pick a month (defaults to the current one) and optionally a branch. Every active coach gets a statement: per session `fee + attended × per-attendee + bonus (if attended ≥ threshold % of capacity) − no-shows × penalty`, clamped at Rp0. Expand a row for the per-session lines. Switch to **last month** to see the seeded history and its payouts (Kevin PAID, Maya APPROVED, Rizky DRAFT). For a coach without a payout, **Create payout** snapshots the statement as a DRAFT (one live payout per coach + month; the API returns 409 on a duplicate).
 3. **Payouts**: **Approve** a DRAFT → **Mark paid** (asks for the transfer reference) → PAID. **Void** (with a reason) from DRAFT or APPROVED frees the period for a fresh payout; PAID and VOID are terminal. Every transition is audited (Configuration → Audit Trail). A Branch Manager can view statements and payouts but the buttons are hidden - and the server returns 403 either way; Front Desk and Coach roles cannot see the module at all.
 4. The dashboard shows **Coach incentives payable** for the current month.
+
+## Walkthrough - People (HRIS)
+
+The staff side, ported from the nuhabiterp ERP into our own stack. Sign in as
+**Super Admin**, **HQ Admin**, **Branch Manager** or **Finance** → **People**.
+Front Desk and Coach roles cannot see the module at all - employee records hold
+home addresses, bank accounts and next of kin.
+
+1. **Roster**: who is expected today and who actually turned up. A person with a
+   pattern row and no shift shows as `REST_DAY`; a person with no pattern at all
+   shows as `UNSCHEDULED` - the roster has to tell those apart. Once a shift has
+   ended with nobody clocked in the row turns `MISSING`, which is a statement of
+   fact; marking it `ABSENT` is HR's decision and a separate action.
+2. **Clock somebody in** from the roster. Lateness is counted **from the shift
+   start**, not from the end of the tolerance: the grace period only decides
+   *whether* an arrival is late, so twelve minutes into a shift with ten
+   minutes' grace is twelve minutes late, not two.
+3. **Leave & Overtime → File leave** across a range containing a public holiday.
+   The holiday does not cost a day and the response names it. Collective leave
+   (*cuti bersama*) **does** cost a day - that is what `deductsLeave` on the
+   calendar marks, and where both fall on one date the national holiday wins.
+4. The allowance moves **on approval**, never on filing - but pending days are
+   reserved, so two requests cannot together overspend the year. Approve, watch
+   the balance drop on the employee's page, then cancel: the days come back.
+   Against the Go backend a database CHECK refuses an overspend even if the
+   application is bypassed.
+5. **Overtime** 22:00 → 01:00 is three hours, not minus twenty-one. Approving it
+   lands the hours on that day's timesheet; cancelling takes them back off.
+6. **Shifts & Calendar**: shift windows, their unpaid break and their grace
+   period, plus the year's public holidays. The government moves these dates by
+   decree, so the calendar is a table HR edits rather than a constant.
 
 ## Walkthrough - Part B (admin)
 

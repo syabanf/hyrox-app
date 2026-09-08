@@ -21,6 +21,10 @@ import {
   Wallet,
   ClipboardList,
   ScanLine,
+  CalendarCheck,
+  CalendarClock,
+  Clock,
+  IdCard,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -85,6 +89,16 @@ const NAV: NavGroup[] = [
     ],
   },
   {
+    label: 'People',
+    items: [
+      { href: '/people', label: 'Roster', icon: CalendarCheck, permission: 'hris.view' },
+      { href: '/people/employees', label: 'Staff Directory', icon: IdCard, permission: 'hris.view' },
+      { href: '/people/attendance', label: 'Timesheet', icon: Clock, permission: 'hris.view' },
+      { href: '/people/leave', label: 'Leave & Overtime', icon: CalendarClock, permission: 'hris.view' },
+      { href: '/people/shifts', label: 'Shifts & Calendar', icon: CalendarDays, permission: 'hris.view' },
+    ],
+  },
+  {
     label: 'Insights',
     items: [
       { href: '/reports', label: 'Reports', icon: BarChart3, permission: 'reports.view' },
@@ -117,7 +131,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const resetDemo = async () => {
     await api.dev.reset();
     clear();
-    location.href = '/login';
+    // A full reload, not a client navigation, so the mock backend is rebuilt
+    // from the fresh seed. The base path is explicit because location.href
+    // does not carry Next's basePath the way the router does.
+    location.href = `${process.env.NEXT_PUBLIC_BASE_PATH ?? '/admin'}/login`;
   };
 
   // Highlight only the deepest matching nav item (so /engagement/races doesn't

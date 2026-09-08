@@ -19,3 +19,4 @@ export * from './org';
 export * from './athlete';
 export * from './hyrox';
 export * from './races';
+export * from './hris';

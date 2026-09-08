@@ -24,6 +24,11 @@ export function statusTone(status: string): Tone {
     case 'ONLINE':
     case 'SYNCED':
     case 'COMPLETED':
+    case 'PRESENT':
+    case 'REMOTE':
+    case 'APPROVED':
+    case 'WORKING':
+    case 'DONE':
       return 'ok';
     case 'PENDING':
     case 'WAITLIST':
@@ -33,6 +38,9 @@ export function statusTone(status: string): Tone {
     case 'OFFLINE_ALLOWED':
     case 'PROCESSING':
     case 'DRAFT':
+    case 'LATE':
+    case 'HALF_DAY':
+    case 'EXPECTED':
       return 'warn';
     case 'FAILED':
     case 'DENIED':
@@ -42,11 +50,16 @@ export function statusTone(status: string): Tone {
     case 'EXPIRED':
     case 'ARCHIVED':
     case 'OFFLINE':
+    case 'ABSENT':
+    case 'MISSING':
+    case 'REJECTED':
       return 'danger';
     case 'REFUNDED':
     case 'INACTIVE':
     case 'DISABLED':
     case 'VOID':
+    case 'REST_DAY':
+    case 'UNSCHEDULED':
       return 'neutral';
     default:
       return 'info';

@@ -235,3 +235,19 @@ export function ErrorNote({ message }: { message: string | null }) {
   if (!message) return null;
   return <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm font-bold text-danger">{message}</p>;
 }
+
+/**
+ * What a refused query looks like.
+ *
+ * A 403 that renders as an empty table reads as "there is nothing here", which
+ * is a different and worse answer than "you are not allowed to see this".
+ */
+export function QueryError({ error }: { error: unknown }) {
+  if (!error) return null;
+  const status = (error as { status?: number }).status;
+  const message =
+    status === 403
+      ? 'Your role does not include access to this. Ask an administrator if you need it.'
+      : ((error as { message?: string }).message ?? 'That did not load.');
+  return <ErrorNote message={message} />;
+}

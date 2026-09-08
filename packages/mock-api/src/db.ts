@@ -1,6 +1,7 @@
 import type {
   AccessLog,
   Activity,
+  Attendance,
   ActivityComment,
   AdminUser,
   AthleteSettings,
@@ -15,6 +16,16 @@ import type {
   Club,
   Coach,
   CreditLedgerEntry,
+  Department,
+  Employee,
+  EmployeeShift,
+  EmploymentStatus,
+  Holiday,
+  Leave,
+  LeaveBalance,
+  OvertimeRequest,
+  Position,
+  Shift,
   CreditPackage,
   Follow,
   Gate,
@@ -43,7 +54,7 @@ import type {
 import { DEFAULT_BUSINESS_RULES } from '@nuhabit/domain';
 
 /** Bump to invalidate persisted localStorage snapshots after seed/schema changes. */
-export const SEED_VERSION = 11;
+export const SEED_VERSION = 12;
 
 export interface MockDb {
   seedVersion: number;
@@ -96,6 +107,19 @@ export interface MockDb {
   // Race ecosystem (phase 4)
   raceEvents: RaceEvent[];
   userRaces: UserRace[];
+  // HRIS — the people side. The Go backend owns these rules; what is here is a
+  // demo stand-in so the panel runs with no server behind it.
+  departments: Department[];
+  positions: Position[];
+  employmentStatuses: EmploymentStatus[];
+  employees: Employee[];
+  shifts: Shift[];
+  employeeShifts: EmployeeShift[];
+  attendance: Attendance[];
+  holidays: Holiday[];
+  leaves: Leave[];
+  leaveBalances: LeaveBalance[];
+  overtimeRequests: OvertimeRequest[];
 }
 
 export function createEmptyDb(now: string): MockDb {
@@ -146,5 +170,16 @@ export function createEmptyDb(now: string): MockDb {
     workoutSessions: [],
     raceEvents: [],
     userRaces: [],
+    departments: [],
+    positions: [],
+    employmentStatuses: [],
+    employees: [],
+    shifts: [],
+    employeeShifts: [],
+    attendance: [],
+    holidays: [],
+    leaves: [],
+    leaveBalances: [],
+    overtimeRequests: [],
   };
 }

@@ -26,6 +26,7 @@ import {
 } from '@nuhabit/domain';
 import type { MockDb } from './db';
 import { createEmptyDb } from './db';
+import { seedHris } from './hris-seed';
 
 /**
  * Deterministic demo dataset (faker seed 42), anchored to boot time so the
@@ -1062,6 +1063,7 @@ export function createSeedDb(nowIso: string): MockDb {
   }
 
   seedAthleteModule(db, { nowIso, daysAgo, addDays });
+  seedHris(db, nowIso);
 
   return db;
 }

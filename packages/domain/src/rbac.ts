@@ -41,6 +41,12 @@ export const PERMISSIONS = [
   'gates.manage',
   'users.manage',
   'rules.update',
+  // The people side. Employee records carry home addresses, bank accounts and
+  // next of kin, so 'hris.view' is a narrower grant than it looks.
+  'hris.view',
+  'hris.manage',
+  'hris.attendance',
+  'hris.approve',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -65,6 +71,9 @@ export const ROLE_PERMISSIONS: Record<AdminRole, readonly Permission[]> = {
     'reports.view',
     'incentives.view',
     'config.view',
+    'hris.view',
+    'hris.attendance',
+    'hris.approve',
   ],
   FRONT_DESK: [
     'dashboard.view',
@@ -91,6 +100,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, readonly Permission[]> = {
     'reports.financial',
     'incentives.view',
     'incentives.manage',
+    'hris.view',
   ],
 };
 

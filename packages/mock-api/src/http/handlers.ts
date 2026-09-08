@@ -88,6 +88,7 @@ import {
 } from '@nuhabit/application';
 import type { MockDb } from '../db';
 import { createAthleteHandlers } from './athlete';
+import { createHrisHandlers } from './hris';
 import { createWorkoutRaceHandlers } from './workout-race';
 import {
   jsonError,
@@ -1709,6 +1710,8 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
     ...createAthleteHandlers(state),
     // ── HYROX workouts (phase 3) + races (phase 4) ──────────────────────────
     ...createWorkoutRaceHandlers(state),
+    // ── HRIS: the people side ───────────────────────────────────────────────
+    ...createHrisHandlers(state),
   ];
 }
 

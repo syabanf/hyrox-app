@@ -2,7 +2,19 @@
 
 import type { DailyPointView } from '@nuhabit/contracts';
 import { Spinner, StatusBadge, formatDay, formatDayTime, formatIdr, formatTime } from '@nuhabit/ui';
-import { AlertTriangle, ChevronRight, CreditCard, Hourglass } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowUpRight,
+  CalendarCheck,
+  Check,
+  ChevronRight,
+  CreditCard,
+  Hourglass,
+  Medal,
+  Store,
+  Users,
+  Wallet,
+} from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
@@ -55,51 +67,213 @@ export default function DashboardPage() {
 
   if (isLoading || !data) return <Spinner label="Loading dashboard…" />;
 
+  // What is waiting on a person rather than on time passing. The hero picks
+  // the most pressing of them to name outright, because a number in a grid is
+  // something to notice and a sentence is something to act on.
+  const pendingPayments = (allPayments ?? []).filter((x) => x.payment.status === 'PENDING').length;
+  const conflictCount = (conflicts ?? []).length;
+  const needsAttention = pendingPayments + conflictCount + data.expiringCredits;
+  const attention =
+    conflictCount > 0
+      ? {
+          href: '/access/logs',
+          icon: AlertTriangle,
+          label: `${conflictCount} offline scan${conflictCount === 1 ? '' : 's'} disagree with the ledger`,
+          hint: 'A gate let somebody in while it could not reach the server',
+        }
+      : pendingPayments > 0
+        ? {
+            href: '/commercial/payments',
+            icon: CreditCard,
+            label: `${pendingPayments} payment${pendingPayments === 1 ? '' : 's'} still pending`,
+            hint: 'Nobody has credits for these yet',
+          }
+        : data.expiringCredits > 0
+          ? {
+              href: '/reports',
+              icon: Hourglass,
+              label: `${data.expiringCredits} credits expire soon`,
+              hint: 'Worth a message before they go',
+            }
+          : {
+              href: '/reports',
+              icon: Check,
+              label: 'Nothing is waiting on anybody',
+              hint: 'Payments settled, gates in sync, no credits about to lapse',
+            };
+  // The bar is against a day's worth of tolerable backlog rather than against
+  // some total, so a quiet day reads as nearly empty instead of nearly full.
+  const attentionShare = Math.min(100, Math.round((needsAttention / 25) * 100));
+
   return (
     <div>
-      <PageTitle title="Dashboard" subtitle="Today at a glance" />
-      {/* Hero - the day's headline numbers on a premium black card */}
-      <div className="surface-ink relative mb-4 overflow-hidden rounded-3xl p-6 text-white shadow-[0_18px_40px_rgb(0_40_26/0.25)]">
-        <div className="pointer-events-none absolute -right-20 -top-28 h-64 w-64 rounded-full bg-lime/20 blur-3xl" />
-        <div className="relative grid grid-cols-2 gap-6 sm:grid-cols-3">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/50">
-              Visitors today
-            </p>
-            <p className="display mt-1 text-4xl leading-none sm:text-5xl">{data.visitorsToday}</p>
+      <PageTitle
+        title="Dashboard"
+        subtitle="Today at a glance"
+        actions={
+          can('pos.sell') ? (
+            <Link href="/counter" className="a-btn">
+              <Store size={16} /> Open the till
+            </Link>
+          ) : null
+        }
+      />
+
+      <div className="mb-4 grid gap-4 xl:grid-cols-[1.6fr_1fr]">
+        {/* The day itself: one headline number, and the things that decide
+            whether it is a good one. */}
+        <div className="surface-ink relative overflow-hidden rounded-3xl p-6 text-white shadow-[0_18px_40px_rgb(0_40_26/0.25)]">
+          <div className="pointer-events-none absolute -right-24 -top-32 h-72 w-72 rounded-full bg-lime/20 blur-3xl" />
+          {/* The column stretches to the height of the cards beside it, so the
+              contents spread rather than leaving a pool of empty green. */}
+          <div className="relative flex h-full flex-col justify-between">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/45">
+                  Taken today
+                </p>
+                <p className="display mt-1 text-5xl leading-none">
+                  {formatIdr(data.revenueTodayIdr)}
+                </p>
+              </div>
+              <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-bold">
+                <span className="h-1.5 w-1.5 rounded-full bg-lime" /> Live
+              </span>
+            </div>
+
+            <div className="mb-4 flex flex-wrap gap-2">
+              <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold">
+                <Users size={13} /> {data.visitorsToday} in today
+              </span>
+              <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold">
+                <CalendarCheck size={13} /> {data.classesToday} classes
+              </span>
+              <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold">
+                <CreditCard size={13} /> {formatIdr(data.topUpsTodayIdr)} topped up
+              </span>
+            </div>
+
+            {/* The single most pressing thing, spelled out rather than left as
+                a number in a grid for somebody to notice. */}
+            <Link
+              href={attention.href}
+              className="mb-4 flex items-center gap-3 rounded-2xl bg-white/[0.07] p-3 transition hover:bg-white/[0.12]"
+            >
+              <span
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+                  needsAttention > 0 ? 'bg-danger text-white' : 'bg-lime text-ink'
+                }`}
+              >
+                <attention.icon size={17} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-bold">{attention.label}</span>
+                <span className="block truncate text-xs text-white/45">{attention.hint}</span>
+              </span>
+              <ArrowUpRight size={16} className="shrink-0 text-white/40" />
+            </Link>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-2 text-xs font-bold">
+                <Users size={13} /> {data.activeMembers} active members
+              </span>
+              <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-2 text-xs font-bold">
+                <Wallet size={13} /> {data.outstandingCredits} credits owed
+              </span>
+              {can('reports.view') ? (
+                <Link href="/reports" className="ml-auto a-btn !py-2">
+                  Reports
+                </Link>
+              ) : null}
+            </div>
           </div>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/50">
-              Revenue today
-            </p>
-            <p className="display mt-1 text-4xl leading-none sm:text-5xl">
-              {formatIdr(data.revenueTodayIdr)}
-            </p>
+        </div>
+
+        <div className="grid content-start gap-4">
+          {/* What is waiting on somebody. Lime when there is nothing to do,
+              because a calm dashboard should look calm. */}
+          <div
+            className={`relative overflow-hidden rounded-3xl p-6 shadow-[0_18px_40px_rgb(0_40_26/0.12)] ${
+              needsAttention > 0 ? 'bg-danger text-white' : 'surface-brand text-ink'
+            }`}
+          >
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <p className="text-sm font-bold">Waiting on somebody</p>
+              {can('reports.view') ? (
+                <Link
+                  href="/reports"
+                  className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold ${
+                    needsAttention > 0 ? 'bg-white/20' : 'bg-ink/10'
+                  }`}
+                >
+                  Open list <ArrowUpRight size={12} />
+                </Link>
+              ) : null}
+            </div>
+            <p className="display text-5xl leading-none">{needsAttention}</p>
+            <div className="mt-4 flex items-baseline justify-between text-[11px] font-bold">
+              <span className={needsAttention > 0 ? 'text-white/70' : 'text-ink/60'}>
+                {pendingPayments} payments · {conflictCount} conflicts
+              </span>
+              <span className={needsAttention > 0 ? 'text-white/70' : 'text-ink/60'}>
+                {data.expiringCredits} expiring
+              </span>
+            </div>
+            <div
+              className={`mt-2 h-1.5 overflow-hidden rounded-full ${
+                needsAttention > 0 ? 'bg-white/25' : 'bg-ink/15'
+              }`}
+            >
+              <div
+                className={`h-full rounded-full ${needsAttention > 0 ? 'bg-white' : 'bg-ink'}`}
+                style={{ width: `${attentionShare}%` }}
+              />
+            </div>
           </div>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/50">
-              Classes today
-            </p>
-            <p className="display mt-1 text-4xl leading-none sm:text-5xl">{data.classesToday}</p>
+
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+            <StatCard
+              label="Visitors"
+              value={data.visitorsToday}
+              hint="Through the door today"
+              icon={Users}
+            />
+            <StatCard
+              label="Expiring credits"
+              value={data.expiringCredits}
+              tone={data.expiringCredits > 0 ? 'danger' : undefined}
+              hint="Within the reminder window"
+              icon={Hourglass}
+            />
           </div>
         </div>
       </div>
-      <div className={`grid gap-3 sm:grid-cols-2 ${can('incentives.view') ? 'xl:grid-cols-5' : 'xl:grid-cols-4'}`}>
-        <StatCard label="Active members" value={data.activeMembers} />
-        <StatCard label="Top-ups today" value={formatIdr(data.topUpsTodayIdr)} />
-        <StatCard label="Outstanding credits" value={data.outstandingCredits} hint="Total liability" />
+
+      <div className={`grid gap-4 sm:grid-cols-2 ${can('incentives.view') ? 'xl:grid-cols-4' : 'xl:grid-cols-3'}`}>
         <StatCard
-          label="Expiring credits"
-          value={data.expiringCredits}
-          tone={data.expiringCredits > 0 ? 'danger' : undefined}
-          hint="Within reminder window"
+          label="Active members"
+          value={data.activeMembers}
+          icon={Users}
+          hint="On the books right now"
+        />
+        <StatCard
+          label="Top-ups today"
+          value={formatIdr(data.topUpsTodayIdr)}
+          icon={CreditCard}
+        />
+        <StatCard
+          label="Outstanding credits"
+          value={data.outstandingCredits}
+          hint="What the studio still owes in classes"
+          icon={Wallet}
         />
         {can('incentives.view') ? (
           <Link href="/operations/incentives" className="contents">
             <StatCard
-              label="Coach incentives payable"
+              label="Coach incentives"
               value={formatIdr(data.coachIncentivesPayableIdr)}
-              hint="This month, all active coaches"
+              hint="Payable this month"
+              icon={Medal}
             />
           </Link>
         ) : null}

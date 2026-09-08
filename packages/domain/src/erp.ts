@@ -990,3 +990,83 @@ export interface ReviewSummary {
   /** Poorly rated and unanswered: the list somebody should work through. */
   negativeNew: number;
 }
+
+// ── Reports ─────────────────────────────────────────────────────────────────
+
+/** One slice of takings: an hour, a category, a payment method. */
+export interface SalesBucket {
+  key: string;
+  label: string;
+  orders: number;
+  items: number;
+  salesIdr: number;
+  costIdr: number;
+  profitIdr: number;
+  /** Computed once from one total, so shares always add to 100. */
+  share: number;
+}
+
+export interface RushHour {
+  /** All 24, including the empty ones: a hole reads as missing data. */
+  hours: SalesBucket[];
+  busiestHour: number;
+  /** The quietest *trading* hour — a shop shut at 4am is not having a bad hour. */
+  quietestHour: number;
+  peakShare: number;
+}
+
+export interface ProfitLine {
+  productId: string;
+  productName: string;
+  qty: number;
+  salesIdr: number;
+  costIdr: number;
+  profitIdr: number;
+  /** Against what it sold for, not what it cost. */
+  marginPercent: number;
+}
+
+export interface SupplierPerformance {
+  supplierId: string;
+  supplierName: string;
+  orders: number;
+  spendIdr: number;
+  onTimeRate: number;
+  fillRate: number;
+  /** Against what was delivered, not what was ordered. */
+  rejectRate: number;
+  averageLeadDays: number;
+  score: number;
+}
+
+export interface ValuationLine {
+  itemId: string;
+  sku: string;
+  name: string;
+  unit: string;
+  qtyOnHand: number;
+  unitCostIdr: number;
+  valueIdr: number;
+  share: number;
+}
+
+export interface ValuationReport {
+  lines: ValuationLine[];
+  totalIdr: number;
+  items: number;
+  /** What share of the money sits in the top five lines. */
+  concentration: number;
+}
+
+export interface StockCardEntry {
+  movementId: string;
+  at: string;
+  kind: string;
+  reference: string;
+  /** Separated rather than signed: that is how a stock card is added up by hand. */
+  in: number;
+  out: number;
+  balance: number;
+  unitCostIdr: number;
+  valueIdr: number;
+}

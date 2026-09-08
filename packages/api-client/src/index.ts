@@ -64,6 +64,7 @@ import type {
   InventoryItemView,
   BatchView,
   CampaignReportView,
+  ClosingReportView,
   ConversationView,
   ExpiryReportView,
   InboxOverviewView,
@@ -82,8 +83,15 @@ import type {
   PostMessageInput,
   ReviewsForView,
   ReviewView,
+  PriceHistoryEntryView,
+  ProfitLine,
+  PurchaseSummaryView,
+  RevenueCompositionView,
+  RushHour,
   ScanView,
   SetConsentInput,
+  StockCardEntry,
+  SupplierPerformance,
   TemplatePreviewView,
   PurchaseOrderView,
   PurchaseRequestLineInput,
@@ -104,6 +112,7 @@ import type {
   UpsertRewardInput,
   UpsertSupplierInput,
   UpsertTemplateInput,
+  ValuationReport,
   UpsertTierInput,
   XPAwardView,
 } from '@nuhabit/contracts';
@@ -584,6 +593,14 @@ export function createApiClient(options: ApiClientOptions) {
           get<StockRowView[]>('/api/admin/inventory/stock', query),
         movements: (query?: { itemId?: string; branchId?: string; kind?: string; referenceType?: string; referenceId?: string; limit?: number }) =>
           get<StockMovement[]>('/api/admin/inventory/movements', query),
+        reports: {
+          /** At weighted-average cost: what the stock on hand actually cost. */
+          valuation: (branchId?: string) =>
+            get<ValuationReport>('/api/admin/inventory/reports/valuation', { branchId }),
+          /** Every movement of one item, with the ledger's own running balance. */
+          stockCard: (query: { itemId: string; branchId?: string; from?: string; to?: string }) =>
+            get<StockCardEntry[]>('/api/admin/inventory/reports/stock-card', query),
+        },
         /** A quantity never changes without a reason attached. */
         adjust: (input: AdjustStockInput) =>
           post<StockMovement>('/api/admin/inventory/adjust', input),
@@ -610,6 +627,20 @@ export function createApiClient(options: ApiClientOptions) {
       purchasing: {
         overview: (branchId?: string) =>
           get<PurchasingSummaryView>('/api/admin/purchasing/overview', { branchId }),
+        reports: {
+          orders: (query?: ReportWindow & { supplierId?: string }) =>
+            get<PurchaseSummaryView>('/api/admin/purchasing/reports/orders', query),
+          /**
+           * How suppliers actually behave, as opposed to what their price
+           * lists say. Fill rate is weighted heaviest: goods that never
+           * arrived cannot be sold at any price.
+           */
+          suppliers: (query?: ReportWindow & { supplierId?: string }) =>
+            get<SupplierPerformance[]>('/api/admin/purchasing/reports/suppliers', query),
+          /** Read from receipts: a quoted price is a promise, a received one a fact. */
+          priceHistory: (itemId: string, limit?: number) =>
+            get<PriceHistoryEntryView[]>('/api/admin/purchasing/reports/price-history', { itemId, limit }),
+        },
         suppliers: {
           list: (query?: { query?: string; status?: string; limit?: number }) =>
             get<Supplier[]>('/api/admin/purchasing/suppliers', query),
@@ -815,6 +846,25 @@ export function createApiClient(options: ApiClientOptions) {
          */
         scan: (barcode: string, branchId?: string) =>
           get<ScanView>('/api/admin/pos/scan', { barcode, branchId }),
+        /**
+         * What the counter did. Every one of these reads completed sales only
+         * — a voided sale is money that came in and went out again.
+         */
+        reports: {
+          transactions: (query?: ReportWindow) =>
+            get<POSOrder[]>('/api/admin/pos/reports/transactions', query),
+          productSales: (query?: ReportWindow) =>
+            get<ProfitLine[]>('/api/admin/pos/reports/product-sales', query),
+          revenue: (query?: ReportWindow) =>
+            get<RevenueCompositionView>('/api/admin/pos/reports/revenue-composition', query),
+          rushHour: (query?: ReportWindow) =>
+            get<RushHour>('/api/admin/pos/reports/rush-hour', query),
+          /** The one action that makes money disappear, looked at together. */
+          voids: (query?: ReportWindow) =>
+            get<POSOrder[]>('/api/admin/pos/reports/voids', query),
+          closing: (shiftId: string) =>
+            get<ClosingReportView>(`/api/admin/pos/reports/closing/${shiftId}`),
+        },
         shifts: {
           list: (query?: { branchId?: string; cashierId?: string; status?: string; limit?: number }) =>
             get<CashierShift[]>('/api/admin/pos/shifts', query),
@@ -1051,3 +1101,16 @@ export function createApiClient(options: ApiClientOptions) {
 }
 
 export type ApiClient = ReturnType<typeof createApiClient>;
+
+/**
+ * The window a report covers.
+ *
+ * Both ends are inclusive calendar days in the studio's timezone, because
+ * "yesterday" is a calendar question rather than an instant. Omitting them
+ * takes a sensible recent window rather than everything ever.
+ */
+export type ReportWindow = {
+  branchId?: string;
+  from?: string;
+  to?: string;
+};

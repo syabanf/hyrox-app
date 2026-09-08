@@ -52,6 +52,17 @@ func (s *Seeder) seedPOS(ctx context.Context) (int, error) {
 			p.barcode, p.packUnit, p.packFactor); err != nil {
 			return 0, fmt.Errorf("seed: pos product %s: %w", p.id, err)
 		}
+
+		// Barcodes and packs arrived after the first demo databases were
+		// seeded, and DO NOTHING leaves those rows without them — a shelf full
+		// of goods the scanner cannot find. Backfilling only where there is
+		// nothing yet fills them in without overwriting anything real.
+		if _, err := s.db.Exec(ctx, `
+			UPDATE pos.products SET barcode = $2, pack_unit = $3, pack_factor = $4
+			WHERE id = $1 AND barcode IS NULL`,
+			p.id, p.barcode, p.packUnit, p.packFactor); err != nil {
+			return 0, fmt.Errorf("seed: backfilling product %s: %w", p.id, err)
+		}
 	}
 
 	// Price breaks. Buying a dozen bars gets the case rate without having to

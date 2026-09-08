@@ -1,7 +1,8 @@
 'use client';
 
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, type LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react';
+import { usePublishHeader } from './page-header';
 
 export interface SearchSelectOption {
   value: string;
@@ -211,24 +212,64 @@ export function Field({
   );
 }
 
+/**
+ * A page's title.
+ *
+ * It renders nothing itself: the shell's top bar is where a title belongs, so
+ * this publishes upwards and the bar draws it. Pages carry on calling it the
+ * way they always did.
+ */
 export function PageTitle({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
-  return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h1 className="display text-3xl font-black">{title}</h1>
-        {subtitle ? <p className="mt-0.5 text-sm text-muted">{subtitle}</p> : null}
-      </div>
-      {actions ? <div className="flex gap-2">{actions}</div> : null}
-    </div>
-  );
+  return usePublishHeader(title, subtitle, actions);
 }
 
-export function StatCard({ label, value, hint, tone }: { label: string; value: ReactNode; hint?: string; tone?: 'brand' | 'danger' }) {
+/**
+ * One number, with the thing it measures above it.
+ *
+ * The icon sits in its own circle in the corner rather than beside the label,
+ * so a row of these reads as a row of numbers — the eye lands on the figures
+ * and the icons stay decoration.
+ */
+export function StatCard({
+  label,
+  value,
+  hint,
+  tone,
+  icon: Icon,
+}: {
+  label: string;
+  value: ReactNode;
+  hint?: string;
+  tone?: 'brand' | 'danger';
+  icon?: LucideIcon;
+}) {
   return (
-    <div className={`a-card ${tone === 'brand' ? '!border-brand/50' : tone === 'danger' ? '!border-danger/40' : ''}`}>
-      <p className="text-[11px] font-bold uppercase tracking-wider text-muted">{label}</p>
-      <p className={`display mt-1 text-3xl font-black ${tone === 'brand' ? 'text-brand' : ''}`}>{value}</p>
-      {hint ? <p className="mt-1 text-xs text-muted">{hint}</p> : null}
+    <div className="a-card relative">
+      {Icon ? (
+        <span
+          className={`absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full ${
+            tone === 'danger'
+              ? 'bg-danger/10 text-danger'
+              : tone === 'brand'
+                ? 'bg-lime text-ink'
+                : 'bg-brand/[0.06] text-brand'
+          }`}
+        >
+          <Icon size={16} />
+        </span>
+      ) : null}
+      <p className="pr-12 text-sm font-bold text-muted">{label}</p>
+      {/* A rupiah figure runs long. Sizing down at the breakpoint where these
+          cards get narrow keeps the number inside its card rather than
+          against the edge of it. */}
+      <p
+        className={`display mt-2 text-3xl font-black tabular-nums xl:text-[1.75rem] 2xl:text-4xl ${
+          tone === 'danger' ? 'text-danger' : ''
+        }`}
+      >
+        {value}
+      </p>
+      {hint ? <p className="mt-1.5 text-xs text-muted">{hint}</p> : null}
     </div>
   );
 }

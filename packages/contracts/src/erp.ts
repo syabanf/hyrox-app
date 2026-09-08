@@ -29,8 +29,14 @@ import type {
   PurchaseReturn,
   POSProduct,
   PurchaseReturnItem,
+  ProfitLine,
   Redemption,
   Review,
+  RushHour,
+  SalesBucket,
+  StockCardEntry,
+  SupplierPerformance,
+  ValuationReport,
   ReviewSummary,
   StockLevel,
   StockMovement,
@@ -593,3 +599,58 @@ export interface LeaveReviewInput {
   rating: number;
   comment?: string | null;
 }
+
+// ── Reports ─────────────────────────────────────────────────────────────────
+
+export interface RevenueCompositionView {
+  byCategory: SalesBucket[];
+  byChannel: SalesBucket[];
+  byMethod: SalesBucket[];
+  totalIdr: number;
+}
+
+export interface PurchaseSummaryView {
+  orders: number;
+  totalIdr: number;
+  receivedIdr: number;
+  /** Committed to but not yet arrived — the cash-flow number. */
+  outstandingIdr: number;
+  bySupplier: SalesBucket[];
+  byStatus: SalesBucket[];
+}
+
+export interface PriceHistoryEntryView {
+  receivedOn: string;
+  supplierId: string;
+  supplierName: string;
+  grnNumber: string;
+  unit: string;
+  packFactor: number;
+  /** Both, because a carton price that fell while the pack fell further is a rise. */
+  packPriceIdr: number;
+  unitPriceIdr: number;
+  qty: number;
+}
+
+/**
+ * The cash-up: what the drawer should hold, what it held, and the difference.
+ *
+ * It lives here rather than in the domain package because it carries the shift
+ * totals view, which is a contract shape.
+ */
+export interface ClosingReportView {
+  shiftId: string;
+  shiftNumber: string;
+  cashierName: string;
+  openedAt: string;
+  closedAt: string | null;
+  totals: ShiftTotalsView;
+  byMethod: SalesBucket[];
+  countedCashIdr: number | null;
+  expectedCashIdr: number;
+  varianceIdr: number;
+  /** Over and short are different conversations, so the report says which. */
+  short: boolean;
+}
+
+export type { ProfitLine, RushHour, SalesBucket, StockCardEntry, SupplierPerformance, ValuationReport };

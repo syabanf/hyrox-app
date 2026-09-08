@@ -2,13 +2,6 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "member",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@nuhabit/member", "dev"],
-      "port": 5173,
-      "autoPort": true
-    },
-    {
       "name": "admin",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@nuhabit/admin", "dev"],

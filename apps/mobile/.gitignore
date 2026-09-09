@@ -50,3 +50,8 @@ android/build/
 android/.gradle/
 android/app/build/
 ios/build/
+
+# Release signing. Written by CI from secrets, or by hand. Never committed.
+key.properties
+*.jks
+*.keystore

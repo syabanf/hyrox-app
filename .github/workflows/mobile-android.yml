@@ -1,0 +1,172 @@
+name: Mobile · Android
+
+# Builds the member app's Flutter shell into something installable.
+#
+# Three ways in, because an APK gets wanted for three different reasons:
+#
+#   - by hand (workflow_dispatch), which is how you get a build to put on a
+#     phone this afternoon, pointed at whichever environment you are testing;
+#   - on a pull request touching apps/mobile, so the shell never sits broken
+#     without anybody noticing;
+#   - on a mobile-v* tag, which additionally publishes a release with the APK
+#     and the Play bundle attached.
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'Which deployment the app should open'
+        required: false
+        default: 'https://nuhabit.reddie.id'
+      bundle:
+        description: 'Also build the Play bundle (.aab)'
+        type: boolean
+        required: false
+        default: false
+  # Tags only, and deliberately without a paths filter: a paths filter applies
+  # to every ref in a push trigger, so a release tag whose commit happened not
+  # to touch apps/mobile would be silently skipped.
+  push:
+    tags: ['mobile-v*']
+  pull_request:
+    paths:
+      - 'apps/mobile/**'
+      - '.github/workflows/mobile-android.yml'
+
+# A second push supersedes the first: nobody wants the APK from two commits
+# ago, and the build takes long enough to be worth cancelling.
+concurrency:
+  group: mobile-android-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Pinned rather than "stable": a toolchain that changes under you turns a
+  # green build into a red one on a day nobody touched the app.
+  FLUTTER_VERSION: '3.44.0'
+  # android/build.gradle.kts pins every subproject to this. The two have to
+  # agree, so they are both stated here rather than one being implied.
+  ANDROID_COMPILE_SDK: '36'
+
+defaults:
+  run:
+    working-directory: apps/mobile
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      # Only the release step needs it, and only on a tag. Stated here because
+      # the default token is read-only and the failure otherwise arrives at the
+      # very end of a twenty-minute build.
+      contents: write
+    env:
+      # The secrets context is not available to a step's `if`, but a job's env
+      # may read it and a step's `if` may read env. This is the bridge.
+      HAS_SIGNING_KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Android SDK ${{ env.ANDROID_COMPILE_SDK }}
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-${{ env.ANDROID_COMPILE_SDK }} build-tools;35.0.0 platform-tools'
+
+      - name: Flutter ${{ env.FLUTTER_VERSION }}
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      # Analyze before building. A build that takes four minutes to tell you
+      # about a typo is four minutes you did not need to spend.
+      - run: flutter analyze --fatal-infos
+
+      - name: Signing key
+        # Absent on a fork's pull request, and absent until somebody creates
+        # one. The build carries on either way — see the summary step, which
+        # says plainly which kind of APK came out.
+        if: env.HAS_SIGNING_KEY == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          # Through the environment rather than interpolated into the script:
+          # a password containing a quote or a backtick would otherwise be
+          # parsed as shell rather than passed as a password.
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > android/upload-keystore.jks
+          {
+            echo "storeFile=upload-keystore.jks"
+            echo "storePassword=$STORE_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PASSWORD"
+          } > android/key.properties
+
+      - name: Build APK
+        run: |
+          flutter build apk --release \
+            --dart-define=NUHABIT_URL=${{ inputs.url || 'https://nuhabit.reddie.id' }}
+
+      - name: Build Play bundle
+        if: ${{ inputs.bundle || startsWith(github.ref, 'refs/tags/mobile-v') }}
+        run: |
+          flutter build appbundle --release \
+            --dart-define=NUHABIT_URL=${{ inputs.url || 'https://nuhabit.reddie.id' }}
+
+      # Says what came out and, more usefully, what it is good for. An APK
+      # signed with the debug key installs and cannot be shipped, and the only
+      # thing worse than that is not knowing which one you have.
+      - name: Summary
+        run: |
+          {
+            echo '### NüHabit Android'
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Opens | \`${{ inputs.url || 'https://nuhabit.reddie.id' }}\` |"
+            if [ -f android/key.properties ]; then
+              echo "| Signing | upload key — installable and shippable |"
+            else
+              echo "| Signing | **debug key** — installable for testing, Play will refuse it |"
+            fi
+            echo "| APK | $(du -h build/app/outputs/flutter-apk/app-release.apk | cut -f1) |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuhabit-apk-${{ github.sha }}
+          path: apps/mobile/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Play bundle
+        if: ${{ inputs.bundle || startsWith(github.ref, 'refs/tags/mobile-v') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuhabit-aab-${{ github.sha }}
+          path: apps/mobile/build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/mobile-v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            apps/mobile/build/app/outputs/flutter-apk/app-release.apk
+            apps/mobile/build/app/outputs/bundle/release/app-release.aab
+          generate_release_notes: true

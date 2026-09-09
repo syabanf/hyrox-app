@@ -56,6 +56,48 @@ flutter build appbundle --release   # for Play
 flutter build ipa --release         # needs a configured Xcode
 ```
 
+## Getting an APK
+
+`.github/workflows/mobile-android.yml` builds one. **Actions → Mobile ·
+Android → Run workflow** asks which deployment the app should open and
+whether you also want the Play bundle, then leaves the APK as an artifact on
+the run.
+
+It also runs on any pull request that touches `apps/mobile`, and on a
+`mobile-v*` tag — the tag additionally publishes a GitHub release with the APK
+and the `.aab` attached:
+
+```bash
+git tag mobile-v1.0.0 && git push origin mobile-v1.0.0
+```
+
+### Signing
+
+Without a key, a release build is signed with the **debug** key. It installs
+fine and is what you want for putting a build on a phone this afternoon; Play
+will refuse it, and it can never update an APK that was signed properly. The
+workflow summary says which kind came out, every time.
+
+To sign properly, create a key once and put it in repository secrets:
+
+```bash
+keytool -genkey -v -keystore upload-keystore.jks \
+  -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+base64 -i upload-keystore.jks | pbcopy   # → ANDROID_KEYSTORE_BASE64
+```
+
+| Secret | |
+|---|---|
+| `ANDROID_KEYSTORE_BASE64` | the keystore, base64 |
+| `ANDROID_KEYSTORE_PASSWORD` | store password |
+| `ANDROID_KEY_ALIAS` | `upload`, above |
+| `ANDROID_KEY_PASSWORD` | key password |
+
+Keep the keystore file itself somewhere safe and backed up. Losing it means
+never updating the app on Play again under that listing — a new key is a new
+app. Locally the same thing is `android/key.properties`, which is gitignored
+along with `*.jks`.
+
 ## The native surface
 
 Two files, and they are the whole reason this exists.

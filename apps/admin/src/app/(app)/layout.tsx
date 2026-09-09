@@ -52,7 +52,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ChevronLeft, ChevronRight, Menu, Search, X } from 'lucide-react';
 import {
   PageHeaderProvider,
@@ -237,7 +237,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         onLogout={logout}
         onReset={usingRealBackend ? undefined : () => void resetDemo()}
       >
-        {children}
+        {/* Every page reads its filters from the URL with useSearchParams,
+            which Next requires to sit under a Suspense boundary. One here
+            covers all of them, rather than fifty identical wrappers. */}
+        <Suspense fallback={null}>{children}</Suspense>
       </Shell>
     </PageHeaderProvider>
   );

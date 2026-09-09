@@ -1585,6 +1585,9 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
           totalIdr,
         })),
         byPackage,
+        refundsIdr: db()
+          .payments.filter((p) => p.status === 'REFUNDED')
+          .reduce((s, p) => s + p.totalIdr, 0),
       });
     }),
 

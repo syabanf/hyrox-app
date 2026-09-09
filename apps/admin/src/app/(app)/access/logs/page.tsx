@@ -1,19 +1,22 @@
 'use client';
 
-import { Spinner, StatusBadge, formatDayTime, gateReasonLabel } from '@nuhabit/ui';
+import { Spinner, StatusBadge, formatDay, formatDayTime, gateReasonLabel } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, PageTitle, Pager, SearchSelect, StatCard } from '../../../../components/ui';
+import { ErrorNote, PageTitle, Pager, StatCard } from '../../../../components/ui';
+import { FilterBar, FilterSelect, useFilters } from '../../../../components/filters';
+
+const LOG_FILTERS = { gateId: '', result: '', mode: '', q: '', on: '' };
 
 export default function AccessLogsPage() {
   const qc = useQueryClient();
   const { can } = usePermissions();
-  const [gateId, setGateId] = useState('');
-  const [result, setResult] = useState('');
-  const [mode, setMode] = useState('');
-  const [memberQuery, setMemberQuery] = useState('');
+  // In the URL so the reports can link here already narrowed — "the denials"
+  // and "the offline scans" are the two questions this screen gets asked.
+  const { filters, set, clear, dirty } = useFilters(LOG_FILTERS);
+  const { gateId, result, mode, q: memberQuery, on } = filters;
   const [page, setPage] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,56 +60,66 @@ export default function AccessLogsPage() {
         <StatCard tone="ok" label="Synced" value={synced} />
         <StatCard label="Conflicts" value={conflicts} tone={conflicts > 0 ? 'danger' : undefined} hint="Need manual reconciliation" />
       </div>
-      <div className="mb-4 flex flex-wrap gap-2">
+      <FilterBar
+        dirty={dirty}
+        onClear={clear}
+        chips={[
+          ...(gateId
+            ? [{ key: 'gateId', label: (gates ?? []).find((g) => g.id === gateId)?.name ?? gateId, onRemove: () => set('gateId', '') }]
+            : []),
+          ...(result ? [{ key: 'result', label: result, onRemove: () => set('result', '') }] : []),
+          ...(mode ? [{ key: 'mode', label: mode, onRemove: () => set('mode', '') }] : []),
+          ...(on ? [{ key: 'on', label: formatDay(on), onRemove: () => set('on', '') }] : []),
+          ...(memberQuery ? [{ key: 'q', label: `"${memberQuery}"`, onRemove: () => set('q', '') }] : []),
+        ]}
+      >
         <input
           className="a-input max-w-xs"
           placeholder="Search member…"
           value={memberQuery}
           onChange={(e) => {
-            setMemberQuery(e.target.value);
+            set('q', e.target.value);
             setPage(0);
           }}
         />
-        <div className="max-w-44">
-          <SearchSelect
-            value={gateId}
-            onChange={setGateId}
-            allowEmpty
-            emptyLabel='All gates'
-            placeholder="Search…"
-            options={[
-              ...(gates ?? []).map((g) => ({ value: g.id, label: g.name })),
-            ]}
-          />
-        </div>
-        <div className="max-w-40">
-          <SearchSelect
-            value={result}
-            onChange={setResult}
-            allowEmpty
-            emptyLabel='All results'
-            placeholder="Search…"
-            options={[
-              { value: 'ALLOWED', label: 'Allowed' },
-              { value: 'DENIED', label: 'Denied' },
-              { value: 'CONFLICT', label: 'Conflict' },
-            ]}
-          />
-        </div>
-        <div className="max-w-40">
-          <SearchSelect
-            value={mode}
-            onChange={setMode}
-            allowEmpty
-            emptyLabel='All modes'
-            placeholder="Search…"
-            options={[
-              { value: 'ONLINE', label: 'Online' },
-              { value: 'OFFLINE', label: 'Offline' },
-            ]}
-          />
-        </div>
-      </div>
+        <FilterSelect
+          value={gateId}
+          onChange={(v) => set('gateId', v)}
+          emptyLabel="All gates"
+          options={(gates ?? []).map((g) => ({ value: g.id, label: g.name }))}
+        />
+        <FilterSelect
+          value={result}
+          onChange={(v) => set('result', v)}
+          emptyLabel="All results"
+          width="w-40"
+          options={[
+            { value: 'ALLOWED', label: 'Allowed' },
+            { value: 'DENIED', label: 'Denied' },
+            { value: 'CONFLICT', label: 'Conflict' },
+          ]}
+        />
+        <FilterSelect
+          value={mode}
+          onChange={(v) => set('mode', v)}
+          emptyLabel="All modes"
+          width="w-40"
+          options={[
+            { value: 'ONLINE', label: 'Online' },
+            { value: 'OFFLINE', label: 'Offline' },
+          ]}
+        />
+        {/* A single day, because the busiest-day row in Reports links here. */}
+        <input
+          type="date"
+          className="a-input w-40"
+          value={on}
+          onChange={(e) => {
+            set('on', e.target.value);
+            setPage(0);
+          }}
+        />
+      </FilterBar>
       {isLoading ? (
         <Spinner label="Loading logs…" />
       ) : (
@@ -127,6 +140,7 @@ export default function AccessLogsPage() {
             <tbody>
               {(logs ?? [])
                 .filter((v) => !memberQuery || (v.memberName ?? '').toLowerCase().includes(memberQuery.toLowerCase()))
+                .filter((v) => !on || v.log.createdAt.slice(0, 10) === on)
                 .slice(page * 12, page * 12 + 12)
                 .map((v) => (
                 <tr key={v.log.id}>
@@ -170,7 +184,8 @@ export default function AccessLogsPage() {
           </table>
           <Pager
             page={page}
-            pageCount={Math.max(1, Math.ceil((logs ?? []).filter((v) => !memberQuery || (v.memberName ?? '').toLowerCase().includes(memberQuery.toLowerCase())).length / 12))}
+            pageCount={Math.max(1, Math.ceil((logs ?? []).filter((v) => !memberQuery || (v.memberName ?? '').toLowerCase().includes(memberQuery.toLowerCase()))
+                .filter((v) => !on || v.log.createdAt.slice(0, 10) === on).length / 12))}
             onPage={setPage}
           />
         </div>

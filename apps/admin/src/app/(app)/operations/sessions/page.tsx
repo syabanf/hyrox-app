@@ -8,20 +8,28 @@ import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
 import { Eye, Trash2 } from 'lucide-react';
 import { CreateSessionModal } from '../../../../components/create-session';
-import { ErrorNote, PageTitle, Pager, RowActions, SearchSelect, StatCard } from '../../../../components/ui';
+import { ErrorNote, PageTitle, Pager, RowActions, StatCard } from '../../../../components/ui';
+import { FilterBar, FilterSelect, useFilters } from '../../../../components/filters';
+
+const SESSION_FILTERS = { branchId: '', coachId: '', classTypeId: '', status: '', q: '', past: '' };
+
+/** The class types actually present in the loaded window, named. */
+function classTypeOptions(sessions: { session: { classTypeId: string }; classTypeName: string }[] | undefined) {
+  const seen = new Map<string, string>();
+  for (const v of sessions ?? []) seen.set(v.session.classTypeId, v.classTypeName);
+  return [...seen].map(([value, label]) => ({ value, label }));
+}
 
 export default function SessionsPage() {
   const qc = useQueryClient();
   const { can } = usePermissions();
-  const [branchId, setBranchId] = useState('');
-  const [coachId, setCoachId] = useState('');
+  const { filters, set, setMany, clear, dirty } = useFilters(SESSION_FILTERS);
+  const { branchId, coachId, classTypeId, status: statusFilter, q: query } = filters;
+  const showPast = filters.past === '1';
   // The create modal opens either empty, or already set to a coach — from the
   // Coaches page, or from the coach this list is filtered to.
   const [createFor, setCreateFor] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-  const [showPast, setShowPast] = useState(false);
-  const [statusFilter, setStatusFilter] = useState('');
-  const [query, setQuery] = useState('');
   const [page, setPage] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,6 +57,7 @@ export default function SessionsPage() {
   const visible = (sessions ?? [])
     .filter((v) => showPast || new Date(v.session.endsAt).getTime() > Date.now() - 3600_000)
     .filter((v) => !statusFilter || v.session.status === statusFilter)
+    .filter((v) => !classTypeId || v.session.classTypeId === classTypeId)
     .filter(
       (v) => !q || v.classTypeName.toLowerCase().includes(q) || v.coachName.toLowerCase().includes(q),
     );
@@ -83,8 +92,7 @@ export default function SessionsPage() {
           value={(sessions ?? []).filter((v) => new Date(v.session.startsAt).getTime() > Date.now() && ['PUBLISHED', 'FULL', 'DRAFT'].includes(v.session.status)).length}
           active={statusFilter === '' && !showPast}
           onClick={() => {
-            setStatusFilter('');
-            setShowPast(false);
+            setMany({ status: '', past: '' });
             setPage(0);
           }}
         />
@@ -96,68 +104,88 @@ export default function SessionsPage() {
             value={(sessions ?? []).filter((v) => v.session.status === status).length}
             active={statusFilter === status}
             onClick={() => {
-              setStatusFilter(statusFilter === status ? '' : status);
+              set('status', statusFilter === status ? '' : status);
               setPage(0);
             }}
           />
         ))}
       </div>
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      <FilterBar
+        dirty={dirty}
+        onClear={clear}
+        chips={[
+          ...(branchId
+            ? [{ key: 'branchId', label: (branches ?? []).find((b) => b.id === branchId)?.name ?? branchId, onRemove: () => set('branchId', '') }]
+            : []),
+          ...(coachId
+            ? [{ key: 'coachId', label: (coaches ?? []).find((c) => c.id === coachId)?.name ?? coachId, onRemove: () => set('coachId', '') }]
+            : []),
+          ...(classTypeId
+            ? [{
+                key: 'classTypeId',
+                label:
+                  (sessions ?? []).find((v) => v.session.classTypeId === classTypeId)?.classTypeName ?? classTypeId,
+                onRemove: () => set('classTypeId', ''),
+              }]
+            : []),
+          ...(statusFilter ? [{ key: 'status', label: statusFilter, onRemove: () => set('status', '') }] : []),
+          ...(showPast ? [{ key: 'past', label: 'Including past', onRemove: () => set('past', '') }] : []),
+          ...(query ? [{ key: 'q', label: `"${query}"`, onRemove: () => set('q', '') }] : []),
+        ]}
+      >
         <input
           className="a-input max-w-xs"
           placeholder="Search class or coach…"
           value={query}
           onChange={(e) => {
-            setQuery(e.target.value);
+            set('q', e.target.value);
             setPage(0);
           }}
         />
-        <div className="w-44">
-          <SearchSelect
-            value={branchId}
-            onChange={(v) => {
-              setBranchId(v);
-              setPage(0);
-            }}
-            allowEmpty
-            emptyLabel="All branches"
-            placeholder="Search branch…"
-            options={(branches ?? []).map((b) => ({ value: b.id, label: b.name }))}
-          />
-        </div>
-        <div className="w-44">
-          <SearchSelect
-            value={coachId}
-            onChange={(v) => {
-              setCoachId(v);
-              setPage(0);
-            }}
-            allowEmpty
-            emptyLabel="All coaches"
-            placeholder="Search coach…"
-            options={(coaches ?? [])
-              .filter((c) => !branchId || c.branchId === branchId)
-              .map((c) => ({ value: c.id, label: c.name, hint: c.specialization }))}
-          />
-        </div>
-        <div className="w-40">
-          <SearchSelect
-            value={statusFilter}
-            onChange={(v) => {
-              setStatusFilter(v);
-              setPage(0);
-            }}
-            allowEmpty
-            emptyLabel="All statuses"
-            placeholder="Search status…"
-            options={[...new Set((sessions ?? []).map((v) => v.session.status))].map((s) => ({ value: s, label: s }))}
-          />
-        </div>
+        <FilterSelect
+          value={branchId}
+          onChange={(v) => {
+            set('branchId', v);
+            setPage(0);
+          }}
+          emptyLabel="All branches"
+          options={(branches ?? []).map((b) => ({ value: b.id, label: b.name }))}
+        />
+        <FilterSelect
+          value={coachId}
+          onChange={(v) => {
+            set('coachId', v);
+            setPage(0);
+          }}
+          emptyLabel="All coaches"
+          options={(coaches ?? [])
+            .filter((c) => !branchId || c.branchId === branchId)
+            .map((c) => ({ value: c.id, label: c.name, hint: c.specialization }))}
+        />
+        <FilterSelect
+          value={classTypeId}
+          onChange={(v) => {
+            set('classTypeId', v);
+            setPage(0);
+          }}
+          emptyLabel="All class types"
+          options={classTypeOptions(sessions)}
+        />
+        <FilterSelect
+          value={statusFilter}
+          onChange={(v) => {
+            set('status', v);
+            setPage(0);
+          }}
+          emptyLabel="All statuses"
+          width="w-40"
+          options={[...new Set((sessions ?? []).map((v) => v.session.status))].map((s) => ({ value: s, label: s }))}
+        />
         <label className="flex items-center gap-2 text-sm text-muted">
-          <input type="checkbox" checked={showPast} onChange={(e) => setShowPast(e.target.checked)} />
+          <input type="checkbox" checked={showPast} onChange={(e) => set('past', e.target.checked ? '1' : '')} />
           Show past sessions
         </label>
-      </div>
+      </FilterBar>
       <ErrorNote message={error} />
       {isLoading ? (
         <Spinner label="Loading sessions…" />

@@ -9,13 +9,16 @@ import { api, ApiError } from '../../../lib/api';
 import { usePermissions } from '../../../lib/auth';
 import { Eye } from 'lucide-react';
 import { ErrorNote, Modal, PageTitle, Pager, RowActions, SearchSelect, StatCard } from '../../../components/ui';
+import { FilterBar, FilterSelect, useFilters } from '../../../components/filters';
 
 const STATUSES = ['', 'ACTIVE', 'SUSPENDED', 'INACTIVE', 'ARCHIVED'];
 
+const MEMBER_FILTERS = { q: '', status: '' };
+
 export default function MembersPage() {
   const { can } = usePermissions();
-  const [query, setQuery] = useState('');
-  const [status, setStatus] = useState('');
+  const { filters, set, clear, dirty } = useFilters(MEMBER_FILTERS);
+  const { q: query, status } = filters;
   const [createOpen, setCreateOpen] = useState(false);
   const [page, setPage] = useState(0);
   const { data, isLoading } = useQuery({
@@ -54,20 +57,20 @@ export default function MembersPage() {
         {/* Each card filters the table to what it counts. */}
         {/* No `active`: this card clears the filter rather than being one, and
             a permanent "filtering" ring on the default view says nothing. */}
-        <StatCard tone="ink" label="Members" value={(data ?? []).length} onClick={() => setStatus('')} />
+        <StatCard tone="ink" label="Members" value={(data ?? []).length} onClick={() => set('status', '')} />
         <StatCard
           tone="brand"
           label="Active"
           value={(data ?? []).filter((m) => m.member.status === 'ACTIVE').length}
           active={status === 'ACTIVE'}
-          onClick={() => setStatus(status === 'ACTIVE' ? '' : 'ACTIVE')}
+          onClick={() => set('status', status === 'ACTIVE' ? '' : 'ACTIVE')}
         />
         <StatCard
           tone="warn"
           label="Suspended / inactive"
           value={(data ?? []).filter((m) => m.member.status !== 'ACTIVE').length}
           active={status === 'NOT_ACTIVE'}
-          onClick={() => setStatus(status === 'NOT_ACTIVE' ? '' : 'NOT_ACTIVE')}
+          onClick={() => set('status', status === 'NOT_ACTIVE' ? '' : 'NOT_ACTIVE')}
         />
         <StatCard
           tone="brand"
@@ -76,30 +79,42 @@ export default function MembersPage() {
           hint="Outstanding across listed members"
         />
       </div>
-      <div className="mb-4 flex flex-wrap gap-2">
+      <FilterBar
+        dirty={dirty}
+        onClear={clear}
+        chips={[
+          ...(status
+            ? [{
+                key: 'status',
+                label: status === 'NOT_ACTIVE' ? 'Suspended or inactive' : status,
+                onRemove: () => set('status', ''),
+              }]
+            : []),
+          ...(query ? [{ key: 'q', label: `"${query}"`, onRemove: () => set('q', '') }] : []),
+        ]}
+      >
         <input
           className="a-input max-w-xs"
           placeholder="Search name, email, phone…"
           value={query}
           onChange={(e) => {
-            setQuery(e.target.value);
+            set('q', e.target.value);
             setPage(0);
           }}
         />
-        <div className="w-44">
-          <SearchSelect
-            value={status}
-            onChange={(v) => {
-              setStatus(v);
-              setPage(0);
-            }}
-            allowEmpty
-            emptyLabel="All statuses"
-            placeholder="Search status…"
-            options={STATUSES.filter(Boolean).map((s) => ({ value: s, label: s }))}
-          />
-        </div>
-      </div>
+        <FilterSelect
+          value={status}
+          onChange={(v) => {
+            set('status', v);
+            setPage(0);
+          }}
+          emptyLabel="All statuses"
+          options={STATUSES.filter(Boolean).map((s) => ({ value: s, label: s }))}
+        />
+        <span className="text-xs text-muted">
+          {rows.length} {rows.length === 1 ? 'member' : 'members'}
+        </span>
+      </FilterBar>
       {isLoading ? (
         <Spinner label="Loading members…" />
       ) : (

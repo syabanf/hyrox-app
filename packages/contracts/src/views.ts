@@ -261,6 +261,8 @@ export interface SalesReportView {
   byDay: DailyPointView[];
   byChannel: { channel: string; totalIdr: number }[];
   byPackage: PackageRevenueView[];
+  /** Money that came in and went back out. Reported, but not in totalIdr. */
+  refundsIdr: number;
 }
 export interface VisitsReportView {
   total: number;

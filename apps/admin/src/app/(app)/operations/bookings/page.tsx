@@ -6,12 +6,16 @@ import { useMemo, useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
 import { ErrorNote, Modal, PageTitle, Pager, SearchSelect, StatCard } from '../../../../components/ui';
+import { FilterBar, FilterSelect, useFilters } from '../../../../components/filters';
+
+const BOOKING_FILTERS = { status: '', q: '' };
 
 export default function BookingsPage() {
   const qc = useQueryClient();
   const { can } = usePermissions();
   const [bookOpen, setBookOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState('');
+  const { filters, set, clear, dirty } = useFilters(BOOKING_FILTERS);
+  const statusFilter = filters.status;
   // CANCELLED_OR_NO_SHOW is not a booking status; it is the pair the summary
   // card counts as one number, so pressing it filters to both.
   const matchesStatus = (status: string) =>
@@ -19,7 +23,7 @@ export default function BookingsPage() {
     (statusFilter === 'CANCELLED_OR_NO_SHOW'
       ? status === 'CANCELLED' || status === 'NO_SHOW'
       : status === statusFilter);
-  const [memberQuery, setMemberQuery] = useState('');
+  const memberQuery = filters.q;
   const [page, setPage] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -105,7 +109,7 @@ export default function BookingsPage() {
             label={label}
             value={all.filter((r) => r.booking.status === status).length}
             active={statusFilter === status}
-            onClick={() => setStatusFilter(statusFilter === status ? '' : status)}
+            onClick={() => set('status', statusFilter === status ? '' : status)}
           />
         ))}
         {/* Two statuses behind one card, so it filters to the pair. */}
@@ -114,35 +118,45 @@ export default function BookingsPage() {
           label="Cancelled / no-show"
           value={all.filter((r) => ['CANCELLED', 'NO_SHOW'].includes(r.booking.status)).length}
           active={statusFilter === 'CANCELLED_OR_NO_SHOW'}
-          onClick={() =>
-            setStatusFilter(statusFilter === 'CANCELLED_OR_NO_SHOW' ? '' : 'CANCELLED_OR_NO_SHOW')
-          }
+          onClick={() => set('status', statusFilter === 'CANCELLED_OR_NO_SHOW' ? '' : 'CANCELLED_OR_NO_SHOW')}
         />
       </div>
-      <div className="mb-4 flex flex-wrap gap-2">
+      <FilterBar
+        dirty={dirty}
+        onClear={clear}
+        chips={[
+          ...(statusFilter
+            ? [{
+                key: 'status',
+                label: statusFilter === 'CANCELLED_OR_NO_SHOW' ? 'Cancelled or no-show' : statusFilter,
+                onRemove: () => set('status', ''),
+              }]
+            : []),
+          ...(memberQuery ? [{ key: 'q', label: `"${memberQuery}"`, onRemove: () => set('q', '') }] : []),
+        ]}
+      >
         <input
           className="a-input max-w-xs"
           placeholder="Search member…"
           value={memberQuery}
           onChange={(e) => {
-            setMemberQuery(e.target.value);
+            set('q', e.target.value);
             setPage(0);
           }}
         />
-        <div className="w-44">
-          <SearchSelect
-            value={statusFilter}
-            onChange={(v) => {
-              setStatusFilter(v);
-              setPage(0);
-            }}
-            allowEmpty
-            emptyLabel="All statuses"
-            placeholder="Search status…"
-            options={['CONFIRMED', 'WAITLIST', 'CHECKED_IN', 'COMPLETED', 'CANCELLED', 'NO_SHOW'].map((s) => ({ value: s, label: s }))}
-          />
-        </div>
-      </div>
+        <FilterSelect
+          value={statusFilter}
+          onChange={(v) => {
+            set('status', v);
+            setPage(0);
+          }}
+          emptyLabel="All statuses"
+          options={['CONFIRMED', 'WAITLIST', 'CHECKED_IN', 'COMPLETED', 'CANCELLED', 'NO_SHOW'].map((s) => ({
+            value: s,
+            label: s,
+          }))}
+        />
+      </FilterBar>
       <ErrorNote message={error} />
       {notice ? <p className="mb-3 rounded-lg bg-ok/10 px-3 py-2 text-sm font-bold text-ok">{notice}</p> : null}
       {isLoading || rosterQueries.isLoading ? (

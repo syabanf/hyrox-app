@@ -5,13 +5,35 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, Modal, PageTitle, Pager, SearchSelect, StatCard } from '../../../../components/ui';
+import { ErrorNote, Modal, PageTitle, Pager, StatCard } from '../../../../components/ui';
+import { FilterBar, FilterSelect, useFilters } from '../../../../components/filters';
+
+const PAYMENT_FILTERS = { status: '', q: '', packageId: '', channel: '' };
+
+/** The pair card reads as one thing on screen, so it says so in the chip. */
+function statusLabel(status: string): string {
+  return status === 'FAILED_OR_EXPIRED' ? 'Failed or expired' : status;
+}
+
+type PaymentRows = { payment: { packageId: string }; packageName: string }[] | undefined;
+
+function packageOptions(rows: PaymentRows) {
+  const seen = new Map<string, string>();
+  for (const r of rows ?? []) seen.set(r.payment.packageId, r.packageName);
+  return [...seen].map(([value, label]) => ({ value, label }));
+}
+
+function packageName(rows: PaymentRows, id: string): string {
+  return (rows ?? []).find((r) => r.payment.packageId === id)?.packageName ?? id;
+}
 
 export default function PaymentsPage() {
   const qc = useQueryClient();
   const { can } = usePermissions();
-  const [statusFilter, setStatusFilter] = useState('');
-  const [query, setQuery] = useState('');
+  // In the URL, so a report can link straight to "PIK's refunds" and land
+  // here with the table already narrowed.
+  const { filters, set, clear, dirty } = useFilters(PAYMENT_FILTERS);
+  const { status: statusFilter, q: query, packageId, channel } = filters;
   const [page, setPage] = useState(0);
   const [refundTarget, setRefundTarget] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +59,8 @@ export default function PaymentsPage() {
       : status === statusFilter);
   const rows = (data ?? [])
     .filter((p) => matchesStatus(p.payment.status))
+    .filter((p) => !packageId || p.payment.packageId === packageId)
+    .filter((p) => !channel || p.payment.channel === channel)
     .filter(
       (p) =>
         !q ||
@@ -65,21 +89,21 @@ export default function PaymentsPage() {
           value={formatIdr(paidTotal)}
           hint="Paid payments"
           active={statusFilter === 'PAID'}
-          onClick={() => setStatusFilter(statusFilter === 'PAID' ? '' : 'PAID')}
+          onClick={() => set('status', statusFilter === 'PAID' ? '' : 'PAID')}
         />
         <StatCard
           tone="lime"
           label="Pending"
           value={(data ?? []).filter((p) => p.payment.status === 'PENDING').length}
           active={statusFilter === 'PENDING'}
-          onClick={() => setStatusFilter(statusFilter === 'PENDING' ? '' : 'PENDING')}
+          onClick={() => set('status', statusFilter === 'PENDING' ? '' : 'PENDING')}
         />
         <StatCard
           tone="warn"
           label="Refunded"
           value={(data ?? []).filter((p) => p.payment.status === 'REFUNDED').length}
           active={statusFilter === 'REFUNDED'}
-          onClick={() => setStatusFilter(statusFilter === 'REFUNDED' ? '' : 'REFUNDED')}
+          onClick={() => set('status', statusFilter === 'REFUNDED' ? '' : 'REFUNDED')}
         />
         {/* Two statuses behind one card, so it filters to the pair. */}
         <StatCard
@@ -87,35 +111,62 @@ export default function PaymentsPage() {
           label="Failed / expired"
           value={(data ?? []).filter((p) => ['FAILED', 'EXPIRED'].includes(p.payment.status)).length}
           active={statusFilter === 'FAILED_OR_EXPIRED'}
-          onClick={() =>
-            setStatusFilter(statusFilter === 'FAILED_OR_EXPIRED' ? '' : 'FAILED_OR_EXPIRED')
-          }
+          onClick={() => set('status', statusFilter === 'FAILED_OR_EXPIRED' ? '' : 'FAILED_OR_EXPIRED')}
         />
       </div>
-      <div className="mb-4 flex flex-wrap gap-2">
+      <FilterBar
+        dirty={dirty}
+        onClear={clear}
+        chips={[
+          ...(statusFilter ? [{ key: 'status', label: statusLabel(statusFilter), onRemove: () => set('status', '') }] : []),
+          ...(packageId
+            ? [{ key: 'packageId', label: packageName(data, packageId), onRemove: () => set('packageId', '') }]
+            : []),
+          ...(channel ? [{ key: 'channel', label: `via ${channel}`, onRemove: () => set('channel', '') }] : []),
+          ...(query ? [{ key: 'q', label: `"${query}"`, onRemove: () => set('q', '') }] : []),
+        ]}
+      >
         <input
           className="a-input max-w-xs"
           placeholder="Search member, package, id…"
           value={query}
           onChange={(e) => {
-            setQuery(e.target.value);
+            set('q', e.target.value);
             setPage(0);
           }}
         />
-        <div className="w-44">
-        <SearchSelect
+        <FilterSelect
           value={statusFilter}
           onChange={(v) => {
-            setStatusFilter(v);
+            set('status', v);
             setPage(0);
           }}
-          allowEmpty
           emptyLabel="All statuses"
-          placeholder="Search status…"
           options={['PENDING', 'PAID', 'FAILED', 'EXPIRED', 'REFUNDED'].map((s) => ({ value: s, label: s }))}
         />
-        </div>
-      </div>
+        <FilterSelect
+          value={channel}
+          onChange={(v) => {
+            set('channel', v);
+            setPage(0);
+          }}
+          emptyLabel="Any channel"
+          options={['QRIS', 'EWALLET', 'VIRTUAL_ACCOUNT', 'CARD'].map((c) => ({ value: c, label: c }))}
+        />
+        <FilterSelect
+          value={packageId}
+          onChange={(v) => {
+            set('packageId', v);
+            setPage(0);
+          }}
+          emptyLabel="Any package"
+          width="w-48"
+          options={packageOptions(data)}
+        />
+        <span className="text-xs text-muted">
+          {rows.length} {rows.length === 1 ? 'payment' : 'payments'}
+        </span>
+      </FilterBar>
       <ErrorNote message={error} />
       {isLoading ? (
         <Spinner label="Loading payments…" />

@@ -12,7 +12,7 @@ import {
   QueryError,
   RowActions,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../components/ui';
 import { api, ApiError } from '../../../lib/api';
 import { usePermissions } from '../../../lib/auth';
@@ -98,7 +98,7 @@ export default function PeoplePage() {
       <ErrorNote message={error} />
       <QueryError error={rosterError} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <StatRow>
         <StatCard
           tone="ink"
           label="On the payroll"
@@ -123,7 +123,7 @@ export default function PeoplePage() {
               : undefined
           }
         />
-      </div>
+      </StatRow>
 
       <div className="mb-4 flex flex-wrap gap-2">
         <input

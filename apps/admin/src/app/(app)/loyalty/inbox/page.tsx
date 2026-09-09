@@ -4,7 +4,7 @@ import { Spinner, StatusBadge } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Send, StickyNote } from 'lucide-react';
 import { useState } from 'react';
-import { ErrorNote, PageTitle, QueryError, SearchSelect, StatCard } from '../../../../components/ui';
+import { ErrorNote, PageTitle, QueryError, SearchSelect, StatCard, StatRow } from '../../../../components/ui';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
 
@@ -39,7 +39,7 @@ export default function InboxPage() {
       <QueryError error={error} />
 
       {overview ? (
-        <div className="mb-4 grid gap-3 sm:grid-cols-4">
+        <StatRow>
           <StatCard label="Waiting" value={overview.metrics.waiting} tone="brand" />
           <StatCard
             label="Nobody has picked up"
@@ -57,7 +57,7 @@ export default function InboxPage() {
             label="Longest wait"
             value={duration(overview.metrics.longestWaitSeconds)}
           />
-        </div>
+        </StatRow>
       ) : null}
 
       <div className="mb-3 flex gap-1 rounded-xl border border-line p-1">

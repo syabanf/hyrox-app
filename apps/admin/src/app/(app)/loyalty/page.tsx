@@ -14,7 +14,7 @@ import {
   QueryError,
   RowActions,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../components/ui';
 import { api, ApiError } from '../../../lib/api';
 import { usePermissions } from '../../../lib/auth';
@@ -66,7 +66,7 @@ export default function LoyaltyPage() {
       />
       <QueryError error={error} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <StatRow>
         <StatCard label="Members earning" value={overview?.members ?? '—'} tone="brand" />
         <StatCard
           tone="lime"
@@ -84,7 +84,7 @@ export default function LoyaltyPage() {
           value={overview?.pendingClaims ?? '—'}
           tone={overview && overview.pendingClaims > 0 ? 'danger' : undefined}
         />
-      </div>
+      </StatRow>
 
       {overview && Object.keys(overview.byTier).length > 0 ? (
         <div className="a-card mb-4">

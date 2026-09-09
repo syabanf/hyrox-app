@@ -219,6 +219,17 @@ export interface VoucherView {
   voucher: Voucher;
   redemptionCount: number;
 }
+/**
+ * What the signed-in member of staff may do, re-read rather than remembered.
+ *
+ * No token: asking what you are allowed to do must never be a way to extend
+ * how long you are allowed to do it.
+ */
+export interface AdminPermissionsView {
+  user: AdminSessionView['user'];
+  permissions: Permission[];
+}
+
 export interface PackageStatsView {
   pkg: CreditPackage;
   purchaseCount: number;

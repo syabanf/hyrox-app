@@ -11,7 +11,7 @@ import {
   PageTitle,
   QueryError,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../../components/ui';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
@@ -80,7 +80,7 @@ export default function PayablesPage() {
       />
       <QueryError error={error} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-4">
+      <StatRow>
         <StatCard
           tone="ink"
           label="Paid"
@@ -102,7 +102,7 @@ export default function PayablesPage() {
           hint="Spend these before they lapse"
           icon={ReceiptText}
         />
-      </div>
+      </StatRow>
 
       <div className="mb-4 max-w-xs">
         <SearchSelect

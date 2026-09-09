@@ -7,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, Modal, PageTitle, Pager, SearchSelect, StatCard } from '../../../../components/ui';
+import { ErrorNote, Modal, PageTitle, Pager, SearchSelect, StatCard, StatRow } from '../../../../components/ui';
 
 type AdminRace = RaceEvent & { participants: number };
 
@@ -51,7 +51,7 @@ export default function RaceEventsPage() {
         }
       />
       <ErrorNote message={error} />
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+      <StatRow>
         <StatCard tone="ink" label="Events" value={(races ?? []).length} />
         <StatCard
           tone="ok"
@@ -64,7 +64,7 @@ export default function RaceEventsPage() {
           value={(races ?? []).reduce((sum, r) => sum + r.participants, 0)}
           hint="From this studio"
         />
-      </div>
+      </StatRow>
       <div className="mb-4 flex flex-wrap gap-2">
         <input
           className="a-input max-w-xs"

@@ -8,7 +8,7 @@ import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
 import { Eye, Trash2 } from 'lucide-react';
 import { CreateSessionModal } from '../../../../components/create-session';
-import { ErrorNote, PageTitle, Pager, RowActions, StatCard } from '../../../../components/ui';
+import { ErrorNote, PageTitle, Pager, RowActions, StatCard, StatRow } from '../../../../components/ui';
 import { FilterBar, FilterSelect, useFilters } from '../../../../components/filters';
 
 const SESSION_FILTERS = { branchId: '', coachId: '', classTypeId: '', status: '', q: '', past: '' };
@@ -84,7 +84,7 @@ export default function SessionsPage() {
           ) : undefined
         }
       />
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <StatRow>
         {/* Each card filters the table to what it counts. */}
         <StatCard
           tone="ink"
@@ -109,7 +109,7 @@ export default function SessionsPage() {
             }}
           />
         ))}
-      </div>
+      </StatRow>
       <FilterBar
         dirty={dirty}
         onClear={clear}

@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, ChevronsUpDown, type LucideIcon } from 'lucide-react';
-import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react';
+import { Children, useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react';
 import { usePublishHeader } from './page-header';
 
 export interface SearchSelectOption {
@@ -238,6 +238,29 @@ export function PageTitle({ title, subtitle, actions }: { title: string; subtitl
  * you cannot act on is a figure somebody reads twice and then ignores.
  * `active` is what the pressed card looks like.
  */
+/**
+ * A row of summary cards.
+ *
+ * The grid was hand-written on every page — `sm:grid-cols-2 xl:grid-cols-4`
+ * here, `sm:grid-cols-3` there, sometimes neither — so no two screens broke
+ * at the same width and a row of three sat in a four-column track with a hole
+ * on the end. The count decides the track, once.
+ */
+export function StatRow({ children }: { children: ReactNode }) {
+  const count = Children.count(children);
+  const cols =
+    count <= 1
+      ? ''
+      : count === 2
+        ? 'sm:grid-cols-2'
+        : count === 3
+          ? 'sm:grid-cols-2 lg:grid-cols-3'
+          : count === 5
+            ? 'sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5'
+            : 'sm:grid-cols-2 xl:grid-cols-4';
+  return <div className={`mb-4 grid gap-3 ${cols}`}>{children}</div>;
+}
+
 export function StatCard({
   label,
   value,
@@ -262,7 +285,7 @@ export function StatCard({
         type="button"
         onClick={onClick}
         aria-pressed={active}
-        className={`a-card relative text-left transition hover:brightness-[0.98] ${skin.card} ${
+        className={`a-card relative !p-4 text-left transition hover:brightness-[0.98] ${skin.card} ${
           active ? 'ring-2 ring-brand ring-offset-2 ring-offset-beige' : ''
         }`}
       >
@@ -276,7 +299,7 @@ export function StatCard({
     );
   }
   return (
-    <div className={`a-card relative ${skin.card}`}>
+    <div className={`a-card relative !p-4 ${skin.card}`}>
       <StatBody label={label} value={value} hint={hint} tone={tone} icon={Icon} />
     </div>
   );
@@ -398,21 +421,21 @@ function StatBody({
     <>
       {Icon ? (
         <span
-          className={`stat-chip absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full ${skin.icon}`}
+          className={`stat-chip absolute right-3.5 top-3.5 flex h-8 w-8 items-center justify-center rounded-full ${skin.icon}`}
         >
           <Icon size={16} />
         </span>
       ) : null}
-      <p className={`pr-12 text-sm font-bold ${skin.label}`}>{label}</p>
+      <p className={`pr-11 text-[13px] font-bold leading-tight ${skin.label}`}>{label}</p>
       {/* A rupiah figure runs long. Sizing down at the breakpoint where these
           cards get narrow keeps the number inside its card rather than
           against the edge of it. */}
       <p
-        className={`display mt-2 text-3xl font-black tabular-nums xl:text-[1.75rem] 2xl:text-4xl ${skin.value}`}
+        className={`display mt-1.5 text-[26px] font-black leading-none tabular-nums xl:text-2xl 2xl:text-3xl ${skin.value}`}
       >
         {value}
       </p>
-      {hint ? <p className={`mt-1.5 text-xs ${skin.hint}`}>{hint}</p> : null}
+      {hint ? <p className={`mt-1.5 text-[11px] leading-tight ${skin.hint}`}>{hint}</p> : null}
     </>
   );
 }

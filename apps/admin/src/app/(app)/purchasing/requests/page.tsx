@@ -14,7 +14,7 @@ import {
   QueryError,
   RowActions,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../../components/ui';
 import { api, ApiError } from '../../../../lib/api';
 import { useAdminAuth, usePermissions } from '../../../../lib/auth';
@@ -85,7 +85,7 @@ export default function RequestsPage() {
       <ErrorNote message={error} />
       <QueryError error={listError} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-4">
+      <StatRow>
         <StatCard tone="ink" label="Requests" value={rows.length} />
         <StatCard label="Awaiting a signature" value={pending.length} tone="brand" />
         <StatCard
@@ -94,7 +94,7 @@ export default function RequestsPage() {
           tone={pending.some((r) => canSignNow(r.status)) ? 'danger' : undefined}
         />
         <StatCard tone="ok" label="Value requested" value={formatIdr(rows.reduce((s, r) => s + r.totalIdr, 0))} />
-      </div>
+      </StatRow>
 
       <div className="mb-4 flex flex-wrap gap-2">
         <div className="w-52">

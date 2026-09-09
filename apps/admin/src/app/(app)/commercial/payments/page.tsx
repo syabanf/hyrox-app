@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, Modal, PageTitle, Pager, StatCard } from '../../../../components/ui';
+import { ErrorNote, Modal, PageTitle, Pager, StatCard, StatRow } from '../../../../components/ui';
 import { FilterBar, FilterSelect, useFilters } from '../../../../components/filters';
 
 const PAYMENT_FILTERS = { status: '', q: '', packageId: '', channel: '' };
@@ -81,7 +81,7 @@ export default function PaymentsPage() {
         title="Payments"
         subtitle="Top-ups via mock Xendit - PAYMENT ≠ CREDIT LEDGER; a paid payment produces the TOP_UP entry"
       />
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <StatRow>
         {/* Each card filters the table to what it counts. */}
         <StatCard
           tone="ok"
@@ -113,7 +113,7 @@ export default function PaymentsPage() {
           active={statusFilter === 'FAILED_OR_EXPIRED'}
           onClick={() => set('status', statusFilter === 'FAILED_OR_EXPIRED' ? '' : 'FAILED_OR_EXPIRED')}
         />
-      </div>
+      </StatRow>
       <FilterBar
         dirty={dirty}
         onClear={clear}

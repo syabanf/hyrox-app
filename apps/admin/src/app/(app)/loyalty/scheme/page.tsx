@@ -13,7 +13,7 @@ import {
   PageTitle,
   QueryError,
   RowActions,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../../components/ui';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
@@ -52,14 +52,14 @@ export default function SchemePage() {
       />
       <QueryError error={error} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+      <StatRow>
         <StatCard label="Tiers" value={(tiers ?? []).length} tone="brand" />
         <StatCard tone="info" label="Earning rules" value={(rules ?? []).filter((r) => r.active).length} />
         <StatCard
           label="Channels covered"
           value={new Set((rules ?? []).filter((r) => r.active).map((r) => r.sourceChannel)).size}
         />
-      </div>
+      </StatRow>
 
       {isLoading ? (
         <Spinner label="Loading the scheme…" />

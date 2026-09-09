@@ -13,7 +13,7 @@ import {
   PageTitle,
   RowActions,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../../components/ui';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
@@ -68,7 +68,7 @@ export default function ShiftsPage() {
       />
       <ErrorNote message={error} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+      <StatRow>
         <StatCard tone="ink" label="Shifts" value={rows.length} hint={`${rows.filter((s) => s.active).length} active`} />
         <StatCard label="Holidays this year" value={calendar.length} tone="brand" />
         <StatCard
@@ -77,7 +77,7 @@ export default function ShiftsPage() {
           value={calendar.filter((h) => h.deductsLeave).length}
           hint="Drawn from the annual allowance"
         />
-      </div>
+      </StatRow>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="a-card !p-0">

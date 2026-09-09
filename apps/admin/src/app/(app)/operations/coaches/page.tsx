@@ -8,7 +8,7 @@ import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
 import { Banknote, CalendarPlus, Pencil, Trash2 } from 'lucide-react';
 import { CreateSessionModal } from '../../../../components/create-session';
-import { ErrorNote, Modal, PageTitle, RowActions, SearchSelect, StatCard } from '../../../../components/ui';
+import { ErrorNote, Modal, PageTitle, RowActions, SearchSelect, StatCard, StatRow } from '../../../../components/ui';
 
 export default function CoachesPage() {
   const qc = useQueryClient();
@@ -56,11 +56,11 @@ export default function CoachesPage() {
         }
       />
       <ErrorNote message={error} />
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+      <StatRow>
         <StatCard tone="ink" label="Coaches" value={(coaches ?? []).length} />
         <StatCard tone="ok" label="Active" value={(coaches ?? []).filter((c) => c.status === 'ACTIVE').length} />
         <StatCard tone="brand" label="Branches covered" value={[...new Set((coaches ?? []).map((c) => c.branchId))].length} />
-      </div>
+      </StatRow>
       <div className="mb-4 flex flex-wrap gap-2">
         <input
           className="a-input max-w-xs"

@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { api, ApiError } from '../../../lib/api';
 import { usePermissions } from '../../../lib/auth';
 import { Eye, Pencil, Send, Trash2 } from 'lucide-react';
-import { ErrorNote, Modal, PageTitle, Pager, RowActions, SearchSelect, StatCard } from '../../../components/ui';
+import { ErrorNote, Modal, PageTitle, Pager, RowActions, SearchSelect, StatCard, StatRow } from '../../../components/ui';
 
 const SEGMENT_LABEL: Record<MemberSegment, string> = {
   ALL_ACTIVE: 'All active members',
@@ -60,7 +60,7 @@ export default function EngagementPage() {
         }
       />
       <ErrorNote message={error} />
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+      <StatRow>
         <StatCard tone="ink" label="Sent" value={(data ?? []).filter((c) => c.status === 'SENT').length} />
         <StatCard
           tone="lime"
@@ -73,7 +73,7 @@ export default function EngagementPage() {
           value={(data ?? []).reduce((sum, c) => sum + (c.sentCount ?? 0), 0)}
           hint="Notifications delivered"
         />
-      </div>
+      </StatRow>
       <div className="mb-4 flex flex-wrap gap-2">
         <input
           className="a-input max-w-xs"

@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, Modal, PageTitle, Pager, SearchSelect, StatCard } from '../../../../components/ui';
+import { ErrorNote, Modal, PageTitle, Pager, SearchSelect, StatCard, StatRow } from '../../../../components/ui';
 import { FilterBar, FilterSelect, useFilters } from '../../../../components/filters';
 
 const BOOKING_FILTERS = { status: '', q: '' };
@@ -94,7 +94,7 @@ export default function BookingsPage() {
           ) : undefined
         }
       />
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <StatRow>
         {/* Each card filters the table to what it counts. */}
         {(
           [
@@ -120,7 +120,7 @@ export default function BookingsPage() {
           active={statusFilter === 'CANCELLED_OR_NO_SHOW'}
           onClick={() => set('status', statusFilter === 'CANCELLED_OR_NO_SHOW' ? '' : 'CANCELLED_OR_NO_SHOW')}
         />
-      </div>
+      </StatRow>
       <FilterBar
         dirty={dirty}
         onClear={clear}

@@ -19,6 +19,7 @@ import type {
   MemberSessionView,
   MemberSummaryView,
   OtpChallengeView,
+  AdminPermissionsView,
   PackageStatsView,
   PaymentView,
   QrView,
@@ -398,6 +399,14 @@ export function createApiClient(options: ApiClientOptions) {
       adminAuthMode: () => get<AuthModeView>('/api/admin/auth/mode'),
       adminLogin: (input: { userId?: string; email?: string; password?: string }) =>
         post<AdminSessionView>('/api/admin/auth/login', input),
+      /**
+       * The permissions this session actually has now.
+       *
+       * The panel stores the list it was handed at sign-in; a deploy that adds
+       * one leaves anybody already signed in holding a stale copy, and whole
+       * sections disappear from their menu until they sign out and back in.
+       */
+      adminSession: () => get<AdminPermissionsView>('/api/admin/auth/session'),
       /** Replacing your own password. */
       changePassword: (currentPassword: string, newPassword: string) =>
         post<{ changed: boolean }>('/api/admin/auth/password', { currentPassword, newPassword }),

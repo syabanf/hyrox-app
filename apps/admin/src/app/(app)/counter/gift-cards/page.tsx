@@ -11,7 +11,7 @@ import {
   PageTitle,
   QueryError,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../../components/ui';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
@@ -56,7 +56,7 @@ export default function GiftCardsPage() {
       />
       <QueryError error={error} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-4">
+      <StatRow>
         <StatCard tone="ink" label="Cards" value={rows.length} icon={CreditCard} />
         <StatCard label="Live" value={live.length} tone="brand" />
         <StatCard
@@ -71,7 +71,7 @@ export default function GiftCardsPage() {
           value={rows.filter((c) => c.status === 'FROZEN').length}
           icon={Snowflake}
         />
-      </div>
+      </StatRow>
 
       <div className="mb-4">
         <input
@@ -324,11 +324,11 @@ function CardSheet({
     <Modal title={card.code} onClose={onClose} wide>
       <div className="grid gap-3">
         <ErrorNote message={error} />
-        <div className="grid gap-3 sm:grid-cols-3">
+        <StatRow>
           <StatCard label="Left on it" value={formatIdr(card.balanceIdr)} tone="brand" />
           <StatCard tone="info" label="Issued with" value={formatIdr(card.initialIdr)} />
           <StatCard label="Status" value={<StatusBadge status={card.status} />} />
-        </div>
+        </StatRow>
 
         {card.memberId ? (
           <p className="rounded-lg bg-surface-raised px-3 py-2 text-xs text-muted">

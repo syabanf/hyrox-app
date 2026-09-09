@@ -11,7 +11,7 @@ import {
   Pager,
   PageTitle,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../../components/ui';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
@@ -95,7 +95,7 @@ export default function AttendancePage() {
         }
       />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-4">
+      <StatRow>
         <StatCard tone="ink" label="Days on file" value={filtered.length} />
         <StatCard label="Hours worked" value={totalHours.toFixed(1)} tone="brand" />
         <StatCard
@@ -105,7 +105,7 @@ export default function AttendancePage() {
           tone={lateMinutes > 0 ? 'danger' : undefined}
         />
         <StatCard tone="danger" label="Absences" value={filtered.filter((r) => r.status === 'ABSENT').length} />
-      </div>
+      </StatRow>
 
       <div className="mb-4 flex flex-wrap gap-2">
         <input type="date" className="a-input max-w-[11rem]" value={from} onChange={(e) => setFrom(e.target.value)} />

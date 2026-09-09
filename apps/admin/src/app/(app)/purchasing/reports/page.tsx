@@ -3,7 +3,7 @@
 import { formatIdr, Spinner } from '@nuhabit/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { PageTitle, QueryError, SearchSelect, StatCard } from '../../../../components/ui';
+import { PageTitle, QueryError, SearchSelect, StatCard, StatRow } from '../../../../components/ui';
 import { api } from '../../../../lib/api';
 
 /**
@@ -51,7 +51,7 @@ export default function PurchasingReportsPage() {
         <input className="a-input" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
       </div>
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-4">
+      <StatRow>
         <StatCard tone="ink" label="Orders" value={summary?.orders ?? 0} />
         <StatCard label="Committed" value={formatIdr(summary?.totalIdr ?? 0)} tone="brand" />
         <StatCard tone="info" label="Arrived" value={formatIdr(summary?.receivedIdr ?? 0)} />
@@ -61,7 +61,7 @@ export default function PurchasingReportsPage() {
           value={formatIdr(summary?.outstandingIdr ?? 0)}
           hint="Committed to but not yet arrived"
         />
-      </div>
+      </StatRow>
 
       <div className="a-card mb-4 !p-0">
         <div className="px-4 pt-4">

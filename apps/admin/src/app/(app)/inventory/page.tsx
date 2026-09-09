@@ -14,7 +14,7 @@ import {
   QueryError,
   RowActions,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../components/ui';
 import { api, ApiError } from '../../../lib/api';
 import { usePermissions } from '../../../lib/auth';
@@ -72,7 +72,7 @@ export default function StockPage() {
       />
       <QueryError error={error} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <StatRow>
         <StatCard
           label="Stock on hand"
           value={overview ? formatIdr(overview.valuation.valueIdr) : '—'}
@@ -86,7 +86,7 @@ export default function StockPage() {
         />
         <StatCard tone="danger" label="Out of stock" value={overview?.valuation.outOfStock ?? '—'} />
         <StatCard tone="ok" label="Items tracked" value={overview?.valuation.items ?? '—'} />
-      </div>
+      </StatRow>
 
       <div className="mb-4 flex flex-wrap gap-2">
         <input

@@ -6,7 +6,7 @@ import { formatIdr, Spinner, StatusBadge } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Pencil } from 'lucide-react';
 import { useState } from 'react';
-import { ErrorNote, Field, Modal, PageTitle, QueryError, RowActions, SearchSelect, StatCard } from '../../../../components/ui';
+import { ErrorNote, Field, Modal, PageTitle, QueryError, RowActions, SearchSelect, StatCard, StatRow } from '../../../../components/ui';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
 
@@ -43,7 +43,7 @@ export default function BadgesPage() {
       />
       <QueryError error={error} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+      <StatRow>
         <StatCard tone="ink" label="Badges" value={rows.length} />
         <StatCard
           label="Earned automatically"
@@ -56,7 +56,7 @@ export default function BadgesPage() {
           value={rows.filter((b) => b.metric === 'MANUAL').length}
           hint="For what no counter can see"
         />
-      </div>
+      </StatRow>
 
       {isLoading ? (
         <Spinner label="Loading badges…" />

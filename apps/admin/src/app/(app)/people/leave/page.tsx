@@ -13,7 +13,7 @@ import {
   PageTitle,
   RowActions,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../../components/ui';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
@@ -110,7 +110,7 @@ export default function LeavePage() {
       />
       <ErrorNote message={error} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-4">
+      <StatRow>
         <StatCard
           label="Leave awaiting a decision"
           value={(leaves ?? []).filter((l) => l.status === 'PENDING').length}
@@ -131,7 +131,7 @@ export default function LeavePage() {
           label="Overtime hours"
           value={overtimeRows.reduce((sum, o) => sum + o.hours, 0).toFixed(1)}
         />
-      </div>
+      </StatRow>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="flex gap-1.5">

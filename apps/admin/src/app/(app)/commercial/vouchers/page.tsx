@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
 import { Ban, CalendarClock, CircleSlash, Pencil, Play, Trash2 } from 'lucide-react';
-import { ErrorNote, Modal, PageTitle, Pager, RowActions, SearchSelect, StatCard } from '../../../../components/ui';
+import { ErrorNote, Modal, PageTitle, Pager, RowActions, SearchSelect, StatCard, StatRow } from '../../../../components/ui';
 
 const NEXT_ACTIONS: Partial<Record<VoucherStatus, VoucherStatus[]>> = {
   DRAFT: ['ACTIVE', 'SCHEDULED', 'DISABLED'],
@@ -60,7 +60,7 @@ export default function VouchersPage() {
         }
       />
       <ErrorNote message={error} />
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+      <StatRow>
         <StatCard tone="ink" label="Live now" value={(data ?? []).filter((v) => v.voucher.status === 'ACTIVE').length} />
         <StatCard
           tone="ok"
@@ -68,7 +68,7 @@ export default function VouchersPage() {
           value={(data ?? []).filter((v) => ['DRAFT', 'SCHEDULED'].includes(v.voucher.status)).length}
         />
         <StatCard tone="warn" label="Redemptions" value={(data ?? []).reduce((sum, v) => sum + v.redemptionCount, 0)} />
-      </div>
+      </StatRow>
       <div className="mb-4 flex flex-wrap gap-2">
         <input
           className="a-input max-w-xs"

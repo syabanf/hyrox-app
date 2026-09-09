@@ -14,7 +14,7 @@ import {
   PageTitle,
   RowActions,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../../../components/ui';
 import { api, ApiError } from '../../../../../lib/api';
 import { usePermissions } from '../../../../../lib/auth';
@@ -108,12 +108,12 @@ export default function OrderPage() {
       />
       <ErrorNote message={error} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-4">
+      <StatRow>
         <StatCard tone="info" label="Status" value={<StatusBadge status={order.status} />} />
         <StatCard label="Subtotal" value={formatIdr(order.subtotalIdr)} />
         <StatCard tone="ink" label={`Tax (${order.taxPercent}%)`} value={formatIdr(order.taxIdr)} />
         <StatCard label="Total" value={formatIdr(order.totalIdr)} tone="brand" />
-      </div>
+      </StatRow>
 
       <div className="a-card !p-0">
         <div className="flex items-center justify-between px-4 py-3">

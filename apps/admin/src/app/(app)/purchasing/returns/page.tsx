@@ -11,7 +11,7 @@ import {
   PageTitle,
   QueryError,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../../components/ui';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
@@ -54,7 +54,7 @@ export default function ReturnsPage() {
       />
       <QueryError error={error} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-4">
+      <StatRow>
         <StatCard tone="ink" label="Returns" value={rows.length} icon={Undo2} />
         <StatCard
           label="Waiting on a signature"
@@ -70,7 +70,7 @@ export default function ReturnsPage() {
           )}
           hint="Each one raised a credit note"
         />
-      </div>
+      </StatRow>
 
       <div className="mb-3 flex flex-wrap gap-1 rounded-xl border border-line p-1">
         {[

@@ -15,7 +15,7 @@ import {
   QueryError,
   RowActions,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../../components/ui';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
@@ -71,7 +71,7 @@ export default function RewardsPage() {
       <ErrorNote message={error} />
       <QueryError error={rewardsError} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-4">
+      <StatRow>
         <StatCard label="Rewards offered" value={catalogue.filter((r) => r.active).length} tone="brand" />
         <StatCard tone="ok" label="Claims waiting" value={rows.filter((c) => c.status === 'PENDING').length} />
         <StatCard tone="warn" label="Fulfilled" value={rows.filter((c) => c.status === 'FULFILLED').length} />
@@ -83,7 +83,7 @@ export default function RewardsPage() {
             .reduce((sum, c) => sum + c.xpCost, 0)
             .toLocaleString()}
         />
-      </div>
+      </StatRow>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="flex gap-1.5">

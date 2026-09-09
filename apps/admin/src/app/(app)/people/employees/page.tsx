@@ -13,7 +13,7 @@ import {
   QueryError,
   RowActions,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../../components/ui';
 import { api } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
@@ -66,7 +66,7 @@ export default function EmployeesPage() {
 
       <QueryError error={error} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-4">
+      <StatRow>
         <StatCard tone="ink" label="Records" value={rows.length} />
         <StatCard label="Active" value={rows.filter((e) => e.active).length} tone="brand" />
         <StatCard
@@ -75,7 +75,7 @@ export default function EmployeesPage() {
           value={new Set(rows.map((e) => e.departmentId).filter(Boolean)).size}
         />
         <StatCard tone="info" label="Coaching staff" value={rows.filter((e) => e.coachId).length} />
-      </div>
+      </StatRow>
 
       <div className="mb-4 flex flex-wrap gap-2">
         <input

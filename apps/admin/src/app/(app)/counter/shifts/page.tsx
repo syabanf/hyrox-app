@@ -13,7 +13,7 @@ import {
   QueryError,
   RowActions,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../../components/ui';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
@@ -48,7 +48,7 @@ export default function ShiftsPage() {
       />
       <QueryError error={error} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+      <StatRow>
         <StatCard tone="ink" label="Shifts" value={rows.length} />
         <StatCard label="Open now" value={rows.filter((s) => s.status === 'OPEN').length} tone="brand" />
         <StatCard
@@ -56,7 +56,7 @@ export default function ShiftsPage() {
           value={rows.filter((s) => s.status === 'CLOSED' && s.varianceIdr !== 0).length}
           tone={rows.some((s) => s.status === 'CLOSED' && s.varianceIdr !== 0) ? 'danger' : undefined}
         />
-      </div>
+      </StatRow>
 
       <div className="mb-4 flex flex-wrap gap-2">
         <div className="w-44">

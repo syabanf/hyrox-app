@@ -12,7 +12,7 @@ import {
   QueryError,
   RowActions,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../../components/ui';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
@@ -64,11 +64,11 @@ export default function CountsPage() {
       <ErrorNote message={error} />
       <QueryError error={listError} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+      <StatRow>
         <StatCard tone="ink" label="Counts" value={rows.length} />
         <StatCard label="In progress" value={rows.filter((t) => t.status === 'DRAFT').length} tone="brand" />
         <StatCard tone="ok" label="Applied" value={rows.filter((t) => t.status === 'APPLIED').length} />
-      </div>
+      </StatRow>
 
       <div className="mb-4 flex flex-wrap gap-2">
         <div className="w-44">

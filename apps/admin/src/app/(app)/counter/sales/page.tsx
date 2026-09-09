@@ -13,7 +13,7 @@ import {
   QueryError,
   RowActions,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../../components/ui';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
@@ -77,7 +77,7 @@ export default function SalesPage() {
       <ErrorNote message={error} />
       <QueryError error={listError} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <StatRow>
         <StatCard
           label="Today"
           value={overview ? formatIdr(overview.today.salesIdr) : '—'}
@@ -105,7 +105,7 @@ export default function SalesPage() {
           value={overview?.month.voidedOrders ?? '—'}
           tone={overview && overview.month.voidedOrders > 0 ? 'danger' : undefined}
         />
-      </div>
+      </StatRow>
 
       {overview && overview.topProducts.length > 0 ? (
         <div className="a-card mb-4">

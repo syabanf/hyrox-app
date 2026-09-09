@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
 import { Pencil, Trash2 } from 'lucide-react';
-import { ErrorNote, Modal, PageTitle, RowActions, StatCard } from '../../../../components/ui';
+import { ErrorNote, Modal, PageTitle, RowActions, StatCard, StatRow } from '../../../../components/ui';
 
 export default function ClassTypesPage() {
   const qc = useQueryClient();
@@ -40,7 +40,7 @@ export default function ClassTypesPage() {
         }
       />
       <ErrorNote message={error} />
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+      <StatRow>
         <StatCard tone="ink" label="Class types" value={(data ?? []).length} />
         <StatCard tone="ok" label="Active" value={(data ?? []).filter((t) => t.active).length} />
         <StatCard
@@ -48,7 +48,7 @@ export default function ClassTypesPage() {
           label="Avg credit cost"
           value={(data ?? []).length > 0 ? ((data ?? []).reduce((sum, t) => sum + t.defaultCreditCost, 0) / (data ?? []).length).toFixed(1) : '-'}
         />
-      </div>
+      </StatRow>
       <div className="mb-4">
         <input
           className="a-input max-w-xs"

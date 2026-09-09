@@ -40,6 +40,9 @@ func (h *Handler) Mount(r *httpx.Router) {
 	// What the login screen is allowed to offer. Public, because it is read
 	// before anybody has a token.
 	r.Get("/api/admin/auth/mode", h.authMode)
+	// What this session may do, re-read rather than remembered. Any signed-in
+	// member of staff may ask about themselves.
+	r.Get("/api/admin/auth/session", h.adminSession, h.guard.RequireAnyAdmin)
 	// Changing your own password needs a session, not a permission: everybody
 	// has one to change.
 	r.Post("/api/admin/auth/password", h.changeOwnPassword, h.guard.RequireAnyAdmin)
@@ -233,6 +236,16 @@ func (h *Handler) adminLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	session, err := h.service.AdminLogin(r.Context(), body.UserID, body.Email, body.Password)
+	if err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	httpx.OK(w, session)
+}
+
+func (h *Handler) adminSession(w http.ResponseWriter, r *http.Request) {
+	principal, _ := auth.Admin(r.Context())
+	session, err := h.service.AdminPermissions(r.Context(), principal.ID)
 	if err != nil {
 		httpx.Fail(w, r, err)
 		return

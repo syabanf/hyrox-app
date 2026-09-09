@@ -13,7 +13,7 @@ import {
   PageTitle,
   QueryError,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../../components/ui';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
@@ -59,7 +59,7 @@ export default function PartnersPage() {
       />
       <QueryError error={error} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+      <StatRow>
         <StatCard tone="ink" label="Partners" value={(partners ?? []).length} icon={Link2} />
         <StatCard
           tone="ok"
@@ -73,7 +73,7 @@ export default function PartnersPage() {
           hint="Recording a partner's word is not paying out on it"
           tone="brand"
         />
-      </div>
+      </StatRow>
 
       <div className="a-card mb-4 !p-0">
         <h2 className="px-4 pt-4 font-black">Who sends us facts</h2>

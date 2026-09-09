@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { api, ApiError } from '../../../lib/api';
 import { usePermissions } from '../../../lib/auth';
 import { Eye } from 'lucide-react';
-import { ErrorNote, Modal, PageTitle, Pager, RowActions, SearchSelect, StatCard } from '../../../components/ui';
+import { ErrorNote, Modal, PageTitle, Pager, RowActions, SearchSelect, StatCard, StatRow } from '../../../components/ui';
 import { FilterBar, FilterSelect, useFilters } from '../../../components/filters';
 
 const STATUSES = ['', 'ACTIVE', 'SUSPENDED', 'INACTIVE', 'ARCHIVED'];
@@ -53,7 +53,7 @@ export default function MembersPage() {
           ) : undefined
         }
       />
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <StatRow>
         {/* Each card filters the table to what it counts. */}
         {/* No `active`: this card clears the filter rather than being one, and
             a permanent "filtering" ring on the default view says nothing. */}
@@ -78,7 +78,7 @@ export default function MembersPage() {
           value={(data ?? []).reduce((sum, m) => sum + m.balance, 0)}
           hint="Outstanding across listed members"
         />
-      </div>
+      </StatRow>
       <FilterBar
         dirty={dirty}
         onClear={clear}

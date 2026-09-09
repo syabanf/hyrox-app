@@ -4,7 +4,7 @@ import type { EXPIRY_LABELS } from '@nuhabit/domain';
 import { formatIdr, Spinner } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { PageTitle, QueryError, SearchSelect, StatCard } from '../../../../components/ui';
+import { PageTitle, QueryError, SearchSelect, StatCard, StatRow } from '../../../../components/ui';
 import { api } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
 
@@ -60,7 +60,7 @@ export default function ExpiryPage() {
         <Spinner label="Checking dates…" />
       ) : (
         <>
-          <div className="mb-4 grid gap-3 sm:grid-cols-4">
+          <StatRow>
             <StatCard label="Near expiry" value={report.summary.nearBatches} tone="brand" />
             <StatCard
               tone="warn"
@@ -75,7 +75,7 @@ export default function ExpiryPage() {
               value={formatIdr(report.summary.expiredValueIdr)}
               hint="Waiting to be written off"
             />
-          </div>
+          </StatRow>
 
           <BatchTable
             title="Going off soon"

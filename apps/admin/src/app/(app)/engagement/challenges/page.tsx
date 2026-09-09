@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, Modal, PageTitle, SearchSelect, StatCard } from '../../../../components/ui';
+import { ErrorNote, Modal, PageTitle, SearchSelect, StatCard, StatRow } from '../../../../components/ui';
 
 const toLocalInput = (iso: string | null): string => {
   if (!iso) return '';
@@ -63,7 +63,7 @@ export default function ChallengesPage() {
         }
       />
       <ErrorNote message={error} />
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+      <StatRow>
         <StatCard tone="ink" label="Challenges" value={rows.length} />
         <StatCard tone="ok" label="Live now" value={live.length} />
         <StatCard
@@ -72,7 +72,7 @@ export default function ChallengesPage() {
           value={rows.reduce((sum, r) => sum + r.participantCount, 0)}
           hint="Joins across all challenges"
         />
-      </div>
+      </StatRow>
       <div className="mb-4 flex flex-wrap gap-2">
         <input
           className="a-input max-w-xs"

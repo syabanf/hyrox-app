@@ -15,7 +15,7 @@ import {
   QueryError,
   RowActions,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../../components/ui';
 import { ExportButton, ImportButton } from '../../../../components/spreadsheet';
 import { api, ApiError } from '../../../../lib/api';
@@ -83,7 +83,7 @@ export default function SuppliersPage() {
       <ErrorNote message={error} />
       <QueryError error={listError} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-4">
+      <StatRow>
         <StatCard tone="ink" label="Suppliers" value={rows.length} />
         <StatCard label="Active" value={rows.filter((s) => s.status === 'ACTIVE').length} tone="brand" />
         <StatCard tone="info" label="On probation" value={rows.filter((s) => s.status === 'PROBATION').length} />
@@ -92,7 +92,7 @@ export default function SuppliersPage() {
           value={rows.filter((s) => s.status === 'BLOCKED').length}
           hint="No order may name them"
         />
-      </div>
+      </StatRow>
 
       <div className="mb-4 flex flex-wrap gap-2">
         <input

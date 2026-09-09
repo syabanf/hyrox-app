@@ -534,6 +534,27 @@ func (s *Service) recordFailure(ctx context.Context, creds Credentials, now time
 	return err
 }
 
+// AdminPermissions is what the signed-in member of staff may do, now.
+//
+// The panel stores the list it was handed at sign-in, and a deploy that adds
+// a permission leaves everyone who was already signed in holding a stale one:
+// whole sections quietly vanish from their menu until they sign out and back
+// in, which is not a thing anybody thinks to try. This lets the panel ask.
+func (s *Service) AdminPermissions(ctx context.Context, userID string) (AdminPermissions, error) {
+	user, err := s.repo.AdminUser(ctx, userID)
+	if err != nil {
+		return AdminPermissions{}, err
+	}
+	return AdminPermissions{User: user, Permissions: domain.PermissionsFor(user.Role)}, nil
+}
+
+// AdminPermissions is the session without a new token: asking what you may do
+// must never be a way to extend how long you may do it.
+type AdminPermissions struct {
+	User        domain.AdminUser    `json:"user"`
+	Permissions []domain.Permission `json:"permissions"`
+}
+
 func (s *Service) adminSession(ctx context.Context, user domain.AdminUser, mustChange bool) (AdminSession, error) {
 	branchID := ""
 	if user.BranchID != nil {

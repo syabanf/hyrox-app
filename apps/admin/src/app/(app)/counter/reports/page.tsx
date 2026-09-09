@@ -3,7 +3,7 @@
 import { formatIdr, Spinner } from '@nuhabit/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { PageTitle, QueryError, SearchSelect, StatCard } from '../../../../components/ui';
+import { PageTitle, QueryError, SearchSelect, StatCard, StatRow } from '../../../../components/ui';
 import { api } from '../../../../lib/api';
 
 /**
@@ -58,7 +58,7 @@ export default function TillReportsPage() {
         <input className="a-input" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
       </div>
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-4">
+      <StatRow>
         <StatCard label="Takings" value={formatIdr(revenue?.totalIdr ?? 0)} tone="brand" />
         <StatCard tone="ok" label="Gross profit" value={formatIdr(profit)} />
         <StatCard
@@ -73,7 +73,7 @@ export default function TillReportsPage() {
           tone={voided > 0 ? 'danger' : undefined}
           hint="Not counted as takings"
         />
-      </div>
+      </StatRow>
 
       {!revenue ? (
         <Spinner label="Adding it up…" />

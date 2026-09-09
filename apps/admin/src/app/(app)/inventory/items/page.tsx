@@ -16,7 +16,7 @@ import {
   QueryError,
   RowActions,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../../components/ui';
 import { Thumb } from '../../../../components/thumb';
 import { ExportButton, ImportButton } from '../../../../components/spreadsheet';
@@ -89,7 +89,7 @@ export default function ItemsPage() {
       />
       <QueryError error={error} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-4">
+      <StatRow>
         <StatCard tone="ink" label="Items" value={rows.length} />
         <StatCard label="For sale" value={rows.filter((i) => i.kind === 'RETAIL').length} tone="brand" />
         <StatCard tone="danger" label="Studio supplies" value={rows.filter((i) => i.kind === 'SUPPLY').length} />
@@ -98,7 +98,7 @@ export default function ItemsPage() {
           label="Stock value"
           value={formatIdr(rows.reduce((sum, i) => sum + i.totalOnHand * i.unitCostIdr, 0))}
         />
-      </div>
+      </StatRow>
 
       <div className="mb-4 flex flex-wrap gap-2">
         <input

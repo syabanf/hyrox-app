@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
 import { Pencil } from 'lucide-react';
-import { ErrorNote, Modal, PageTitle, RowActions, SearchSelect, StatCard } from '../../../../components/ui';
+import { ErrorNote, Modal, PageTitle, RowActions, SearchSelect, StatCard, StatRow } from '../../../../components/ui';
 
 /** The exercise library behind the member app's Guides tab and workout player. */
 export default function ExercisesPage() {
@@ -33,7 +33,7 @@ export default function ExercisesPage() {
         title="Exercise Guides"
         subtitle="Names, difficulty, and the how-to videos members see in Guides"
       />
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+      <StatRow>
         <StatCard tone="ink" label="Exercises" value={(data ?? []).length} />
         <StatCard tone="ok" label="Race stations" value={(data ?? []).filter((e) => e.hyroxStationOrder !== null).length} />
         <StatCard
@@ -42,7 +42,7 @@ export default function ExercisesPage() {
           value={(data ?? []).filter((e) => e.videoUrl).length}
           hint="Shown in the member Guides tab"
         />
-      </div>
+      </StatRow>
       <div className="mb-4 flex flex-wrap gap-2">
         <input
           className="a-input max-w-xs"

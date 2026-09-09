@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
-import { ErrorNote, PageTitle, Pager, StatCard } from '../../../../components/ui';
+import { ErrorNote, PageTitle, Pager, StatCard, StatRow } from '../../../../components/ui';
 import { FilterBar, FilterSelect, useFilters } from '../../../../components/filters';
 
 const LOG_FILTERS = { gateId: '', result: '', mode: '', q: '', on: '' };
@@ -55,11 +55,11 @@ export default function AccessLogsPage() {
         subtitle="Every gate decision, incl. offline fallback & re-sync - approving a conflict deducts the booked class"
       />
       <ErrorNote message={error} />
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+      <StatRow>
         <StatCard tone="ink" label="Offline transactions" value={offline.length} />
         <StatCard tone="ok" label="Synced" value={synced} />
         <StatCard label="Conflicts" value={conflicts} tone={conflicts > 0 ? 'danger' : undefined} hint="Need manual reconciliation" />
-      </div>
+      </StatRow>
       <FilterBar
         dirty={dirty}
         onClear={clear}

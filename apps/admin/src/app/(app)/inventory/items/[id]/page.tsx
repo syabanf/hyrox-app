@@ -7,7 +7,7 @@ import { ArrowLeft, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
-import { ErrorNote, Field, Modal, PageTitle, SearchSelect, StatCard } from '../../../../../components/ui';
+import { ErrorNote, Field, Modal, PageTitle, SearchSelect, StatCard, StatRow } from '../../../../../components/ui';
 import { api, ApiError } from '../../../../../lib/api';
 import { usePermissions } from '../../../../../lib/auth';
 
@@ -35,7 +35,7 @@ export default function ItemPage() {
       </Link>
       <PageTitle title={item.name} subtitle={`${item.sku} · ${item.categoryName ?? 'uncategorised'}`} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-4">
+      <StatRow>
         <StatCard
           label="On hand"
           value={item.trackStock ? `${item.totalOnHand} ${item.unit.toLowerCase()}` : 'not tracked'}
@@ -53,7 +53,7 @@ export default function ItemPage() {
           value={formatIdr(item.totalOnHand * item.unitCostIdr)}
         />
         <StatCard label="Kind" value={<StatusBadge status={item.active ? item.kind : 'INACTIVE'} />} />
-      </div>
+      </StatRow>
 
       <PacksCard itemId={id} baseUnit={item.unit} canManage={can('inventory.manage')} />
 

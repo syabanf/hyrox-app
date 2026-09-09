@@ -20,7 +20,7 @@ import {
   QueryError,
   RowActions,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../../components/ui';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
@@ -61,7 +61,7 @@ export default function OffersPage() {
       />
       <QueryError error={error} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-4">
+      <StatRow>
         <StatCard tone="ink" label="Offers" value={rows.length} icon={Tag} />
         <StatCard label="Running" value={live.length} tone="brand" />
         <StatCard
@@ -75,7 +75,7 @@ export default function OffersPage() {
           value={live.filter((p) => p.exclusive).length}
           hint="Cannot combine with anything else"
         />
-      </div>
+      </StatRow>
 
       {isLoading ? (
         <Spinner label="Loading offers…" />

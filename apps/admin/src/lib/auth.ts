@@ -20,6 +20,8 @@ interface AdminAuthState {
     mustChangePassword?: boolean,
   ) => void;
   passwordChanged: () => void;
+  /** Replace the remembered permission list with what the server says now. */
+  syncPermissions: (user: AdminUser, permissions: readonly Permission[]) => void;
   clear: () => void;
 }
 
@@ -33,6 +35,7 @@ export const useAdminAuth = create<AdminAuthState>()(
       setSession: (token, user, permissions, mustChangePassword = false) =>
         set({ token, user, permissions: [...permissions], mustChangePassword }),
       passwordChanged: () => set({ mustChangePassword: false }),
+      syncPermissions: (user, permissions) => set({ user, permissions: [...permissions] }),
       clear: () => set({ token: null, user: null, permissions: [], mustChangePassword: false }),
     }),
     { name: 'nuhabit.admin.session' },

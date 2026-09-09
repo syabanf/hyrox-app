@@ -19,7 +19,7 @@ import {
   Pager,
   RowActions,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../../components/ui';
 
 const TABS = ['Statements', 'Payouts', 'Schemes'] as const;
@@ -173,7 +173,7 @@ function StatementsTab() {
         </div>
       </div>
       <ErrorNote message={error} />
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <StatRow>
         <StatCard
           label={`Payable · ${periodTitle(period)}`}
           value={formatIdr(sum((s) => s.totals.totalIdr))}
@@ -193,7 +193,7 @@ function StatementsTab() {
           value={sum((s) => s.totals.attended)}
           hint="Checked-in members"
         />
-      </div>
+      </StatRow>
       {isLoading ? (
         <Spinner label="Computing statements…" />
       ) : (
@@ -362,7 +362,7 @@ function PayoutsTab() {
   return (
     <div className="flex flex-col gap-4">
       <ErrorNote message={error} />
-      <div className="grid gap-3 sm:grid-cols-3">
+      <StatRow>
         <StatCard
           tone="warn"
           label="Awaiting approval"
@@ -376,7 +376,7 @@ function PayoutsTab() {
           hint="Ready for transfer"
         />
         <StatCard tone="ok" label="Paid out" value={formatIdr(totalFor('PAID'))} hint="All time" />
-      </div>
+      </StatRow>
       <div className="flex flex-wrap gap-2">
         <div className="w-44">
           <SearchSelect

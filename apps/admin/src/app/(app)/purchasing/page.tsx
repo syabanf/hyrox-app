@@ -14,7 +14,7 @@ import {
   QueryError,
   RowActions,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../components/ui';
 import { api, ApiError } from '../../../lib/api';
 import { usePermissions } from '../../../lib/auth';
@@ -77,7 +77,7 @@ export default function OrdersPage() {
       />
       <QueryError error={error} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <StatRow>
         <StatCard
           tone="ink"
           label="Awaiting a signature"
@@ -96,7 +96,7 @@ export default function OrdersPage() {
           label="Received this month"
           value={overview ? formatIdr(overview.receivedMonthIdr) : '—'}
         />
-      </div>
+      </StatRow>
 
       <div className="mb-4 flex flex-wrap gap-2">
         <div className="w-44">

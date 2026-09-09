@@ -15,7 +15,7 @@ import {
   QueryError,
   RowActions,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../../components/ui';
 import { Thumb } from '../../../../components/thumb';
 import { api, ApiError } from '../../../../lib/api';
@@ -64,7 +64,7 @@ export default function CatalogPage() {
       />
       <QueryError error={error} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-4">
+      <StatRow>
         <StatCard tone="ink" label="Products" value={rows.length} />
         <StatCard label="On sale today" value={rows.filter((p) => p.available && p.active).length} tone="brand" />
         <StatCard
@@ -85,7 +85,7 @@ export default function CatalogPage() {
               : '—'
           }
         />
-      </div>
+      </StatRow>
 
       <div className="mb-4">
         <input

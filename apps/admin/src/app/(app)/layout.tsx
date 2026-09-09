@@ -53,7 +53,8 @@ import {
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
-import { ChevronLeft, ChevronRight, Menu, Search, X } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Menu, Search, X } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import {
   PageHeaderProvider,
   usePageActionSlot,
@@ -70,6 +71,8 @@ interface NavItem {
 }
 interface NavGroup {
   label: string | null;
+  /** Shown on the section header, and it is the whole rail when collapsed. */
+  icon?: LucideIcon;
   items: NavItem[];
 }
 
@@ -80,10 +83,12 @@ const NAV: NavGroup[] = [
   },
   {
     label: 'Members',
+    icon: Users,
     items: [{ href: '/members', label: 'Members', icon: Users, permission: 'members.view' }],
   },
   {
-    label: 'Operations',
+    label: 'Studio',
+    icon: CalendarDays,
     items: [
       { href: '/operations/schedule', label: 'Schedule', icon: CalendarDays, permission: 'operations.view' },
       { href: '/operations/sessions', label: 'Class Sessions', icon: ClipboardList, permission: 'operations.view' },
@@ -96,6 +101,7 @@ const NAV: NavGroup[] = [
   },
   {
     label: 'Access',
+    icon: ScanLine,
     items: [
       { href: '/access/monitor', label: 'Live Check-in', icon: ScanLine, permission: 'access.view' },
       { href: '/access/logs', label: 'Access Logs', icon: DoorOpen, permission: 'access.view' },
@@ -103,6 +109,7 @@ const NAV: NavGroup[] = [
   },
   {
     label: 'Commercial',
+    icon: Wallet,
     items: [
       { href: '/commercial/packages', label: 'Credit Packages', icon: Wallet, permission: 'commercial.view' },
       { href: '/commercial/payments', label: 'Payments', icon: CreditCard, permission: 'payments.view' },
@@ -111,6 +118,7 @@ const NAV: NavGroup[] = [
   },
   {
     label: 'Engagement',
+    icon: Megaphone,
     items: [
       { href: '/engagement', label: 'Campaigns', icon: Megaphone, permission: 'engagement.view' },
       { href: '/engagement/races', label: 'Race Events', icon: Flag, permission: 'engagement.view' },
@@ -118,7 +126,8 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    label: 'Counter',
+    label: 'Retail',
+    icon: Store,
     items: [
       { href: '/counter', label: 'Till', icon: Store, permission: 'pos.sell' },
       { href: '/counter/sales', label: 'Sales', icon: Receipt, permission: 'pos.view' },
@@ -132,6 +141,7 @@ const NAV: NavGroup[] = [
   },
   {
     label: 'Stock',
+    icon: Warehouse,
     items: [
       { href: '/inventory', label: 'Stock Levels', icon: Warehouse, permission: 'inventory.view' },
       { href: '/inventory/items', label: 'Catalogue', icon: Package, permission: 'inventory.view' },
@@ -142,6 +152,7 @@ const NAV: NavGroup[] = [
   },
   {
     label: 'Purchasing',
+    icon: Truck,
     items: [
       { href: '/purchasing', label: 'Purchase Orders', icon: Truck, permission: 'purchasing.view' },
       { href: '/purchasing/requests', label: 'Requests', icon: Layers, permission: 'purchasing.view' },
@@ -153,6 +164,7 @@ const NAV: NavGroup[] = [
   },
   {
     label: 'Loyalty',
+    icon: Medal,
     items: [
       { href: '/loyalty', label: 'Members', icon: Medal, permission: 'crm.view' },
       { href: '/loyalty/rewards', label: 'Rewards', icon: Gift, permission: 'crm.view' },
@@ -165,6 +177,7 @@ const NAV: NavGroup[] = [
   },
   {
     label: 'People',
+    icon: CalendarCheck,
     items: [
       { href: '/people', label: 'Roster', icon: CalendarCheck, permission: 'hris.view' },
       { href: '/people/employees', label: 'Staff Directory', icon: IdCard, permission: 'hris.view' },
@@ -174,7 +187,8 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    label: 'Insights',
+    label: 'Reports & Setup',
+    icon: BarChart3,
     items: [
       { href: '/reports', label: 'Reports', icon: BarChart3, permission: 'reports.view' },
       { href: '/config', label: 'Configuration', icon: Settings, permission: 'config.view' },
@@ -185,9 +199,30 @@ const NAV: NavGroup[] = [
 export default function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, token, mustChangePassword, clear } = useAdminAuth();
+  const { user, token, mustChangePassword, clear, syncPermissions } = useAdminAuth();
   const { can } = usePermissions();
   const [navOpen, setNavOpen] = useState(false);
+
+  // What this session may do is re-read once on load rather than trusted from
+  // the copy stored at sign-in. Without this, a deploy that adds a permission
+  // leaves everybody already signed in with sections missing from their menu,
+  // and nothing on screen suggests signing out would bring them back.
+  useEffect(() => {
+    if (!token) return;
+    let live = true;
+    void api.auth
+      .adminSession()
+      .then((s) => {
+        if (live) syncPermissions(s.user, s.permissions);
+      })
+      .catch(() => {
+        // An expired or rejected token is the redirect below's job, not this
+        // one's; a failure here simply leaves the stored list in place.
+      });
+    return () => {
+      live = false;
+    };
+  }, [token, syncPermissions]);
 
   useEffect(() => {
     if (!token) {
@@ -303,6 +338,11 @@ function Shell({
 
   // The nav's own label stands in until the page publishes its own, so the bar
   // is never briefly blank on the way to being right.
+  // Which section is open. null means "whichever holds the page you are on",
+  // which is what you want after following a link; '' means the user shut it.
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+  useEffect(() => setOpenGroup(null), [activeHref]);
+
   const navLabel = navGroups.flatMap((g) => g.items).find((i) => i.href === activeHref)?.label;
   const title = header?.title ?? navLabel ?? 'Dashboard';
   const initials = user.name
@@ -364,36 +404,74 @@ function Shell({
           {navGroups.map((group) => {
             const visible = group.items.filter((i) => can(i.permission));
             if (visible.length === 0) return null;
+
+            // A group with no label is not a section — it is the one link
+            // that sits above them all.
+            if (!group.label) {
+              return (
+                <div key="root" className="mb-3">
+                  {visible.map((item) => (
+                    <NavLink key={item.href} item={item} active={item.href === activeHref} collapsed={collapsed} />
+                  ))}
+                </div>
+              );
+            }
+
+            const holdsActive = visible.some((i) => i.href === activeHref);
+            const open = openGroup === group.label || (openGroup === null && holdsActive);
+            const GroupIcon = group.icon;
+
+            // Collapsed to icons, a section is one button: pressing it opens
+            // the rail on that section. Forty-three icons in a column is not
+            // a menu, it is a wall.
+            if (collapsed) {
+              return (
+                <button
+                  key={group.label}
+                  type="button"
+                  title={group.label}
+                  onClick={() => {
+                    setOpenGroup(group.label);
+                    toggleRail();
+                  }}
+                  className={`mb-1 flex w-full items-center justify-center rounded-2xl px-2 py-2.5 transition ${
+                    holdsActive ? 'bg-lime text-ink' : 'text-white/50 hover:bg-white/[0.07] hover:text-white'
+                  }`}
+                >
+                  {GroupIcon ? <GroupIcon size={17} className="shrink-0" /> : null}
+                </button>
+              );
+            }
+
             return (
-              <div key={group.label ?? 'root'} className="mb-4">
-                {group.label && !collapsed ? (
-                  <p className="px-3 pb-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/25">
-                    {group.label}
-                  </p>
+              <div key={group.label} className="mb-0.5">
+                <button
+                  type="button"
+                  onClick={() => setOpenGroup(open ? '' : group.label)}
+                  aria-expanded={open}
+                  className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-bold transition ${
+                    holdsActive && !open
+                      ? 'bg-white/[0.09] text-white'
+                      : 'text-white/60 hover:bg-white/[0.07] hover:text-white'
+                  }`}
+                >
+                  {GroupIcon ? <GroupIcon size={17} className="shrink-0" /> : null}
+                  <span className="flex-1 truncate text-left">{group.label}</span>
+                  {/* A dot when the section is shut but holds the page you are
+                      on, so a closed section never hides where you are. */}
+                  {holdsActive && !open ? <span className="h-1.5 w-1.5 rounded-full bg-lime" /> : null}
+                  <ChevronDown
+                    size={15}
+                    className={`shrink-0 opacity-40 transition-transform ${open ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {open ? (
+                  <div className="mb-2 ml-[26px] border-l border-white/10 pl-2 pt-1">
+                    {visible.map((item) => (
+                      <NavLink key={item.href} item={item} active={item.href === activeHref} collapsed={false} sub />
+                    ))}
+                  </div>
                 ) : null}
-                {collapsed && group.label ? (
-                  <div className="mx-auto mb-2 h-px w-6 bg-white/10" />
-                ) : null}
-                {visible.map(({ href, label, icon: Icon }) => {
-                  const active = href === activeHref;
-                  return (
-                    <Link
-                      key={href}
-                      href={href}
-                      title={collapsed ? label : undefined}
-                      className={`mb-1 flex items-center gap-3 rounded-2xl text-sm font-bold transition ${
-                        collapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2.5'
-                      } ${
-                        active
-                          ? 'bg-lime text-ink shadow-[0_6px_18px_rgb(218_255_89/0.18)]'
-                          : 'text-white/50 hover:bg-white/[0.07] hover:text-white'
-                      }`}
-                    >
-                      <Icon size={17} className="shrink-0" />
-                      {!collapsed ? <span className="truncate">{label}</span> : null}
-                    </Link>
-                  );
-                })}
               </div>
             );
           })}
@@ -594,5 +672,42 @@ function NavSearch({
         </div>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * One row in the rail.
+ *
+ * `sub` is the second level: smaller, lighter, and marked with a rule down
+ * the left rather than an indent alone, so a long sub-menu still reads as
+ * belonging to the section above it.
+ */
+function NavLink({
+  item,
+  active,
+  collapsed,
+  sub = false,
+}: {
+  item: NavItem;
+  active: boolean;
+  collapsed: boolean;
+  sub?: boolean;
+}) {
+  const { href, label, icon: Icon } = item;
+  return (
+    <Link
+      href={href}
+      title={collapsed ? label : undefined}
+      className={`mb-0.5 flex items-center gap-2.5 rounded-xl font-bold transition ${
+        collapsed ? 'justify-center px-2 py-2.5' : sub ? 'px-2.5 py-2 text-[13px]' : 'px-3 py-2.5 text-sm'
+      } ${
+        active
+          ? 'bg-lime text-ink shadow-[0_6px_18px_rgb(218_255_89/0.18)]'
+          : 'text-white/50 hover:bg-white/[0.07] hover:text-white'
+      }`}
+    >
+      <Icon size={sub ? 15 : 17} className="shrink-0" />
+      {!collapsed ? <span className="truncate">{label}</span> : null}
+    </Link>
   );
 }

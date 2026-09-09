@@ -5,7 +5,7 @@ import { Spinner, StatusBadge } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { EyeOff, Star } from 'lucide-react';
 import { useState } from 'react';
-import { ErrorNote, Modal, PageTitle, QueryError, StatCard } from '../../../../components/ui';
+import { ErrorNote, Modal, PageTitle, QueryError, StatCard, StatRow } from '../../../../components/ui';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
 
@@ -46,7 +46,7 @@ export default function ReviewsPage() {
       <PageTitle title="Reviews" subtitle="What members said, and what we said back" />
       <QueryError error={error} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-4">
+      <StatRow>
         <StatCard tone="ink" label="Showing" value={rows.length} />
         <StatCard label="Average" value={average || '—'} tone="brand" />
         <StatCard
@@ -60,7 +60,7 @@ export default function ReviewsPage() {
           value={rows.filter((r) => r.verified).length}
           hint="An average built from unverified reviews means something else"
         />
-      </div>
+      </StatRow>
 
       <label className="mb-4 flex items-center gap-2 text-sm font-bold">
         <input

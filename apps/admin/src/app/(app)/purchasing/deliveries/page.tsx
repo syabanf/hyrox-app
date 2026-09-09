@@ -11,7 +11,7 @@ import {
   PageTitle,
   QueryError,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../../components/ui';
 import { api, ApiError } from '../../../../lib/api';
 import { usePermissions } from '../../../../lib/auth';
@@ -53,7 +53,7 @@ export default function DeliveriesPage() {
       />
       <QueryError error={error} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+      <StatRow>
         <StatCard tone="ink" label="Arrivals" value={rows.length} icon={Truck} />
         <StatCard
           label="Waiting to be checked"
@@ -66,7 +66,7 @@ export default function DeliveriesPage() {
           label="Checked in"
           value={rows.filter((d) => d.status === 'INSPECTED').length}
         />
-      </div>
+      </StatRow>
 
       <div className="mb-3 flex gap-1 rounded-xl border border-line p-1">
         {[
@@ -343,7 +343,7 @@ function DeliverySheet({
           which is why a short delivery and a rejection are different things here.
         </p>
 
-        <div className="grid gap-3 sm:grid-cols-3">
+        <StatRow>
           <StatCard tone="brand" label="Delivered" value={delivery.inspection.delivered} />
           <StatCard tone="info" label="Judged" value={delivery.inspection.inspected} />
           <StatCard
@@ -351,7 +351,7 @@ function DeliverySheet({
             value={delivery.inspection.outstanding}
             tone={delivery.inspection.outstanding > 0 ? 'brand' : undefined}
           />
-        </div>
+        </StatRow>
 
         {canReceive && delivery.status === 'ARRIVED' ? (
           <div className="grid gap-2">

@@ -5,7 +5,7 @@ import { formatDayTime, formatIdr, Spinner } from '@nuhabit/ui';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';
-import { Pager, PageTitle, QueryError, SearchSelect, StatCard } from '../../../../components/ui';
+import { Pager, PageTitle, QueryError, SearchSelect, StatCard, StatRow } from '../../../../components/ui';
 import { api } from '../../../../lib/api';
 
 const PAGE_SIZE = 30;
@@ -45,7 +45,7 @@ export default function MovementsPage() {
       />
       <QueryError error={error} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-4">
+      <StatRow>
         <StatCard tone="info" label="Movements" value={rows.length} />
         <StatCard label="Received" value={rows.filter((m) => m.qty > 0).length} tone="brand" />
         <StatCard label="Issued" value={rows.filter((m) => m.qty < 0).length} />
@@ -54,7 +54,7 @@ export default function MovementsPage() {
           value={rows.filter((m) => m.kind === 'ADJUSTMENT').length}
           hint="Each one carries a reason"
         />
-      </div>
+      </StatRow>
 
       <div className="mb-4 flex flex-wrap gap-2">
         <div className="w-44">

@@ -14,7 +14,7 @@ import {
   PageTitle,
   RowActions,
   SearchSelect,
-  StatCard,
+  StatCard, StatRow,
 } from '../../../../../components/ui';
 import { api, ApiError } from '../../../../../lib/api';
 import { usePermissions } from '../../../../../lib/auth';
@@ -75,7 +75,7 @@ export default function EmployeePage() {
       />
       <ErrorNote message={error} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-4">
+      <StatRow>
         <StatCard tone="ink" label="Employee number" value={employee.employeeNumber} />
         <StatCard
           label="Annual leave left"
@@ -89,7 +89,7 @@ export default function EmployeePage() {
           value={<StatusBadge status={employee.active ? employee.employmentStatusCode : 'INACTIVE'} />}
           hint={employee.endDate ? `Left ${employee.endDate}` : `Joined ${employee.joinDate}`}
         />
-      </div>
+      </StatRow>
 
       <div className="mb-4 flex flex-wrap gap-1.5">
         {(['overview', 'schedule', 'attendance', 'leave'] as const).map((t) => (

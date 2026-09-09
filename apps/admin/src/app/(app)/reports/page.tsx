@@ -16,7 +16,7 @@ import {
 import { api } from '../../../lib/api';
 import { usePermissions } from '../../../lib/auth';
 import type { Permission } from '@nuhabit/domain';
-import { PageTitle, StatCard } from '../../../components/ui';
+import { PageTitle, StatCard, StatRow } from '../../../components/ui';
 import { FilterBar, RangePicker, drillTo, rangeLabel, useFilters } from '../../../components/filters';
 
 const TABS = ['Overview', 'Sales', 'Visits', 'Classes', 'Credits'] as const;
@@ -157,7 +157,7 @@ function Overview({ days, can }: { days: number; can: (p: Permission) => boolean
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <StatRow>
         <StatCard
           tone="ink"
           label={`Revenue · ${days}d`}
@@ -177,7 +177,7 @@ function Overview({ days, can }: { days: number; can: (p: Permission) => boolean
           value={noShows}
           hint="Booked and did not arrive"
         />
-      </div>
+      </StatRow>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title="Money" subtitle="Each line opens the records behind it">
@@ -248,7 +248,7 @@ function SalesReport({ days }: { days: number }) {
   if (isLoading || !data) return <Spinner label="Crunching sales…" />;
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <StatRow>
         <StatCard tone="ink" label={`Revenue · ${days}d`} value={formatIdr(data.totalIdr)} />
         <StatCard
           tone="danger"
@@ -259,7 +259,7 @@ function SalesReport({ days }: { days: number }) {
         {data.byChannel.slice(0, 2).map((c) => (
           <StatCard tone="info" key={c.channel} label={`via ${c.channel}`} value={formatIdr(c.totalIdr)} />
         ))}
-      </div>
+      </StatRow>
       <div className="a-card">
         <p className="a-label">Revenue by day</p>
         <ResponsiveContainer width="100%" height={240}>
@@ -308,11 +308,11 @@ function VisitsReport({ days }: { days: number }) {
   const busiest = [...data.byDay].sort((a, b) => b.value - a.value).slice(0, 5);
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid gap-3 sm:grid-cols-3">
+      <StatRow>
         <StatCard tone="ink" label={`Visits · ${days}d`} value={data.total} />
         <StatCard tone="danger" label="Denied attempts" value={data.denied} />
         <StatCard tone="info" label="Offline transactions" value={data.offline} />
-      </div>
+      </StatRow>
       <div className="a-card">
         <p className="a-label">Visits by day</p>
         <ResponsiveContainer width="100%" height={240}>
@@ -374,12 +374,12 @@ function ClassesReport({ days }: { days: number }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <StatRow>
         <StatCard tone="ink" label="Sessions held" value={totals.sessions} />
         <StatCard tone="ok" label="Attended" value={totals.attended} hint={`${rate}% of bookings`} />
         <StatCard tone="warn" label="No-shows" value={totals.noShows} />
         <StatCard tone="info" label="Booked" value={totals.booked} />
-      </div>
+      </StatRow>
       <div className="a-card !p-0">
         <p className="a-label px-4 pt-4">Attendance per class type</p>
         <p className="px-4 pb-1 text-xs text-muted">Click a row for the sessions behind it</p>
@@ -457,7 +457,7 @@ function CreditsReport() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid gap-3 sm:grid-cols-2">
+      <StatRow>
         <StatCard
           tone="ink"
           label="Outstanding credits"
@@ -472,7 +472,7 @@ function CreditsReport() {
           onClick={() => set('owing', filters.owing === 'expiring' ? '' : 'expiring')}
           active={filters.owing === 'expiring'}
         />
-      </div>
+      </StatRow>
       <FilterBar
         dirty={dirty}
         onClear={clear}

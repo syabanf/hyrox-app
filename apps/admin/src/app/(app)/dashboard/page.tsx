@@ -90,7 +90,9 @@ export default function DashboardPage() {
       ? {
           href: '/access/logs',
           icon: AlertTriangle,
-          label: `${conflictCount} offline scan${conflictCount === 1 ? '' : 's'} disagree with the ledger`,
+          label: `${conflictCount} offline scan${conflictCount === 1 ? '' : 's'} ${
+            conflictCount === 1 ? 'disagrees' : 'disagree'
+          } with the ledger`,
           hint: 'A gate let somebody in while it could not reach the server',
         }
       : pendingPayments > 0

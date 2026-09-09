@@ -184,6 +184,17 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
       HttpResponse.json({ demoRoster: true, accountsWithoutPassword: 0, minPasswordLength: 10 }),
     ),
 
+    // What this session may do, re-read rather than remembered. No token in
+    // the answer: asking what you may do is not a way to extend how long.
+    http.get('*/api/admin/auth/session', ({ request }) => {
+      const auth = requireAdmin(db(), request);
+      if (!auth.ok) return auth.response;
+      return HttpResponse.json({
+        user: auth.value,
+        permissions: ROLE_PERMISSIONS[auth.value.role],
+      });
+    }),
+
     http.post('*/api/admin/auth/login', async ({ request }) => {
       const body = await parseBody(request, AdminLoginSchema);
       if (!body.ok) return body.response;

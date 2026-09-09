@@ -534,7 +534,7 @@ function Shell({
       >
         {/* The utility bar: what page this is, a way to get anywhere, and who
             you are signed in as. */}
-        <header className="sticky top-0 z-20 flex flex-wrap items-center gap-3 bg-beige/85 px-4 pb-3 pt-16 backdrop-blur sm:px-6 lg:px-7 lg:pt-5">
+        <header className="sticky top-0 z-20 mx-auto flex max-w-[1600px] flex-wrap items-center gap-3 bg-beige/85 px-4 pb-3 pt-16 backdrop-blur sm:px-6 lg:px-7 lg:pt-5">
           <div className="min-w-0 shrink-0">
             <h1 className="display truncate text-2xl font-black leading-tight">{title}</h1>
             {header?.subtitle ? (
@@ -562,7 +562,10 @@ function Shell({
           </div>
         </header>
 
-        <main className="min-w-0 px-4 pb-8 pt-2 sm:px-6 lg:px-7">{children}</main>
+        {/* A cap on the reading width. Past about 1600px a table stretches
+            until the first column and the last are too far apart to read as
+            one row, and the extra space buys nothing. */}
+        <main className="mx-auto min-w-0 max-w-[1600px] px-4 pb-8 pt-2 sm:px-6 lg:px-7">{children}</main>
       </div>
     </div>
   );

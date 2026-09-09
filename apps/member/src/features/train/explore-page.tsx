@@ -1,7 +1,7 @@
 import { Spinner, formatDay, formatDistanceM, formatDuration } from '@nuhabit/ui';
-import { Check, Play, Trash2, Trophy, Users } from 'lucide-react';
+import { Check, Trash2, Trophy, Users } from 'lucide-react';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 import { RouteMap } from '../../components/route-map';
 import { api } from '../../lib/api';
 import {
@@ -78,7 +78,6 @@ function SegmentsTab() {
 
 function RoutesTab() {
   const units = useUnits();
-  const navigate = useNavigate();
   const invalidate = useInvalidateAll();
   const { data: routes, isLoading } = useRoutes();
   if (isLoading) return <Spinner label="Loading routes…" />;
@@ -115,12 +114,6 @@ function RoutesTab() {
           <div className="mt-2">
             <RouteMap points={route.points} height={110} />
           </div>
-          <button
-            className="btn-brand mt-3 flex w-full items-center justify-center gap-2 !py-2 text-sm"
-            onClick={() => navigate(`/train/record?route=${route.id}`)}
-          >
-            <Play size={14} fill="currentColor" /> Use this route
-          </button>
         </div>
       ))}
     </div>

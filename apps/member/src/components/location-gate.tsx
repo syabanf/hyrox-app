@@ -69,11 +69,11 @@ export function LocationGate({
 function remedy(permission: LocationPermission): string {
   switch (permission) {
     case 'denied':
-      return 'Allow location for this site in your browser settings, then reload. Or record with Demo GPS instead.';
+      return 'Allow location for this site in your browser settings, then reload.';
     case 'insecure':
       return 'Browsers only share location over https. Open the app on its https address.';
     default:
-      return 'Record with Demo GPS instead — everything else works the same.';
+      return 'Timer-based workouts still record; anything with a route needs location.';
   }
 }
 

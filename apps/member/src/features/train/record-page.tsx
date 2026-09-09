@@ -1,5 +1,5 @@
 import { ApiError } from '@nuhabit/api-client';
-import type { ActivityType, ActivityVisibility, Division, Route, TrackPoint } from '@nuhabit/domain';
+import type { ActivityType, ActivityVisibility, Division, TrackPoint } from '@nuhabit/domain';
 import { haversineM } from '@nuhabit/domain';
 import { formatDistanceM, formatDuration, formatPace } from '@nuhabit/ui';
 import {
@@ -11,7 +11,6 @@ import {
   Flame,
   Footprints,
   ImagePlus,
-  MapPinned,
   Pause,
   PersonStanding,
   Play,
@@ -23,7 +22,7 @@ import {
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useNavigate } from 'react-router';
 import { GeoMap } from '../../components/geo-map';
 import { LocationGate } from '../../components/location-gate';
 import { useLocationPermission } from '../../lib/geolocation';
@@ -44,7 +43,6 @@ const DIVISIONS: { id: Division; label: string }[] = [
   { id: 'WOMEN_PRO', label: 'Women Pro' },
 ];
 
-const SIM_SPEED: Record<ActivityType, number> = { RUN: 3.2, RIDE: 7.5, WALK: 1.5, WORKOUT: 0 };
 
 /** Recording preferences survive reloads (localStorage, per browser). */
 const prefGet = (key: string): boolean => {
@@ -145,7 +143,6 @@ const TYPE_TILES: {
   { id: 'WORKOUT', label: 'Workout', hint: 'Sets & reps', icon: Dumbbell },
   { id: 'HYROX', label: 'HYROX Sim', hint: 'Guided race', icon: Flame },
 ];
-const M_PER_DEG_LAT = 111_320;
 
 function defaultTitle(type: ActivityType): string {
   const hour = new Date().getHours();
@@ -160,20 +157,12 @@ export function RecordPage() {
   const units = useUnits();
   const invalidate = useInvalidateAll();
   const { data: stats } = useAthleteStats();
-  const [searchParams] = useSearchParams();
-  const routeId = searchParams.get('route');
-  const [followRoute, setFollowRoute] = useState<Route | null>(null);
-  useEffect(() => {
-    if (!routeId) return;
-    void api.athlete.route(routeId).then(setFollowRoute).catch(() => setFollowRoute(null));
-  }, [routeId]);
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [type, setType] = useState<ActivityType | 'HYROX'>('RUN');
   const [division, setDivision] = useState<Division>('MEN_OPEN');
   const [simBusy, setSimBusy] = useState(false);
   const [simError, setSimError] = useState('');
-  const [useDemoGps, setUseDemoGps] = useState(true);
   // Read without asking, so the setup screen can say whether real GPS is even
   // an option before anybody presses Start.
   const [locationPermission, setLocationPermission] = useLocationPermission();
@@ -193,13 +182,6 @@ export function RecordPage() {
 
   const startTsRef = useRef(0);
   const pausedRef = useRef(false);
-  const simStateRef = useRef({
-    lat: -6.21,
-    lng: 106.82,
-    heading: 0, // north, along the segment corridor
-    ele: 20,
-    routeIdx: 0,
-  });
   const watchIdRef = useRef<number | null>(null);
   const timersRef = useRef<number[]>([]);
   const lastPointRef = useRef<TrackPoint | null>(null);
@@ -236,14 +218,6 @@ export function RecordPage() {
     startTsRef.current = Date.now();
     pausedRef.current = false;
     lastPointRef.current = null;
-    const startPoint = followRoute?.points[0];
-    simStateRef.current = {
-      lat: startPoint?.lat ?? -6.21,
-      lng: startPoint?.lng ?? 106.82,
-      heading: 0,
-      ele: 20,
-      routeIdx: 0,
-    };
     setPhase('recording');
 
     timersRef.current.push(
@@ -254,54 +228,26 @@ export function RecordPage() {
 
     if (type === 'WORKOUT' || type === 'HYROX') return; // timer only / guided
 
-    if (!useDemoGps && navigator.geolocation) {
-      watchIdRef.current = navigator.geolocation.watchPosition(
-        (pos) =>
-          appendPoint(
-            pos.coords.latitude,
-            pos.coords.longitude,
-            typeof pos.coords.altitude === 'number' ? pos.coords.altitude : undefined,
-          ),
-        (err) => setGpsError(`GPS: ${err.message} - switch to Demo GPS to keep going.`),
-        { enableHighAccuracy: true, maximumAge: 1000 },
-      );
-    } else {
-      timersRef.current.push(
-        window.setInterval(() => {
-          if (pausedRef.current) return;
-          const s = simStateRef.current;
-          const v = SIM_SPEED[type as ActivityType] * (0.9 + Math.random() * 0.2);
-          const route = followRoute;
-          if (route && s.routeIdx < route.points.length - 1) {
-            // Follow the saved route: head toward the next route point.
-            let remaining = v;
-            while (remaining > 0 && s.routeIdx < route.points.length - 1) {
-              const target = route.points[s.routeIdx + 1]!;
-              const dist = haversineM({ lat: s.lat, lng: s.lng }, target);
-              if (dist <= remaining) {
-                s.lat = target.lat;
-                s.lng = target.lng;
-                s.routeIdx += 1;
-                remaining -= dist;
-              } else {
-                const frac = remaining / dist;
-                s.lat += (target.lat - s.lat) * frac;
-                s.lng += (target.lng - s.lng) * frac;
-                remaining = 0;
-              }
-            }
-          } else {
-            // Default demo run: follow the segment corridor north, drifting a little.
-            s.heading += (Math.random() - 0.5) * 0.15;
-            s.heading = Math.max(-0.5, Math.min(0.5, s.heading));
-            s.lat += (v * Math.cos(s.heading)) / M_PER_DEG_LAT;
-            s.lng += (v * Math.sin(s.heading)) / (M_PER_DEG_LAT * Math.cos((s.lat * Math.PI) / 180));
-          }
-          s.ele += (Math.random() - 0.45) * 0.6;
-          appendPoint(s.lat, s.lng, s.ele);
-        }, 1000),
-      );
+    if (!navigator.geolocation) {
+      setGpsError('This device cannot share its location, so the route cannot be recorded.');
+      return;
     }
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (pos) =>
+        appendPoint(
+          pos.coords.latitude,
+          pos.coords.longitude,
+          typeof pos.coords.altitude === 'number' ? pos.coords.altitude : undefined,
+        ),
+      (err) =>
+        setGpsError(
+          err.code === 1
+            ? 'Location is blocked for this site. Allow it in your browser settings and start again.'
+            : 'Lost the GPS fix. The timer is still running — the route will pick up when the signal returns.',
+        ),
+      { enableHighAccuracy: true, maximumAge: 1000 },
+    );
   };
 
   // Audio cue at every completed kilometre (skipped when Reduce Motion users
@@ -370,13 +316,6 @@ export function RecordPage() {
       <h1 className="display text-3xl">{t('Record')}</h1>
       <TrainTabs />
 
-      {followRoute ? (
-        <p className="rounded-xl bg-brand/10 px-3 py-2 text-sm font-bold text-brand">
-          {t('Routes')}: {followRoute.name} ({formatDistanceM(followRoute.distanceM, units)}) - Demo
-          GPS follows this route.
-        </p>
-      ) : null}
-
       {phase === 'idle' ? (
         <>
           <div>
@@ -414,49 +353,37 @@ export function RecordPage() {
           </div>
           {type === 'HYROX' ? null : type !== 'WORKOUT' ? (
             <div className="flex flex-col gap-3">
-              <label className="card flex items-center justify-between text-sm font-bold">
-                Demo GPS (simulated route)
-                <input
-                  type="checkbox"
-                  checked={useDemoGps}
-                  onChange={(e) => setUseDemoGps(e.target.checked)}
-                  className="h-5 w-5 accent-[var(--color-brand)]"
-                />
-              </label>
               {/* Asked here rather than at Start. Discovering halfway up a
                   hill that the app was never allowed to see where you are
                   loses the run, and a prompt in the middle of one is the
                   moment somebody is least inclined to read it. */}
-              {!useDemoGps ? (
-                <LocationGate
-                  permission={locationPermission}
-                  error={null}
-                  locating={askingLocation}
-                  reason="So your run is drawn on the map and your distance and pace are real."
-                  onRequest={() => {
-                    setAskingLocation(true);
-                    navigator.geolocation.getCurrentPosition(
-                      () => {
-                        setLocationPermission('granted');
-                        setAskingLocation(false);
-                      },
-                      (err) => {
-                        if (err.code === 1) setLocationPermission('denied');
-                        setGpsError(
-                          err.code === 1
-                            ? 'Location is blocked for this site. Turn it on in your browser settings, or record with Demo GPS.'
-                            : 'Could not get a fix yet — you can still start, and it will pick you up outside.',
-                        );
-                        setAskingLocation(false);
-                      },
-                      { enableHighAccuracy: true, timeout: 15000 },
-                    );
-                  }}
-                />
-              ) : null}
-              {gpsError && !useDemoGps ? (
-                <p className="text-xs font-bold text-danger">{gpsError}</p>
-              ) : null}
+              <LocationGate
+                permission={locationPermission}
+                error={null}
+                locating={askingLocation}
+                reason="So your run is drawn on the map and your distance and pace are real."
+                onRequest={() => {
+                  setAskingLocation(true);
+                  navigator.geolocation.getCurrentPosition(
+                    () => {
+                      setLocationPermission('granted');
+                      setGpsError('');
+                      setAskingLocation(false);
+                    },
+                    (err) => {
+                      if (err.code === 1) setLocationPermission('denied');
+                      setGpsError(
+                        err.code === 1
+                          ? 'Location is blocked for this site. Allow it in your browser settings, then reload.'
+                          : 'Could not get a fix yet — you can still start, and it will pick you up outside.',
+                      );
+                      setAskingLocation(false);
+                    },
+                    { enableHighAccuracy: true, timeout: 15000 },
+                  );
+                }}
+              />
+              {gpsError ? <p className="text-xs font-bold text-danger">{gpsError}</p> : null}
             </div>
           ) : (
             <div className="card">
@@ -548,17 +475,6 @@ export function RecordPage() {
 
           {type !== 'HYROX' && type !== 'WORKOUT' ? (
             <div className="card divide-y divide-line !p-2">
-              <OptionRow
-                icon={MapPinned}
-                label="Follow a route"
-                hint={followRoute ? followRoute.name : 'Pick a saved route to guide the demo GPS'}
-                right={
-                  <span className="flex items-center gap-1 text-xs font-bold text-muted">
-                    {followRoute ? 'On' : 'Off'} <ChevronRight size={15} />
-                  </span>
-                }
-                onClick={() => navigate('/train/explore')}
-              />
               <OptionRow
                 icon={Timer}
                 label="Track laps"

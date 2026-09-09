@@ -71,10 +71,15 @@ export default function LoginPage() {
           column without dragging the artwork up with it. */}
       <div className="surface-ink relative hidden overflow-hidden lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:justify-between lg:p-12">
         <div className="pattern-brand pointer-events-none absolute inset-0" aria-hidden />
+        {/* self-start, or the wordmark is stretched to twice its width. The
+            panel is a flex column, so align-items defaults to stretch and
+            pulls a w-auto child across the whole cross axis — the height
+            holds at h-9 and only the width grows, which is exactly how you
+            flatten a logo without touching its CSS. */}
         <img
           src="/admin/brand/nuhabit-logo-white.png"
           alt="NüHabit"
-          className="relative h-9 w-auto"
+          className="relative h-9 w-auto self-start"
         />
         <div className="relative">
           <h1 className="display max-w-md text-5xl uppercase leading-[0.95] text-white">

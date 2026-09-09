@@ -69,6 +69,7 @@ type (
 
 	AuditLog interface {
 		List(ctx context.Context, limit int) ([]domain.AuditEvent, error)
+		ForEntity(ctx context.Context, entityType, entityID string, limit int) ([]domain.AuditEvent, error)
 	}
 
 	// Notifications and Announcements are optional: when the engagement
@@ -597,6 +598,29 @@ type MemberDetail struct {
 	Lots             []domain.TopUpLot           `json:"lots"`
 	Visits           []access.LogView            `json:"visits"`
 	Payments         []domain.Payment            `json:"payments"`
+	// What they bought, and what was done to their record. The panel has had
+	// a panel for each of these since it was written; the response simply
+	// never carried them, so both sections read `.length` off undefined and
+	// took the whole page down with them.
+	Packages []MemberPackage     `json:"packages"`
+	Audit    []domain.AuditEvent `json:"audit"`
+}
+
+// MemberPackage is one purchased pack, as the front desk sees it.
+//
+// The same shape the member's own wallet shows, so a question over the
+// counter — "when does my ten-pack run out?" — is answered off the same
+// figures the member is looking at on their phone.
+type MemberPackage struct {
+	LotID         string    `json:"lotId"`
+	PackageID     string    `json:"packageId"`
+	Name          string    `json:"name"`
+	Credits       int       `json:"credits"`
+	PurchasedAt   time.Time `json:"purchasedAt"`
+	ExpiresAt     time.Time `json:"expiresAt"`
+	Active        bool      `json:"active"`
+	CoverageIDs   []string  `json:"coverageIds"`
+	CoverageNames []string  `json:"coverageNames"`
 }
 
 func (s *Service) MemberDetail(ctx context.Context, memberID string) (MemberDetail, error) {
@@ -652,7 +676,78 @@ func (s *Service) MemberDetail(ctx context.Context, memberID string) (MemberDeta
 	}
 	detail.TotalVisits = visits[memberID].Total
 	detail.LastVisitAt = visits[memberID].LastVisitAt
+
+	if detail.Packages, err = s.memberPackages(ctx, detail.Lots, now); err != nil {
+		return detail, err
+	}
+	if detail.Audit, err = s.audit.ForEntity(ctx, "member", memberID, 50); err != nil {
+		return detail, err
+	}
 	return detail, nil
+}
+
+// memberPackages names each top-up lot and says whether it is still good.
+//
+// A lot on its own is an id and a number; what the desk needs is "10 Visit
+// Pack, bought in June, dead in October, all classes".
+func (s *Service) memberPackages(
+	ctx context.Context, lots []domain.TopUpLot, now time.Time,
+) ([]MemberPackage, error) {
+	out := []MemberPackage{}
+	if len(lots) == 0 {
+		return out, nil
+	}
+
+	packages, err := s.catalog.Packages(ctx, false)
+	if err != nil {
+		return nil, err
+	}
+	byID := make(map[string]domain.CreditPackage, len(packages))
+	for _, p := range packages {
+		byID[p.ID] = p
+	}
+
+	// Class-type names for the packages that only cover some of them. Fetched
+	// once rather than per lot: a member with a dozen packs would otherwise
+	// ask the same question a dozen times.
+	types, err := s.catalog.ClassTypes(ctx, false)
+	if err != nil {
+		return nil, err
+	}
+	typeName := make(map[string]string, len(types))
+	for _, ct := range types {
+		typeName[ct.ID] = ct.Name
+	}
+
+	for _, lot := range lots {
+		entry := MemberPackage{
+			LotID:       lot.ID,
+			Credits:     lot.Credits,
+			PurchasedAt: lot.CreatedAt,
+			ExpiresAt:   lot.ExpiresAt,
+			Active:      lot.ExpiresAt.After(now),
+			Name:        "Credit top-up",
+		}
+		if lot.PackageID != nil {
+			entry.PackageID = *lot.PackageID
+			if pkg, ok := byID[entry.PackageID]; ok {
+				entry.Name = pkg.Name
+				// A nil coverage list means every class, and the panel reads
+				// null as exactly that — so an empty slice would be a lie.
+				if len(pkg.ApplicableClassTypeIDs) > 0 {
+					entry.CoverageIDs = pkg.ApplicableClassTypeIDs
+					for _, id := range pkg.ApplicableClassTypeIDs {
+						if name, ok := typeName[id]; ok {
+							entry.CoverageNames = append(entry.CoverageNames, name)
+						}
+					}
+				}
+			}
+		}
+		out = append(out, entry)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].PurchasedAt.After(out[j].PurchasedAt) })
+	return out, nil
 }
 
 // Audit returns the recent audit trail.

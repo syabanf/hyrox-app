@@ -88,10 +88,49 @@ func (r *PostgresRecorder) List(ctx context.Context, limit int) ([]domain.AuditE
 	return events, rows.Err()
 }
 
+// ForEntity returns what was done to one thing, newest first.
+//
+// Not List filtered in memory: a member's trail is a handful of rows among
+// every action the studio has ever taken, and reading the lot to throw
+// almost all of it away gets slower every week the studio operates.
+func (r *PostgresRecorder) ForEntity(
+	ctx context.Context, entityType, entityID string, limit int,
+) ([]domain.AuditEvent, error) {
+	if limit <= 0 || limit > 500 {
+		limit = 100
+	}
+	rows, err := r.db.Query(ctx, `
+		SELECT id, entity_type, entity_id, action, previous_value, new_value,
+		       actor_id, actor_name, reason, created_at
+		FROM platform.audit_events
+		WHERE entity_type = $1 AND entity_id = $2
+		ORDER BY created_at DESC LIMIT $3`, entityType, entityID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("audit: listing events for %s %s: %w", entityType, entityID, err)
+	}
+	defer rows.Close()
+
+	events := []domain.AuditEvent{}
+	for rows.Next() {
+		var e domain.AuditEvent
+		if err := rows.Scan(&e.ID, &e.EntityType, &e.EntityID, &e.Action, &e.PreviousValue,
+			&e.NewValue, &e.ActorID, &e.ActorName, &e.Reason, &e.CreatedAt); err != nil {
+			return nil, fmt.Errorf("audit: scanning event: %w", err)
+		}
+		events = append(events, e)
+	}
+	return events, rows.Err()
+}
+
 // Nop discards events, for tests and for services that do not audit.
 type Nop struct{}
 
 func (Nop) Record(context.Context, Event) error { return nil }
+
+// ForEntity on the discarding recorder is an empty trail, not an error.
+func (Nop) ForEntity(context.Context, string, string, int) ([]domain.AuditEvent, error) {
+	return []domain.AuditEvent{}, nil
+}
 
 // Str is a convenience for the optional string fields.
 func Str(value string) *string { return &value }

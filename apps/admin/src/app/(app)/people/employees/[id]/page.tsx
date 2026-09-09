@@ -3,7 +3,7 @@
 import { WEEKDAYS, annualRemaining, shortTime } from '@nuhabit/domain';
 import { Spinner, StatusBadge } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
@@ -57,9 +57,6 @@ export default function EmployeePage() {
 
   return (
     <div>
-      <Link href="/people/employees" className="mb-3 inline-flex items-center gap-1.5 text-sm font-bold text-muted hover:text-ink">
-        <ArrowLeft size={14} /> Staff directory
-      </Link>
       <PageTitle
         title={employee.fullName}
         subtitle={[employee.positionTitle, employee.departmentName, employee.branchName]

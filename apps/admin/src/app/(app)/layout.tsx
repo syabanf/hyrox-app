@@ -53,7 +53,7 @@ import {
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, Menu, Search, X } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronLeft, ChevronRight, Menu, Search, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import {
   PageHeaderProvider,
@@ -315,6 +315,7 @@ function Shell({
   const header = usePageHeader();
   const setActionSlot = usePageActionSlot();
   const [collapsed, setCollapsed] = useState(false);
+  const back = useBackTrail(activeHref);
 
   // Restored on load rather than defaulted, so the rail is where it was left.
   useEffect(() => {
@@ -535,6 +536,20 @@ function Shell({
         {/* The utility bar: what page this is, a way to get anywhere, and who
             you are signed in as. */}
         <header className="sticky top-0 z-20 mx-auto flex max-w-[1600px] flex-wrap items-center gap-3 bg-beige/85 px-4 pb-3 pt-16 backdrop-blur sm:px-6 lg:px-7 lg:pt-5">
+          {/* Only when there is somewhere to go. A back button on the first
+              page you opened either does nothing or throws you out of the
+              panel, and both are worse than not having one. */}
+          {back.available ? (
+            <button
+              type="button"
+              onClick={back.go}
+              title={`Back to ${back.label}`}
+              className="a-btn-ghost !gap-1.5 !px-2.5 shrink-0"
+            >
+              <ArrowLeft size={16} />
+              <span className="hidden max-w-36 truncate text-xs sm:inline">{back.label}</span>
+            </button>
+          ) : null}
           <div className="min-w-0 shrink-0">
             <h1 className="display truncate text-2xl font-black leading-tight">{title}</h1>
             {header?.subtitle ? (
@@ -713,4 +728,68 @@ function NavLink({
       {!collapsed ? <span className="truncate">{label}</span> : null}
     </Link>
   );
+}
+
+/**
+ * Where the back button goes: the last page you opened, not the parent of
+ * this one.
+ *
+ * The panel keeps its own trail rather than calling router.back(), for two
+ * reasons. Landing on a deep link directly — a report drill pasted into
+ * chat, a bookmark — leaves nothing of ours in the browser's history, so
+ * back would walk out of the panel entirely. And the filter controls
+ * navigate with replace() on purpose, so "back" must mean the previous
+ * *page* rather than the previous *state of this page*.
+ */
+function useBackTrail(activeHref: string | undefined) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const trail = useRef<string[]>([]);
+  const current = useRef(pathname);
+  // Popping the trail is itself a navigation, and it must not push the page
+  // it just left back onto the trail — that is how a back button becomes a
+  // toggle between two screens.
+  const returning = useRef(false);
+  const [depth, setDepth] = useState(0);
+
+  useEffect(() => {
+    if (current.current === pathname) return;
+    if (returning.current) {
+      returning.current = false;
+    } else {
+      trail.current.push(current.current);
+      setDepth(trail.current.length);
+    }
+    current.current = pathname;
+  }, [pathname]);
+
+  const previous = depth > 0 ? trail.current[depth - 1] : undefined;
+  return {
+    available: depth > 0,
+    label: previous ? pageLabel(previous) : 'Back',
+    go: () => {
+      const target = trail.current.pop();
+      setDepth(trail.current.length);
+      if (!target) return;
+      returning.current = true;
+      router.push(target);
+    },
+    activeHref,
+  };
+}
+
+/**
+ * What to call a path in the back button.
+ *
+ * Nav labels where there is one; otherwise the last meaningful segment,
+ * because a detail page's id ("mem_04G8…") tells the reader nothing about
+ * where the button leads.
+ */
+function pageLabel(path: string): string {
+  const known = NAV.flatMap((g) => g.items).find((i) => i.href === path);
+  if (known) return known.label;
+  const segments = path.split('/').filter(Boolean);
+  const named = [...segments].reverse().find((s) => !/[_-]/.test(s) || /^[a-z-]+$/.test(s));
+  if (!named) return 'Back';
+  return named.charAt(0).toUpperCase() + named.slice(1).replace(/-/g, ' ');
 }

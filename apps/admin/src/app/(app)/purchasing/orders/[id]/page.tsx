@@ -3,8 +3,7 @@
 import type { GoodsReceiptView } from '@nuhabit/contracts';
 import { formatIdr, Spinner, StatusBadge } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Ban, PackageCheck, Send, Trash2 } from 'lucide-react';
-import Link from 'next/link';
+import { Ban, PackageCheck, Send, Trash2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import {
@@ -72,12 +71,6 @@ export default function OrderPage() {
 
   return (
     <div>
-      <Link
-        href="/purchasing"
-        className="mb-3 inline-flex items-center gap-1.5 text-sm font-bold text-muted hover:text-ink"
-      >
-        <ArrowLeft size={14} /> Purchase orders
-      </Link>
       <PageTitle
         title={order.poNumber}
         subtitle={`${order.supplierName} · ${order.branchName}`}

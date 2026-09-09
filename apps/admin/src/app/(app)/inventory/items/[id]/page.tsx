@@ -3,8 +3,7 @@
 import { MOVEMENT_LABELS } from '@nuhabit/domain';
 import { formatDayTime, formatIdr, Spinner, StatusBadge } from '@nuhabit/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Pencil } from 'lucide-react';
-import Link from 'next/link';
+import { Pencil } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { ErrorNote, Field, Modal, PageTitle, SearchSelect, StatCard, StatRow } from '../../../../../components/ui';
@@ -27,12 +26,6 @@ export default function ItemPage() {
 
   return (
     <div>
-      <Link
-        href="/inventory/items"
-        className="mb-3 inline-flex items-center gap-1.5 text-sm font-bold text-muted hover:text-ink"
-      >
-        <ArrowLeft size={14} /> Catalogue
-      </Link>
       <PageTitle title={item.name} subtitle={`${item.sku} · ${item.categoryName ?? 'uncategorised'}`} />
 
       <StatRow>

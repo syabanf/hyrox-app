@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug builds only. This file lives in src/debug, so it is not merged into a
+  release APK and a shipped app still refuses cleartext everywhere.
+
+  It exists so the shell can be pointed at a laptop while the web app is being
+  worked on: 10.0.2.2 is how an Android emulator reaches the host machine.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

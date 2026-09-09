@@ -247,6 +247,16 @@ func (s *Seeder) seedBookings(ctx context.Context) (int, error) {
 			SELECT upcoming.id AS session_id, people.id AS member_id, upcoming.starts_at
 			FROM upcoming CROSS JOIN people
 			WHERE (upcoming.n + people.n * 2) % 3 = 0
+			  -- A member may hold one active booking per session, enforced by a
+			  -- partial unique index that ON CONFLICT (id) does not cover: a
+			  -- waitlist row from an earlier run has a different id and the
+			  -- same pair, so the second run collided on the rule rather than
+			  -- the key.
+			  AND NOT EXISTS (
+				SELECT 1 FROM scheduling.bookings b
+				WHERE b.session_id = upcoming.id AND b.member_id = people.id
+				  AND b.status IN ('PENDING', 'CONFIRMED', 'WAITLIST', 'CHECKED_IN')
+			  )
 		)
 		INSERT INTO scheduling.bookings
 			(id, member_id, session_id, status, source, created_at, updated_at)

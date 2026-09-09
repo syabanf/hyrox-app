@@ -232,12 +232,109 @@ type RegistrationInput struct {
 	PreferredBranchID *string
 	WaiverAccepted    bool
 	TermsAccepted     bool
+	Password          string
+}
+
+// MemberLogin exchanges an email address or phone number and a password for a
+// member token.
+//
+// This is the sign-in the app uses. The one-time code remains, because a
+// member who has forgotten their password has to get in somehow and there is
+// no reset flow yet — but nobody should need a round trip through a mail
+// provider to open an app they use four times a week.
+func (s *Service) MemberLogin(ctx context.Context, identifier, password string) (Session, error) {
+	identifier = strings.TrimSpace(identifier)
+	if identifier == "" || password == "" {
+		return Session{}, httpx.Invalid("Enter your email address or phone number, and your password.")
+	}
+
+	creds, err := s.repo.MemberCredentialsByIdentifier(ctx, identifier)
+	if err != nil {
+		if httpx.IsNotFound(err) {
+			// An unknown account fails exactly like a wrong password, and
+			// takes comparable time doing it: a faster "no such member" turns
+			// the sign-in form into a directory of who trains here.
+			s.passwords.Matches(password, decoyHash)
+			return Session{}, errBadMemberCredentials
+		}
+		return Session{}, err
+	}
+
+	now := s.clock.Now()
+	if creds.LockedUntil != nil && now.Before(*creds.LockedUntil) {
+		return Session{}, httpx.ErrRateLimited.WithMessage(
+			"Too many incorrect passwords. Try again in %d minutes.",
+			int(creds.LockedUntil.Sub(now).Minutes())+1)
+	}
+	if creds.Status == domain.MemberArchived {
+		return Session{}, errBadMemberCredentials
+	}
+
+	if creds.PasswordHash == "" || !s.passwords.Matches(password, creds.PasswordHash) {
+		if err := s.recordMemberFailure(ctx, creds, now); err != nil {
+			return Session{}, err
+		}
+		return Session{}, errBadMemberCredentials
+	}
+
+	// A suspended member may sign in and see why they cannot book. Refusing
+	// the login instead would leave them with a screen that says nothing and
+	// a front desk answering the same question every time.
+	if err := s.repo.RecordMemberLogin(ctx, creds.ID, now); err != nil {
+		return Session{}, err
+	}
+	return s.sessionFor(creds.Member)
+}
+
+// SetMemberPassword replaces a member's own password.
+func (s *Service) SetMemberPassword(ctx context.Context, memberID, password string) error {
+	if err := checkPasswordLength(password); err != nil {
+		return err
+	}
+	hash, err := s.passwords.Hash(password)
+	if err != nil {
+		return err
+	}
+	return s.repo.SetMemberPassword(ctx, memberID, hash, s.clock.Now())
+}
+
+var errBadMemberCredentials = httpx.ErrUnauthorized.WithMessage(
+	"Those sign-in details do not match. Check the email address or phone number and your password.")
+
+func (s *Service) recordMemberFailure(ctx context.Context, creds MemberCredentials, now time.Time) error {
+	attempts := s.cfg.LoginAttempts
+	if attempts < 1 {
+		attempts = 10
+	}
+	var lockUntil *time.Time
+	if creds.FailedLogins+1 >= attempts {
+		until := now.Add(s.cfg.LockoutFor)
+		lockUntil = &until
+	}
+	return s.repo.RecordMemberFailedLogin(ctx, creds.ID, lockUntil)
+}
+
+// checkPasswordLength is the one rule. Length is what costs an attacker
+// something; composition rules are what produce Passw0rd! on a sticky note.
+func checkPasswordLength(password string) error {
+	const minLength = 8
+	if len([]rune(password)) < minLength {
+		return httpx.Invalid("A password is at least %d characters.", minLength)
+	}
+	return nil
 }
 
 // Register creates a member and signs them in.
 func (s *Service) Register(ctx context.Context, in RegistrationInput) (Session, error) {
 	if !in.WaiverAccepted || !in.TermsAccepted {
 		return Session{}, httpx.Invalid("The waiver and terms must both be accepted.")
+	}
+	if err := checkPasswordLength(in.Password); err != nil {
+		return Session{}, err
+	}
+	hash, err := s.passwords.Hash(in.Password)
+	if err != nil {
+		return Session{}, err
 	}
 	now := s.clock.Now()
 	member := domain.Member{
@@ -260,6 +357,9 @@ func (s *Service) Register(ctx context.Context, in RegistrationInput) (Session, 
 
 	created, err := s.repo.InsertMember(ctx, member)
 	if err != nil {
+		return Session{}, err
+	}
+	if err := s.repo.SetMemberPassword(ctx, created.ID, hash, now); err != nil {
 		return Session{}, err
 	}
 	if err := s.auditor.Record(ctx, audit.Event{

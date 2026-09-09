@@ -27,11 +27,20 @@ const memberColumns = `id, full_name, email, phone, date_of_birth, gender, emerg
 	created_at, updated_at`
 
 func scanMember(row pgx.Row) (domain.Member, error) {
+	return scanMemberWith(row)
+}
+
+// scanMemberWith reads the member columns, then whatever a caller appended to
+// the SELECT after them — the credential columns, in practice. Keeping it in
+// one place means the member column list is written once and a new column
+// cannot land in one scanner and not the other.
+func scanMemberWith(row pgx.Row, extra ...any) (domain.Member, error) {
 	var m domain.Member
 	var contact []byte
-	if err := row.Scan(&m.ID, &m.FullName, &m.Email, &m.Phone, &m.DateOfBirth, &m.Gender,
+	dest := append([]any{&m.ID, &m.FullName, &m.Email, &m.Phone, &m.DateOfBirth, &m.Gender,
 		&contact, &m.PreferredBranchID, &m.AvatarURL, &m.Status, &m.WaiverVersion,
-		&m.WaiverAcceptedAt, &m.Notes, &m.CreatedAt, &m.UpdatedAt); err != nil {
+		&m.WaiverAcceptedAt, &m.Notes, &m.CreatedAt, &m.UpdatedAt}, extra...)
+	if err := row.Scan(dest...); err != nil {
 		return domain.Member{}, err
 	}
 	if len(contact) > 0 {
@@ -450,6 +459,80 @@ func (r *Repository) SupervisorsWithPIN(ctx context.Context) ([]SupervisorCandid
 // ── Passwords ────────────────────────────────────────────────────────────────
 
 // Credentials is a staff account plus everything the sign-in check needs.
+// MemberCredentials is a member's row plus what a sign-in needs to judge it.
+type MemberCredentials struct {
+	domain.Member
+	PasswordHash string
+	FailedLogins int
+	LockedUntil  *time.Time
+}
+
+// MemberCredentialsByIdentifier finds a member by email or phone.
+//
+// One query for both, because the sign-in form asks for "email or phone" and
+// deciding which it was handed before looking is a guess the database can
+// make more cheaply and more correctly.
+func (r *Repository) MemberCredentialsByIdentifier(
+	ctx context.Context, identifier string,
+) (MemberCredentials, error) {
+	var c MemberCredentials
+	row := r.db.QueryRow(ctx, `
+		SELECT `+memberColumns+`, coalesce(password_hash, ''), failed_logins, locked_until
+		FROM identity.members
+		WHERE (lower(email) = lower($1) OR phone = $1) AND status <> 'ARCHIVED'
+		ORDER BY created_at DESC LIMIT 1`, strings.TrimSpace(identifier))
+	m, err := scanMemberWith(row, &c.PasswordHash, &c.FailedLogins, &c.LockedUntil)
+	if database.IsNoRows(err) {
+		return MemberCredentials{}, httpx.NotFound("member")
+	}
+	if err != nil {
+		return MemberCredentials{}, fmt.Errorf("identity: reading member credentials: %w", err)
+	}
+	c.Member = m
+	return c, nil
+}
+
+// SetMemberPassword stores a new hash and forgives whatever the old password
+// had accumulated: a fresh password should not inherit a lockout.
+func (r *Repository) SetMemberPassword(
+	ctx context.Context, memberID, hash string, at time.Time,
+) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE identity.members
+		SET password_hash = $2, password_set_at = $3, failed_logins = 0,
+		    locked_until = NULL, updated_at = $3
+		WHERE id = $1`, memberID, hash, at)
+	if err != nil {
+		return fmt.Errorf("identity: setting member password: %w", err)
+	}
+	return nil
+}
+
+func (r *Repository) RecordMemberFailedLogin(
+	ctx context.Context, memberID string, lockUntil *time.Time,
+) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE identity.members
+		SET failed_logins = failed_logins + 1,
+		    locked_until = coalesce($2, locked_until)
+		WHERE id = $1`, memberID, lockUntil)
+	if err != nil {
+		return fmt.Errorf("identity: recording failed member login: %w", err)
+	}
+	return nil
+}
+
+func (r *Repository) RecordMemberLogin(ctx context.Context, memberID string, at time.Time) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE identity.members
+		SET last_login_at = $2, failed_logins = 0, locked_until = NULL
+		WHERE id = $1`, memberID, at)
+	if err != nil {
+		return fmt.Errorf("identity: recording member login: %w", err)
+	}
+	return nil
+}
+
 type Credentials struct {
 	domain.AdminUser
 	PasswordHash       string

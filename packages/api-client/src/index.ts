@@ -42,6 +42,7 @@ import type {
   CreateSessionInput,
   GateScanInput,
   PayoutActionInput,
+  MemberLoginInput,
   RegisterMemberInput,
   TopUpRequest,
   UpdateBranchInput,
@@ -394,6 +395,12 @@ export function createApiClient(options: ApiClientOptions) {
         post<MemberSessionView>('/api/auth/otp/verify', { challengeId, code }),
       register: (input: RegisterMemberInput) =>
         post<MemberSessionView>('/api/auth/register', input),
+      /**
+       * The sign-in the app uses. The one-time code above is still there for
+       * a member who has forgotten their password.
+       */
+      login: (input: MemberLoginInput) =>
+        post<MemberSessionView>('/api/auth/login', input),
       adminUsers: () => get<AdminSessionView['user'][]>('/api/admin/auth/users'),
       /** What the login screen may offer: read before anybody has a token. */
       adminAuthMode: () => get<AuthModeView>('/api/admin/auth/mode'),

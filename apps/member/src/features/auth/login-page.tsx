@@ -8,73 +8,22 @@ import { useAuthStore } from '../../lib/auth';
 /** Bundled gym photo (originally Unsplash, committed under public/img). */
 const HERO_PHOTO = '/img/hero-login.jpg';
 
-/** Segmented 6-digit code input: an invisible input drives the display boxes. */
-function OtpBoxes({ value, onChange }: { value: string; onChange: (next: string) => void }) {
-  return (
-    <div className="relative">
-      <input
-        autoFocus
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        maxLength={6}
-        value={value}
-        onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 6))}
-        className="absolute inset-0 z-10 h-full w-full cursor-text opacity-0"
-        aria-label="Verification code"
-      />
-      <div className="flex gap-2">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div
-            key={i}
-            className={`flex h-14 flex-1 items-center justify-center rounded-2xl border-2 text-2xl font-extrabold transition ${
-              i === value.length
-                ? 'border-brand bg-surface'
-                : 'border-transparent bg-surface-raised'
-            }`}
-          >
-            {value[i] ?? ''}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export function LoginPage() {
   const navigate = useNavigate();
   const setSession = useAuthStore((s) => s.setSession);
-  const [identifier, setIdentifier] = useState('demo@nuhabit.id');
-  const [challengeId, setChallengeId] = useState<string | null>(null);
-  const [hint, setHint] = useState('');
-  const [code, setCode] = useState('');
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const requestOtp = async () => {
-    setBusy(true);
-    setError('');
-    try {
-      const res = await api.auth.requestOtp(identifier);
-      if (!res.memberExists) {
-        setError('No account found - create your membership below.');
-        return;
-      }
-      setChallengeId(res.challengeId);
-      setHint(res.hint);
-      setCode('');
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Something went wrong.');
-    } finally {
-      setBusy(false);
-    }
-  };
+  const canSubmit = identifier.trim().length >= 3 && password.length > 0;
 
-  const verify = async () => {
-    if (!challengeId) return;
+  const signIn = async () => {
+    if (!canSubmit) return;
     setBusy(true);
     setError('');
     try {
-      const res = await api.auth.verifyOtp(challengeId, code);
+      const res = await api.auth.login({ identifier: identifier.trim(), password });
       setSession(res.token, res.member);
       navigate('/', { replace: true });
     } catch (e) {
@@ -108,71 +57,58 @@ export function LoginPage() {
       {/* Floating form card - relative so it paints above the hero's absolute overlay */}
       <div className="relative -mt-10 px-4 pb-10">
         <div className="card !p-6">
-          {!challengeId ? (
-            <div className="flex flex-col gap-4">
-              <div>
-                <p className="display text-2xl">Sign in</p>
-                <p className="mt-0.5 text-sm text-muted">
-                  We'll send a one-time code to verify it's you.
-                </p>
-              </div>
-              <div>
-                <label className="label" htmlFor="identifier">
-                  Email or phone
-                </label>
-                <input
-                  id="identifier"
-                  className="input"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="you@example.com"
-                  autoComplete="username"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && identifier.length >= 3) void requestOtp();
-                  }}
-                />
-              </div>
-              <button
-                className="btn-brand flex items-center justify-center gap-2"
-                disabled={busy || identifier.length < 3}
-                onClick={() => void requestOtp()}
-              >
-                Continue <ArrowRight size={18} />
-              </button>
+          {/* One form, submitted as a form: a password manager will not offer
+              to fill a pair of inputs that never announce themselves as a
+              sign-in, and Enter has to work from either field. */}
+          <form
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void signIn();
+            }}
+          >
+            <div>
+              <p className="display text-2xl">Sign in</p>
+              <p className="mt-0.5 text-sm text-muted">Use the email or phone on your membership.</p>
             </div>
-          ) : (
-            <div className="flex flex-col gap-4">
-              <div>
-                <p className="display text-2xl">Enter the code</p>
-                <p className="mt-0.5 text-sm text-muted">
-                  Sent to <span className="font-bold text-ink">{identifier}</span>
-                </p>
-              </div>
-              <OtpBoxes
-                value={code}
-                onChange={(next) => {
-                  setCode(next);
-                  setError('');
-                }}
+            <div>
+              <label className="label" htmlFor="identifier">
+                Email or phone
+              </label>
+              <input
+                id="identifier"
+                className="input"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="you@example.com"
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
               />
-              <p className="text-xs text-muted">{hint}</p>
-              <button className="btn-brand" disabled={busy || code.length < 4} onClick={() => void verify()}>
-                Sign in
-              </button>
-              <button
-                className="text-center text-sm font-bold text-muted"
-                onClick={() => {
-                  setChallengeId(null);
-                  setCode('');
-                  setError('');
-                }}
-              >
-                Use a different email or phone
-              </button>
             </div>
-          )}
-
-          {error ? <p className="mt-3 text-sm font-bold text-danger">{error}</p> : null}
+            <div>
+              <label className="label" htmlFor="password">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                className="input"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                autoComplete="current-password"
+              />
+            </div>
+            <button
+              type="submit"
+              className="btn-brand flex items-center justify-center gap-2"
+              disabled={busy || !canSubmit}
+            >
+              Sign in <ArrowRight size={18} />
+            </button>
+            {error ? <p className="text-sm font-bold text-danger">{error}</p> : null}
+          </form>
         </div>
 
         <Link to="/auth/register" className="btn-ghost mt-3 block">
@@ -181,7 +117,7 @@ export function LoginPage() {
 
         <p className="mt-6 text-center">
           <span className="chip bg-surface-raised text-muted">
-            Demo: demo@nuhabit.id · any 6-digit code
+            Demo: demo@nuhabit.id · nuhabit-demo-2026
           </span>
         </p>
       </div>

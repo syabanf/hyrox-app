@@ -345,17 +345,35 @@ func (s *Seeder) seedMembers(ctx context.Context) (int, error) {
 		{"mem_dimas", "Dimas Anggara", "dimas@example.com", "+628123456707", "brn_senopati", "SUSPENDED", 120},
 		{"mem_rina", "Rina Kartika", "rina@example.com", "+628123456708", "brn_pik", "INACTIVE", 200},
 	}
+	// Members sign in with a password now, so a seeded member without one
+	// could not open the app at all. Hashed once: PBKDF2 is deliberately slow
+	// and nine of them at the demo cost is a noticeable pause.
+	hash, err := s.passwords.Hash(DemoPassword)
+	if err != nil {
+		return 0, fmt.Errorf("seed: hashing the demo member password: %w", err)
+	}
+
 	for _, m := range members {
 		joined := now.AddDate(0, 0, -m.joinedDaysAgo)
 		_, err := s.db.Exec(ctx, `
 			INSERT INTO identity.members (id, full_name, email, phone, preferred_branch_id, status,
-				waiver_version, waiver_accepted_at, created_at, updated_at)
-			VALUES ($1, $2, $3, $4, $5, $6, '2026-01', $7, $7, $7)
+				waiver_version, waiver_accepted_at, created_at, updated_at,
+				password_hash, password_set_at)
+			VALUES ($1, $2, $3, $4, $5, $6, '2026-01', $7, $7, $7, $8, $7)
 			ON CONFLICT (id) DO NOTHING`,
-			m.id, m.name, m.email, m.phone, m.branch, m.status, joined)
+			m.id, m.name, m.email, m.phone, m.branch, m.status, joined, hash)
 		if err != nil {
 			return 0, fmt.Errorf("seed: member %s: %w", m.id, err)
 		}
+	}
+
+	// A member seeded before passwords existed has none, and would be locked
+	// out of an app they could open yesterday. Filled in, never overwritten —
+	// the same rule the staff accounts follow.
+	if _, err := s.db.Exec(ctx, `
+		UPDATE identity.members SET password_hash = $1, password_set_at = now()
+		WHERE password_hash IS NULL`, hash); err != nil {
+		return 0, fmt.Errorf("seed: backfilling member passwords: %w", err)
 	}
 	return len(members), nil
 }

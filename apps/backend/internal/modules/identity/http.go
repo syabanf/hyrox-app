@@ -28,6 +28,9 @@ func (h *Handler) Mount(r *httpx.Router) {
 	r.Post("/api/auth/otp/request", h.requestOTP)
 	r.Post("/api/auth/otp/verify", h.verifyOTP)
 	r.Post("/api/auth/register", h.register)
+	// Email or phone, plus a password. The one-time code above stays for the
+	// member who has forgotten theirs.
+	r.Post("/api/auth/login", h.memberLogin)
 
 	// Staff sign-in. The roster is only public in demo mode, where the login
 	// screen is a role picker; otherwise listing staff needs a session.
@@ -100,6 +103,35 @@ func (h *Handler) requestOTP(w http.ResponseWriter, r *http.Request) {
 	httpx.OK(w, challenge)
 }
 
+type memberLoginRequest struct {
+	Identifier string `json:"identifier"`
+	Password   string `json:"password"`
+}
+
+func (m *memberLoginRequest) Validate() error {
+	if len(strings.TrimSpace(m.Identifier)) < 3 {
+		return httpx.Invalid("Enter your email address or phone number.")
+	}
+	if m.Password == "" {
+		return httpx.Invalid("Enter your password.")
+	}
+	return nil
+}
+
+func (h *Handler) memberLogin(w http.ResponseWriter, r *http.Request) {
+	body, err := httpx.Decode[memberLoginRequest](r)
+	if err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	session, err := h.service.MemberLogin(r.Context(), body.Identifier, body.Password)
+	if err != nil {
+		httpx.Fail(w, r, err)
+		return
+	}
+	httpx.OK(w, session)
+}
+
 type otpVerifyRequest struct {
 	ChallengeID string `json:"challengeId"`
 	Code        string `json:"code"`
@@ -139,6 +171,7 @@ type registerRequest struct {
 	PreferredBranchID *string                  `json:"preferredBranchId"`
 	WaiverAccepted    bool                     `json:"waiverAccepted"`
 	TermsAccepted     bool                     `json:"termsAccepted"`
+	Password          string                   `json:"password"`
 }
 
 func (rq *registerRequest) Validate() error {
@@ -150,6 +183,9 @@ func (rq *registerRequest) Validate() error {
 	}
 	if len(strings.TrimSpace(rq.Phone)) < 6 {
 		return httpx.Invalid("Enter a valid phone number.")
+	}
+	if len([]rune(rq.Password)) < 8 {
+		return httpx.Invalid("Choose a password of at least 8 characters.")
 	}
 	if rq.Gender != nil && !isGender(*rq.Gender) {
 		return httpx.Invalid("Gender must be MALE, FEMALE or OTHER.")
@@ -195,6 +231,7 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 		PreferredBranchID: body.PreferredBranchID,
 		WaiverAccepted:    body.WaiverAccepted,
 		TermsAccepted:     body.TermsAccepted,
+		Password:          body.Password,
 	})
 	if err != nil {
 		httpx.Fail(w, r, err)

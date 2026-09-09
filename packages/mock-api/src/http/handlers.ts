@@ -38,6 +38,7 @@ import {
   OtpRequestSchema,
   OtpVerifySchema,
   RefundPaymentSchema,
+  MemberLoginSchema,
   RegisterMemberSchema,
   ResolveConflictSchema,
   ReverseEntrySchema,
@@ -164,6 +165,23 @@ export function createHandlers(state: MockApiState, onReset: () => void): HttpHa
       if (!member)
         return jsonError(404, 'MEMBER_NOT_FOUND', 'No member with that email or phone - register first.');
       delete db().otpChallenges[body.data.challengeId];
+      return HttpResponse.json({ token: `member:${member.id}`, member });
+    }),
+
+    // The sign-in the app uses. The offline demo has no password hashes, so
+    // it checks the one demo password rather than pretending to verify — the
+    // shape of the answer is what matters here, not the arithmetic.
+    http.post('*/api/auth/login', async ({ request }) => {
+      const body = await parseBody(request, MemberLoginSchema);
+      if (!body.ok) return body.response;
+      const member = deps().members.byIdentifier(body.data.identifier);
+      if (!member || body.data.password !== DEMO_PASSWORD) {
+        return jsonError(
+          401,
+          'UNAUTHORIZED',
+          'Those sign-in details do not match. Check the email address or phone number and your password.',
+        );
+      }
       return HttpResponse.json({ token: `member:${member.id}`, member });
     }),
 

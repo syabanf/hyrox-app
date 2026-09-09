@@ -18,6 +18,7 @@ export function RegisterPage() {
   const [otpHint, setOtpHint] = useState('');
   const [code, setCode] = useState('');
   const [fullName, setFullName] = useState('');
+  const [password, setPassword] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [gender, setGender] = useState<'MALE' | 'FEMALE' | 'OTHER' | ''>('');
   const [ecName, setEcName] = useState('');
@@ -62,6 +63,7 @@ export function RegisterPage() {
         preferredBranchId: null,
         waiverAccepted: true,
         termsAccepted: true,
+        password,
       });
       setSession(res.token, res.member);
       navigate('/', { replace: true });
@@ -140,6 +142,24 @@ export function RegisterPage() {
             <input type="date" className="input" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
           </div>
           <div>
+            <label className="label" htmlFor="new-password">
+              Password
+            </label>
+            <input
+              id="new-password"
+              type="password"
+              className="input"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
+              placeholder="At least 8 characters"
+            />
+            {/* Said before they submit, not after the server refuses it. */}
+            {password.length > 0 && password.length < 8 ? (
+              <p className="mt-1 text-xs text-danger">A password is at least 8 characters.</p>
+            ) : null}
+          </div>
+          <div>
             <label className="label">Gender</label>
             <div className="flex gap-2">
               {(['MALE', 'FEMALE', 'OTHER'] as const).map((g) => (
@@ -156,7 +176,11 @@ export function RegisterPage() {
               ))}
             </div>
           </div>
-          <button className="btn-brand" disabled={fullName.trim().length < 2} onClick={next}>
+          <button
+            className="btn-brand"
+            disabled={fullName.trim().length < 2 || password.length < 8}
+            onClick={next}
+          >
             Continue
           </button>
         </div>

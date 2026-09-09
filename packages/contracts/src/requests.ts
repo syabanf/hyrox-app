@@ -23,6 +23,14 @@ export const RegisterMemberSchema = z.object({
   preferredBranchId: z.string().nullable().default(null),
   waiverAccepted: z.literal(true),
   termsAccepted: z.literal(true),
+  /** Length is the rule. Composition rules produce Passw0rd! on a sticky note. */
+  password: z.string().min(8),
+});
+
+/** Member sign-in: an email address or a phone number, and a password. */
+export const MemberLoginSchema = z.object({
+  identifier: z.string().min(3),
+  password: z.string().min(1),
 });
 
 /**
@@ -322,6 +330,7 @@ export const UpsertRaceEventSchema = z.object({
 export type OtpRequest = z.infer<typeof OtpRequestSchema>;
 export type OtpVerify = z.infer<typeof OtpVerifySchema>;
 export type RegisterMemberInput = z.infer<typeof RegisterMemberSchema>;
+export type MemberLoginInput = z.infer<typeof MemberLoginSchema>;
 export type AdminLoginInput = z.infer<typeof AdminLoginSchema>;
 export type SetPasswordInput = z.infer<typeof SetPasswordSchema>;
 export type ChangePasswordInput = z.infer<typeof ChangePasswordSchema>;

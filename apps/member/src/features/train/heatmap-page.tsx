@@ -56,6 +56,7 @@ export function HeatmapPage() {
             markers: false,
           }))}
           height={380}
+          showMe
         />
       )}
 

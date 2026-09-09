@@ -25,6 +25,8 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { GeoMap } from '../../components/geo-map';
+import { LocationGate } from '../../components/location-gate';
+import { useLocationPermission } from '../../lib/geolocation';
 import { RouteMap } from '../../components/route-map';
 import { api } from '../../lib/api';
 import { useAthleteStats, useUnits } from '../../lib/athlete-queries';
@@ -172,6 +174,10 @@ export function RecordPage() {
   const [simBusy, setSimBusy] = useState(false);
   const [simError, setSimError] = useState('');
   const [useDemoGps, setUseDemoGps] = useState(true);
+  // Read without asking, so the setup screen can say whether real GPS is even
+  // an option before anybody presses Start.
+  const [locationPermission, setLocationPermission] = useLocationPermission();
+  const [askingLocation, setAskingLocation] = useState(false);
   const [trackLaps, setTrackLaps] = useState(() => prefGet('laps'));
   const [audioCues, setAudioCues] = useState(() => prefGet('cues'));
   const [liveShare, setLiveShare] = useState(false);
@@ -407,15 +413,51 @@ export function RecordPage() {
             </div>
           </div>
           {type === 'HYROX' ? null : type !== 'WORKOUT' ? (
-            <label className="card flex items-center justify-between text-sm font-bold">
-              Demo GPS (simulated route)
-              <input
-                type="checkbox"
-                checked={useDemoGps}
-                onChange={(e) => setUseDemoGps(e.target.checked)}
-                className="h-5 w-5 accent-[var(--color-brand)]"
-              />
-            </label>
+            <div className="flex flex-col gap-3">
+              <label className="card flex items-center justify-between text-sm font-bold">
+                Demo GPS (simulated route)
+                <input
+                  type="checkbox"
+                  checked={useDemoGps}
+                  onChange={(e) => setUseDemoGps(e.target.checked)}
+                  className="h-5 w-5 accent-[var(--color-brand)]"
+                />
+              </label>
+              {/* Asked here rather than at Start. Discovering halfway up a
+                  hill that the app was never allowed to see where you are
+                  loses the run, and a prompt in the middle of one is the
+                  moment somebody is least inclined to read it. */}
+              {!useDemoGps ? (
+                <LocationGate
+                  permission={locationPermission}
+                  error={null}
+                  locating={askingLocation}
+                  reason="So your run is drawn on the map and your distance and pace are real."
+                  onRequest={() => {
+                    setAskingLocation(true);
+                    navigator.geolocation.getCurrentPosition(
+                      () => {
+                        setLocationPermission('granted');
+                        setAskingLocation(false);
+                      },
+                      (err) => {
+                        if (err.code === 1) setLocationPermission('denied');
+                        setGpsError(
+                          err.code === 1
+                            ? 'Location is blocked for this site. Turn it on in your browser settings, or record with Demo GPS.'
+                            : 'Could not get a fix yet — you can still start, and it will pick you up outside.',
+                        );
+                        setAskingLocation(false);
+                      },
+                      { enableHighAccuracy: true, timeout: 15000 },
+                    );
+                  }}
+                />
+              ) : null}
+              {gpsError && !useDemoGps ? (
+                <p className="text-xs font-bold text-danger">{gpsError}</p>
+              ) : null}
+            </div>
           ) : (
             <div className="card">
               <div className="mb-2 flex items-center justify-between">
